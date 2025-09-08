@@ -1,0 +1,489 @@
+"use client"
+
+import * as React from "react"
+import { CalendarDays, Target, TrendingDown, AlertCircle, Plus } from "lucide-react"
+import ClientIcon from "@/components/ui/client-icon"
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useApp } from "@/contexts/app-context"
+import { calculateProgressPercentage, estimateTimeToGoal } from "@/lib/calculations"
+import { 
+  ProgressTrendChart,
+  CalorieManagementWidget,
+  GoalProgressWidget,
+  MetabolicInsightsWidget
+} from "@/components/charts/lazy-chart-components"
+import { 
+  AIInsightsPanel,
+  AIChatWidget
+} from "@/components/ai/lazy-ai-components"
+
+export function Dashboard() {
+  const { state, calculateAndUpdateProgression, generateNewReport } = useApp()
+  const { current_user, current_calculation, entries, reports, loading, error } = state
+
+  // Calculate current metrics
+  const latestEntry = entries[0] // entries are sorted by date desc
+  const currentWeight = latestEntry?.weight || current_user?.current_weight || 0
+  const currentBF = latestEntry?.body_fat_percentage || current_user?.current_bf || 0
+  
+  const goalWeight = current_user?.goal_weight || 0
+  const goalBF = current_user?.goal_bf || 0
+  const startWeight = current_user?.current_weight || 0
+  const startBF = current_user?.current_bf || 0
+
+  const weightProgress = calculateProgressPercentage(startWeight, currentWeight, goalWeight)
+  const bfProgress = calculateProgressPercentage(startBF, currentBF, goalBF)
+
+  // Calculate program timeline data
+  const programData = current_user ? (() => {
+    const startDate = new Date(current_user.start_date)
+    const endDate = new Date(current_user.end_date)
+    const currentDate = new Date()
+    
+    const totalTime = Math.abs(endDate.getTime() - startDate.getTime())
+    const elapsedTime = Math.abs(currentDate.getTime() - startDate.getTime())
+    
+    const totalWeeks = Math.ceil(totalTime / (1000 * 60 * 60 * 24 * 7))
+    const currentWeek = Math.min(totalWeeks, Math.max(1, Math.ceil(elapsedTime / (1000 * 60 * 60 * 24 * 7))))
+    
+    return {
+      totalWeeks,
+      currentWeek,
+      daysIntoProgram: Math.floor(elapsedTime / (1000 * 60 * 60 * 24)),
+      programProgress: Math.min(100, (currentWeek / totalWeeks) * 100)
+    }
+  })() : { totalWeeks: 0, currentWeek: 0, daysIntoProgram: 0, programProgress: 0 }
+
+  // Get current week's calorie recommendation based on program progression
+  let currentCalories = 0
+  try {
+    if (current_calculation && current_calculation.progression && Array.isArray(current_calculation.progression) && current_calculation.progression.length > 0) {
+      const weekIndex = Math.max(0, Math.min(programData.currentWeek - 1, current_calculation.progression.length - 1))
+      const weekData = current_calculation.progression[weekIndex]
+      currentCalories = weekData?.daily_calorie_intake || 0
+    }
+  } catch (e) {
+    console.error('Error calculating current calories:', e)
+    currentCalories = 0
+  }
+
+  // Time estimation using program length
+  let timeEstimate = { weeks: programData.totalWeeks, completion_date: current_user ? new Date(current_user.end_date || Date.now()) : new Date() }
+  try {
+    if (current_calculation && current_calculation.progression && Array.isArray(current_calculation.progression) && current_calculation.progression.length > 0) {
+      timeEstimate = estimateTimeToGoal(current_calculation.progression, goalWeight, goalBF, programData.totalWeeks)
+    }
+  } catch (e) {
+    console.error('Error estimating time to goal:', e)
+  }
+
+  // Handle initial calculation if needed
+  React.useEffect(() => {
+    if (current_user && !current_calculation && !loading) {
+      calculateAndUpdateProgression()
+    }
+  }, [current_user, current_calculation, loading, calculateAndUpdateProgression])
+
+  const handleGenerateReport = async () => {
+    await generateNewReport()
+  }
+
+  if (!current_user) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome to ApÂ³ð˜¹Fit.ai â€" ð›¼</CardTitle>
+            <CardDescription>Set up your profile to start tracking your progress</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/setup">
+              <Button>
+                <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
+                Set Up Profile
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <div className="flex items-center space-x-2">
+          <Link href="/setup/custom">
+            <Button variant="secondary">
+              Update Profile
+            </Button>
+          </Link>
+          <Link href="/entries/new">
+            <Button>
+              <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
+              Add Entry
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={handleGenerateReport} disabled={loading}>
+            Generate Report
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <ClientIcon icon={AlertCircle} className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {loading && (
+        <Alert>
+          <AlertDescription>Calculating progression...</AlertDescription>
+        </Alert>
+      )}
+      
+      <Tabs defaultValue="overview" className="space-y-4" aria-label="Dashboard sections">
+        <TabsList 
+          className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900"
+          role="tablist"
+          aria-label="Dashboard navigation tabs"
+        >
+          <TabsTrigger 
+            value="overview" 
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white"
+            aria-label="Overview section - View current metrics and progress summary"
+          >
+            <span aria-hidden="true">ðŸ"Š</span> Overview
+          </TabsTrigger>
+          <TabsTrigger 
+            value="progress" 
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white"
+            aria-label="Progress section - View detailed progress charts and trends"
+          >
+            <span aria-hidden="true">ðŸ"ˆ</span> Progress
+          </TabsTrigger>
+          <TabsTrigger 
+            value="nutrition" 
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white"
+            aria-label="Nutrition section - View calorie and nutrition guidance"
+          >
+            <span aria-hidden="true">ðŸŽ</span> Nutrition
+          </TabsTrigger>
+          <TabsTrigger 
+            value="ai-coach" 
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+            aria-label="AI Coach section - Get personalized AI insights and chat"
+          >
+            <span aria-hidden="true">ðŸ¤–</span> AI Coach
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4" role="tabpanel" aria-labelledby="overview-tab">
+          <section aria-labelledby="metrics-heading">
+            <h3 id="metrics-heading" className="sr-only">Current Metrics Overview</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card 
+                className="relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 dark:from-emerald-900/20 dark:to-emerald-800/20"
+                role="article"
+                aria-labelledby="current-weight-title"
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle id="current-weight-title" className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Current Weight</CardTitle>
+                  <div className="p-2 bg-emerald-500/10 rounded-full" aria-hidden="true">
+                    <ClientIcon icon={TrendingDown} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-200" aria-label={`Current weight: ${currentWeight.toFixed(1)} pounds`}>
+                    {currentWeight.toFixed(1)} lbs
+                  </div>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    {startWeight > currentWeight ? (
+                      <span aria-label={`${Math.abs(startWeight - currentWeight).toFixed(1)} pounds lost since starting`}>
+                        <span aria-hidden="true">â†"</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs lost
+                      </span>
+                    ) : (
+                      <span aria-label={`${Math.abs(startWeight - currentWeight).toFixed(1)} pounds gained since starting`}>
+                        <span aria-hidden="true">â†'</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs gained
+                      </span>
+                    )}
+                  </p>
+                </CardContent>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10" aria-hidden="true">âš–ï¸</div>
+              </Card>
+            
+              <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">Body Fat %</CardTitle>
+                  <div className="p-2 bg-blue-500/10 rounded-full">
+                    <ClientIcon icon={TrendingDown} className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                    {currentBF.toFixed(1)}%
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    {startBF > currentBF ? (
+                      <>â†" {Math.abs(startBF - currentBF).toFixed(1)}% reduced</>
+                    ) : (
+                      <>â†' {Math.abs(startBF - currentBF).toFixed(1)}% increased</>
+                    )}
+                  </p>
+                </CardContent>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸŽ¯</div>
+              </Card>
+            
+              <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 dark:from-orange-900/20 dark:to-orange-800/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">This Week's Calories</CardTitle>
+                  <div className="p-2 bg-orange-500/10 rounded-full">
+                    <ClientIcon icon={Target} className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-800 dark:text-orange-200">
+                    {currentCalories ? Math.round(currentCalories) : 'Calculating...'}
+                  </div>
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    {current_calculation ? `Week ${programData.currentWeek} target` : 'Pending calculation'}
+                  </p>
+                </CardContent>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸ"¥</div>
+              </Card>
+            
+              <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-900/20 dark:to-purple-800/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">Program Progress</CardTitle>
+                  <div className="p-2 bg-purple-500/10 rounded-full">
+                    <ClientIcon icon={CalendarDays} className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                    Week {programData.currentWeek}
+                  </div>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">
+                    of {programData.totalWeeks} weeks ({Math.round(programData.programProgress)}% complete)
+                  </p>
+                </CardContent>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸ"ˆ</div>
+              </Card>
+            </div>
+          </section>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Weekly Progress Trend</CardTitle>
+                <CardDescription>
+                  Visual overview of your recent progress with AI predictions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProgressTrendChart 
+                  entries={entries.slice(0, 8)} // Show last 8 entries for overview
+                  progression={current_calculation?.progression?.slice(0, 6)} // Next 6 weeks prediction
+                  title=""
+                  description=""
+                />
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Progress Summary</CardTitle>
+                <CardDescription>Key metrics and goals</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Goal Progress Section */}
+                <div className="space-y-4">
+                  <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-emerald-700">ðŸ'ª Weight Loss Progress</span>
+                      <span className="font-bold text-emerald-800">{Math.max(0, weightProgress).toFixed(1)}%</span>
+                    </div>
+                    <div className="relative">
+                      <Progress value={Math.max(0, Math.min(100, weightProgress))} className="h-3 bg-emerald-100" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full" 
+                           style={{ width: `${Math.max(0, Math.min(100, weightProgress))}%` }} />
+                    </div>
+                    <div className="text-center text-xs text-emerald-600">
+                      {currentWeight.toFixed(1)} lbs â†' {goalWeight.toFixed(1)} lbs
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-blue-700">ðŸŽ¯ Body Fat Reduction</span>
+                      <span className="font-bold text-blue-800">{Math.max(0, bfProgress).toFixed(1)}%</span>
+                    </div>
+                    <div className="relative">
+                      <Progress value={Math.max(0, Math.min(100, bfProgress))} className="h-3 bg-blue-100" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full" 
+                           style={{ width: `${Math.max(0, Math.min(100, bfProgress))}%` }} />
+                    </div>
+                    <div className="text-center text-xs text-blue-600">
+                      {currentBF.toFixed(1)}% â†' {goalBF.toFixed(1)}%
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-purple-700">â° Timeline Progress</span>
+                      <span className="font-bold text-purple-800">{Math.round(programData.programProgress)}%</span>
+                    </div>
+                    <div className="relative">
+                      <Progress value={programData.programProgress} className="h-3 bg-purple-100" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full" 
+                           style={{ width: `${Math.min(100, programData.programProgress)}%` }} />
+                    </div>
+                    <div className="text-center text-xs text-purple-600">
+                      Day {programData.daysIntoProgram} of {Math.round(programData.totalWeeks * 7)}
+                    </div>
+                  </div>
+
+                  {current_calculation?.confidence_score && (
+                    <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-amber-700">ðŸ§  AI Confidence Score</span>
+                        <span className="font-bold text-amber-800">{current_calculation?.confidence_score}/100</span>
+                      </div>
+                      <div className="relative">
+                        <Progress value={current_calculation?.confidence_score || 0} className="h-3 bg-amber-100" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full" 
+                             style={{ width: `${current_calculation?.confidence_score || 0}%` }} />
+                      </div>
+                      <div className="text-xs text-amber-600 text-center">
+                        Plan reliability assessment
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Activity */}
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <span className="text-lg">ðŸ"Š</span>
+                    Recent Activity
+                  </h4>
+                  <div className="space-y-3">
+                    {entries.slice(0, 2).map((entry, index) => (
+                      <div key={entry.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/50">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          ðŸ"ˆ
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-xs font-medium text-blue-900">
+                            {entry.weight.toFixed(1)} lbs
+                            {entry.body_fat_percentage && ` (${entry.body_fat_percentage.toFixed(1)}% BF)`}
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            {new Date(entry.date).toLocaleDateString()}
+                            {index === 0 && <span className="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full text-xs">Latest</span>}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {reports.slice(0, 1).map((report) => (
+                      <div key={report.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-emerald-50/50 to-green-50/50 border border-emerald-100/50">
+                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          ðŸ"„
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-xs font-medium text-emerald-900">Report generated</p>
+                          <p className="text-xs text-emerald-600">
+                            {new Date(report.generated_at).toLocaleDateString()}
+                            <span className="ml-2 px-2 py-0.5 bg-emerald-200 text-emerald-800 rounded-full text-xs">New</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {entries.length === 0 && reports.length === 0 && (
+                      <div className="text-center py-2 text-muted-foreground">
+                        <p className="text-xs">No activity yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Insights Panel on Overview */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <AIInsightsPanel 
+                title="AI Insights & Guidance"
+                showHeader={true}
+                maxInsights={4}
+                categories={['progress', 'nutrition', 'goal']}
+              />
+            </div>
+            <div className="lg:col-span-1">
+              <AIChatWidget defaultExpanded={false} maxHeight="350px" />
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="progress" className="space-y-4">
+          <ProgressTrendChart 
+            entries={entries}
+            progression={current_calculation?.progression}
+          />
+          
+          <div className="grid gap-4 lg:grid-cols-2">
+            <GoalProgressWidget 
+              user={current_user}
+              entries={entries}
+              progression={current_calculation?.progression}
+            />
+            <MetabolicInsightsWidget 
+              progression={current_calculation?.progression}
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="nutrition" className="space-y-4">
+          <CalorieManagementWidget 
+            progression={current_calculation?.progression}
+            currentCalories={currentCalories}
+            user={current_user}
+          />
+        </TabsContent>
+
+        <TabsContent value="ai-coach" className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-4">
+              <AIInsightsPanel 
+                title="Personalized AI Insights"
+                showHeader={true}
+                maxInsights={6}
+                categories={['progress', 'nutrition', 'workout', 'goal', 'health']}
+              />
+            </div>
+            <div className="space-y-4">
+              <AIChatWidget defaultExpanded={true} maxHeight="600px" />
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
