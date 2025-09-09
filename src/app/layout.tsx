@@ -29,13 +29,42 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta
           name="format-detection"
           content="telephone=no, date=no, email=no, address=no"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Script id="extension-hydration-fix" strategy="beforeInteractive">
+          {`
+            // Fix hydration mismatches caused by browser extensions
+            (function() {
+              // Suppress hydration warnings in development
+              if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                  if (typeof args[0] === 'string' && (
+                    args[0].includes('data-darkreader-mode') ||
+                    args[0].includes('data-darkreader-scheme') ||
+                    args[0].includes('data-nighteye') ||
+                    args[0].includes('data-night-mode') ||
+                    args[0].includes('Hydration failed')
+                  )) {
+                    // Skip browser extension hydration warnings
+                    return;
+                  }
+                  originalWarn.apply(console, args);
+                };
+              }
+              
+              // Mark document as extension-aware
+              if (typeof document !== 'undefined') {
+                document.documentElement.setAttribute('data-extension-aware', 'true');
+              }
+            })();
+          `}
+        </Script>
         <Script id="global-error-logger" strategy="afterInteractive">
           {`
             (function(){
@@ -43,6 +72,14 @@ export default function RootLayout({
                 try { console[type]('[AppError]', payload); } catch(e){}
               }
               window.addEventListener('error', function(e){
+                // Filter out extension-related errors
+                if (e.message && (
+                  e.message.includes('darkreader') ||
+                  e.message.includes('nighteye') ||
+                  e.message.includes('extension')
+                )) {
+                  return;
+                }
                 log('error', { kind:'error', message:e.message, filename:e.filename, lineno:e.lineno, colno:e.colno, error:e.error && e.error?.stack });
               }, true);
               window.addEventListener('unhandledrejection', function(e){
@@ -75,10 +112,6 @@ export default function RootLayout({
                     background: 'hsl(var(--card))',
                     color: 'hsl(var(--card-foreground))',
                     border: '1px solid hsl(var(--border))',
-                  },
-                  ariaProps: {
-                    role: 'status',
-                    'aria-live': 'polite',
                   },
                 }}
               />

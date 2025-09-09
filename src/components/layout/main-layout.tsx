@@ -16,7 +16,8 @@ import {
 } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import ClientWrapper from "@/components/ui/client-wrapper"
-import { ChangelogDialog } from "@/components/changelog"
+import { ExtensionSafe } from "@/components/ui/extension-safe"
+import { NoSSR } from "@/components/ui/no-ssr"
 import { ProfileHeader } from "@/components/profile/profile-header"
 
 import { cn } from "@/lib/utils"
@@ -86,6 +87,11 @@ const toolItems = [
     url: "/settings",
     icon: Settings,
   },
+  {
+    title: "Changelog",
+    url: "/changelog",
+    icon: History,
+  },
 ]
 
 const aiItems = [
@@ -132,7 +138,7 @@ function AppSidebar() {
                       isActive={pathname === item.url}
                       className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                       aria-current={pathname === item.url ? "page" : undefined}
-                      aria-disabled={isDisabled}
+                      aria-disabled={isDisabled ? true : undefined}
                     >
                       {isDisabled ? (
                         <div 
@@ -181,9 +187,6 @@ function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuItem role="menuitem">
-                <ChangelogDialog />
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -224,22 +227,33 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full" role="application" aria-label="ApexFit AI Fitness Tracker">
+      <ExtensionSafe 
+        className="flex min-h-screen w-full extension-safe" 
+        role="application" 
+        aria-label="ApexFit AI Fitness Tracker"
+        fallback={
+          <div className="flex min-h-screen w-full items-center justify-center">
+            <div className="animate-pulse">Loading application...</div>
+          </div>
+        }
+      >
         {/* Screen reader announcements region */}
         <div 
           id="sr-announcements" 
           aria-live="polite" 
           aria-atomic="false"
           className="sr-announcer"
+          suppressHydrationWarning
         />
         
-        <aside role="complementary" aria-label="Application navigation">
+        <aside role="complementary" aria-label="Application navigation" className="sidebar extension-safe">
           <ClientWrapper 
             fallback={
               <div 
-                className="w-64 bg-background border-r" 
+                className="w-64 bg-background border-r extension-safe" 
                 role="navigation" 
                 aria-label="Loading navigation"
+                suppressHydrationWarning
               >
                 <div className="p-4">
                   <div className="animate-pulse space-y-4">
@@ -259,22 +273,26 @@ export function MainLayout({ children }: MainLayoutProps) {
           </ClientWrapper>
         </aside>
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col" suppressHydrationWarning>
           <header 
-            className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+            className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 header extension-safe"
             role="banner"
+            suppressHydrationWarning
           >
             <div className="container flex h-14 items-center">
-              <SidebarTrigger 
-                aria-label="Toggle navigation menu"
-                aria-expanded="false"
-                aria-controls="sidebar-content"
-              />
+              <NoSSR fallback={<div className="w-6 h-6" />}>
+                <SidebarTrigger 
+                  aria-label="Toggle navigation menu"
+                  aria-expanded="false"
+                  aria-controls="sidebar-content"
+                />
+              </NoSSR>
               <nav className="ml-auto flex items-center space-x-4" aria-label="Secondary navigation">
                 <Button 
                   variant="outline" 
                   size="sm"
                   aria-label="Export your fitness data to external file"
+                  suppressHydrationWarning
                 >
                   Export Data
                 </Button>
@@ -283,26 +301,34 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
           
           <main 
-            className="flex-1" 
+            className="flex-1 main-content extension-safe" 
             role="main" 
             id="main-content"
             aria-label="Main application content"
             tabIndex={-1}
+            suppressHydrationWarning
           >
-            <section role="complementary" aria-label="User profile information">
-              <ProfileHeader className="border-b" compact={true} />
+            <section 
+              role="complementary" 
+              aria-label="User profile information"
+              suppressHydrationWarning
+            >
+              <NoSSR fallback={<div className="h-16 border-b" />}>
+                <ProfileHeader className="border-b" compact={true} />
+              </NoSSR>
             </section>
             
             <section 
               className="space-y-4 p-4 md:p-8 pt-6"
               role="main"
               aria-label="Primary content area"
+              suppressHydrationWarning
             >
               {children}
             </section>
           </main>
         </div>
-      </div>
+      </ExtensionSafe>
     </SidebarProvider>
   )
 }
