@@ -30,24 +30,18 @@ from performance_optimizations import (
 # Add the PRIME code to Python path
 current_dir = Path(__file__).parent
 gui_app_dir = current_dir.parent
-terminal_app_dir = gui_app_dir.parent
-prime_code_dir = terminal_app_dir / "new_prime_python_code"
-sys.path.insert(0, str(prime_code_dir))
-sys.path.insert(0, str(terminal_app_dir))
+sys.path.insert(0, str(gui_app_dir))
 
 try:
     from new_prime_python_code.PRIME_Calculations import predict_weight_loss
     from new_prime_python_code.PRIME_Utils import calculate_rmr, calculate_tdee
     from new_prime_python_code.PRIME_RMR_Calculations_v2 import get_rmr_and_tdee
     from new_prime_python_code.PRIME_Diet_Calculations_v2 import calculate_weekly_rate_of_fat_loss, calculate_weekly_muscle_gain
-    from new_prime_python_code.PRIME_Report_Generator_v3 import generate_prime_report_terminal
     from new_prime_python_code.PRIME_Report_Generator_v3_Fast import generate_prime_report_terminal_fast
     from new_prime_python_code.PRIME_AI_Confidence_Analyzer import AIConfidenceAnalyzer
 except ImportError as e:
     print(f"Error importing PRIME modules: {e}")
     print(f"Python path: {sys.path}")
-    print(f"Prime code directory: {prime_code_dir}")
-    print(f"Available files: {list(prime_code_dir.glob('*.py')) if prime_code_dir.exists() else 'Directory not found'}")
     # Temporarily disable exit to test database endpoints
     # sys.exit(1)
 
