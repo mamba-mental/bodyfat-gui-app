@@ -11,10 +11,11 @@ from typing import List, Dict, Any, Optional
 class Database:
     def __init__(self, db_path: str = None):
         if db_path is None:
-            db_path = Path(__file__).parent / "data" / "bodyfat.db"
+            # Use the main data directory instead of python-api/data
+            db_path = Path(__file__).parent.parent / "data" / "bodyfat.db"
         
         self.db_path = db_path
-        Path(db_path).parent.mkdir(exist_ok=True)
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.init_db()
     
     def init_db(self):

@@ -251,14 +251,14 @@ export async function clearUserData(userId: string) {
     }
     
     // Delete user data and indexes
-    await redis.del(
+    await redis.del([
       `user:${userId}`,
       `user:${userId}:entries`,
       `user:${userId}:entries:sorted`,
       `user:${userId}:reports`,
       `user:${userId}:reports:sorted`,
       `user:${userId}:lastCalculation`
-    );
+    ]);
     
     return true;
   } catch (error) {

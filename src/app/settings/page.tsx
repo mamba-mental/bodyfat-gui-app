@@ -29,6 +29,8 @@ import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/contexts/theme-context"
 import { ProfileHeader } from "@/components/profile/profile-header"
 import { FontSelector } from "@/components/settings/font-selector"
+import { useRouter } from "next/navigation"
+import { withBasePath } from "@/lib/api-path"
 
 interface UserSettings {
   units: "imperial" | "metric"
@@ -52,6 +54,7 @@ export default function SettingsPage() {
   const { state, setUserData, clearAllData } = useApp()
   const { current_user, entries, reports } = state
   const { theme, setTheme, font, setFont } = useTheme()
+  const router = useRouter()
   
   const [settings, setSettings] = useState<UserSettings>({
     units: "imperial",
@@ -123,7 +126,7 @@ export default function SettingsPage() {
     try {
       await clearAllData()
       // Clear AI settings from server
-      await fetch('/api/ai/settings', { method: 'DELETE' })
+      await fetch(withBasePath('/api/ai/settings'), { method: 'DELETE' })
       // Clear all localStorage items
       localStorage.removeItem('userSettings')
       localStorage.removeItem('profileData')
@@ -625,8 +628,8 @@ export default function SettingsPage() {
                   Configure AI providers including Anthropic (Claude), OpenAI, Google Gemini, and more. Assign specific models to different areas of the app for optimized performance.
                 </p>
                 
-                <Button 
-                  onClick={() => window.location.href = '/settings/ai'} 
+                <Button
+                  onClick={() => router.push('/settings/ai')}
                   className="w-full md:w-auto"
                 >
                   <ClientIcon icon={Brain} className="mr-2 h-4 w-4" />

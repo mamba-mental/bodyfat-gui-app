@@ -132,7 +132,7 @@ function AppSidebar() {
                       isActive={pathname === item.url}
                       className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                       aria-current={pathname === item.url ? "page" : undefined}
-                      aria-disabled={isDisabled}
+                      aria-disabled={isDisabled ? "true" : undefined}
                     >
                       {isDisabled ? (
                         <div 

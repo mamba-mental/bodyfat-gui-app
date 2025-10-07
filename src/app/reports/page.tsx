@@ -105,6 +105,17 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
     }
   }
 
+  const handleViewFullReport = (report: any) => {
+    if (report?.html_content) {
+      const win = window.open("", "_blank")
+      if (win) {
+        win.document.write(report.html_content)
+        win.document.close()
+        win.document.title = report.title
+      }
+    }
+  }
+
   if (!current_user) {
     return (
       <div className="container max-w-4xl mx-auto space-y-6">
@@ -636,6 +647,17 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                               View
                             </Button>
                           </Link>
+                          {report.html_content && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleViewFullReport(report)}
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                            >
+                              <ClientIcon icon={FileText} className="mr-1 h-3 w-3" />
+                              Full Report
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"

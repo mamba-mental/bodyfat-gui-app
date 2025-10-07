@@ -86,7 +86,7 @@ class ServiceWorkerManager implements ServiceWorkerAPI {
         resolve(event.data)
       }
 
-      navigator.serviceWorker.controller.postMessage(
+      navigator.serviceWorker.controller?.postMessage(
         { type: 'GET_CACHE_STATS' },
         [messageChannel.port2]
       )
@@ -105,7 +105,7 @@ class ServiceWorkerManager implements ServiceWorkerAPI {
         resolve(event.data.success || false)
       }
 
-      navigator.serviceWorker.controller.postMessage(
+      navigator.serviceWorker.controller?.postMessage(
         { type: 'CLEAR_CACHE' },
         [messageChannel.port2]
       )

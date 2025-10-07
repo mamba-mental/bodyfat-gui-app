@@ -105,7 +105,7 @@ export function Dashboard() {
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Welcome to ApÂ³ð˜¹Fit.ai â€" ð›¼</CardTitle>
+            <CardTitle>Welcome to ApexFit.ai - Alpha</CardTitle>
             <CardDescription>Set up your profile to start tracking your progress</CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,28 +167,28 @@ export function Dashboard() {
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white"
             aria-label="Overview section - View current metrics and progress summary"
           >
-            <span aria-hidden="true">ðŸ"Š</span> Overview
+            <span aria-hidden="true">&#x1F4CA;</span> Overview
           </TabsTrigger>
           <TabsTrigger 
             value="progress" 
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white"
             aria-label="Progress section - View detailed progress charts and trends"
           >
-            <span aria-hidden="true">ðŸ"ˆ</span> Progress
+            <span aria-hidden="true">&#x1F4C8;</span> Progress
           </TabsTrigger>
           <TabsTrigger 
             value="nutrition" 
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white"
             aria-label="Nutrition section - View calorie and nutrition guidance"
           >
-            <span aria-hidden="true">ðŸŽ</span> Nutrition
+            <span aria-hidden="true">&#x1F34E;</span> Nutrition
           </TabsTrigger>
           <TabsTrigger 
             value="ai-coach" 
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
             aria-label="AI Coach section - Get personalized AI insights and chat"
           >
-            <span aria-hidden="true">ðŸ¤–</span> AI Coach
+            <span aria-hidden="true">&#x1F916;</span> AI Coach
           </TabsTrigger>
         </TabsList>
         
@@ -214,16 +214,16 @@ export function Dashboard() {
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                     {startWeight > currentWeight ? (
                       <span aria-label={`${Math.abs(startWeight - currentWeight).toFixed(1)} pounds lost since starting`}>
-                        <span aria-hidden="true">â†"</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs lost
+                        <span aria-hidden="true">↓</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs lost
                       </span>
                     ) : (
                       <span aria-label={`${Math.abs(startWeight - currentWeight).toFixed(1)} pounds gained since starting`}>
-                        <span aria-hidden="true">â†'</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs gained
+                        <span aria-hidden="true">↑</span> {Math.abs(startWeight - currentWeight).toFixed(1)} lbs gained
                       </span>
                     )}
                   </p>
                 </CardContent>
-                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10" aria-hidden="true">âš–ï¸</div>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10" aria-hidden="true">&#x2696;&#xFE0F;</div>
               </Card>
             
               <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20">
@@ -239,13 +239,13 @@ export function Dashboard() {
                   </div>
                   <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                     {startBF > currentBF ? (
-                      <>â†" {Math.abs(startBF - currentBF).toFixed(1)}% reduced</>
+                      <>↓ {Math.abs(startBF - currentBF).toFixed(1)}% reduced</>
                     ) : (
-                      <>â†' {Math.abs(startBF - currentBF).toFixed(1)}% increased</>
+                      <>↑ {Math.abs(startBF - currentBF).toFixed(1)}% increased</>
                     )}
                   </p>
                 </CardContent>
-                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸŽ¯</div>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">&#x1F3AF;</div>
               </Card>
             
               <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 dark:from-orange-900/20 dark:to-orange-800/20">
@@ -263,7 +263,7 @@ export function Dashboard() {
                     {current_calculation ? `Week ${programData.currentWeek} target` : 'Pending calculation'}
                   </p>
                 </CardContent>
-                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸ"¥</div>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">&#x1F525;</div>
               </Card>
             
               <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-900/20 dark:to-purple-800/20">
@@ -281,7 +281,7 @@ export function Dashboard() {
                     of {programData.totalWeeks} weeks ({Math.round(programData.programProgress)}% complete)
                   </p>
                 </CardContent>
-                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">ðŸ"ˆ</div>
+                <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">&#x1F4C8;</div>
               </Card>
             </div>
           </section>
@@ -314,7 +314,7 @@ export function Dashboard() {
                 <div className="space-y-4">
                   <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-emerald-700">ðŸ'ª Weight Loss Progress</span>
+                      <span className="font-medium text-emerald-700">&#x1F4AA; Weight Loss Progress</span>
                       <span className="font-bold text-emerald-800">{Math.max(0, weightProgress).toFixed(1)}%</span>
                     </div>
                     <div className="relative">
@@ -323,13 +323,13 @@ export function Dashboard() {
                            style={{ width: `${Math.max(0, Math.min(100, weightProgress))}%` }} />
                     </div>
                     <div className="text-center text-xs text-emerald-600">
-                      {currentWeight.toFixed(1)} lbs â†' {goalWeight.toFixed(1)} lbs
+                      {currentWeight.toFixed(1)} lbs → {goalWeight.toFixed(1)} lbs
                     </div>
                   </div>
                   
                   <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-blue-700">ðŸŽ¯ Body Fat Reduction</span>
+                      <span className="font-medium text-blue-700">&#x1F3AF; Body Fat Reduction</span>
                       <span className="font-bold text-blue-800">{Math.max(0, bfProgress).toFixed(1)}%</span>
                     </div>
                     <div className="relative">
@@ -338,13 +338,13 @@ export function Dashboard() {
                            style={{ width: `${Math.max(0, Math.min(100, bfProgress))}%` }} />
                     </div>
                     <div className="text-center text-xs text-blue-600">
-                      {currentBF.toFixed(1)}% â†' {goalBF.toFixed(1)}%
+                      {currentBF.toFixed(1)}% → {goalBF.toFixed(1)}%
                     </div>
                   </div>
 
                   <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-purple-700">â° Timeline Progress</span>
+                      <span className="font-medium text-purple-700">&#x23F0; Timeline Progress</span>
                       <span className="font-bold text-purple-800">{Math.round(programData.programProgress)}%</span>
                     </div>
                     <div className="relative">
@@ -360,7 +360,7 @@ export function Dashboard() {
                   {current_calculation?.confidence_score && (
                     <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-amber-700">ðŸ§  AI Confidence Score</span>
+                        <span className="font-medium text-amber-700">&#x1F9E0; AI Confidence Score</span>
                         <span className="font-bold text-amber-800">{current_calculation?.confidence_score}/100</span>
                       </div>
                       <div className="relative">
@@ -378,14 +378,14 @@ export function Dashboard() {
                 {/* Recent Activity */}
                 <div className="border-t pt-4">
                   <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <span className="text-lg">ðŸ"Š</span>
+                    <span className="text-lg">&#x1F4CA;</span>
                     Recent Activity
                   </h4>
                   <div className="space-y-3">
                     {entries.slice(0, 2).map((entry, index) => (
                       <div key={entry.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/50">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          ðŸ"ˆ
+                          &#x1F4C8;
                         </div>
                         <div className="flex-1 space-y-1">
                           <p className="text-xs font-medium text-blue-900">
@@ -403,7 +403,7 @@ export function Dashboard() {
                     {reports.slice(0, 1).map((report) => (
                       <div key={report.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-emerald-50/50 to-green-50/50 border border-emerald-100/50">
                         <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          ðŸ"„
+                          &#x1F504;
                         </div>
                         <div className="flex-1 space-y-1">
                           <p className="text-xs font-medium text-emerald-900">Report generated</p>

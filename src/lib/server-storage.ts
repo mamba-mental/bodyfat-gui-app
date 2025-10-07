@@ -116,6 +116,12 @@ export async function dbGetReports(userId: number = 1): Promise<Report[]> {
     .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
 }
 
+export async function dbGetReportById(reportId: string): Promise<Report | null> {
+  const data = await readData();
+  const report = data.reports.find(r => r.id === reportId);
+  return report || null;
+}
+
 export async function dbSaveReport(report: Report, userId: number = 1): Promise<void> {
   const data = await readData();
   // Remove existing report with same ID if it exists

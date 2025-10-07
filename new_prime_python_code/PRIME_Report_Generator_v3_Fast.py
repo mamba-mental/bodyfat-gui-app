@@ -4,6 +4,7 @@ This is a standalone implementation that doesn't depend on AI components.
 """
 
 import os
+import glob
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib
@@ -394,13 +395,40 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
     }
     
     # Generate HTML using template
-    # Use the correct template path from the main templates directory
-    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'report_template.html')
-    
+    # Resolve template path robustly across available report templates
+    templates_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+    candidate_files = [
+        'report_template.html',
+        'report-template-new-091625.html',
+        'report-template-new-091625.md.html',
+    ]
+
+    template_path = None
+    # Try known candidates first (stable order)
+    for fname in candidate_files:
+        path = os.path.join(templates_dir, fname)
+        if os.path.exists(path):
+            template_path = path
+            break
+
+    # If still not found, try to pick the first matching report*.html file
+    if template_path is None:
+        try:
+            matches = sorted(glob.glob(os.path.join(templates_dir, 'report*.html')))
+            if matches:
+                template_path = matches[0]
+        except Exception:
+            pass
+
+    if template_path is None or not os.path.exists(template_path):
+        raise FileNotFoundError(
+            f"Report template not found. Looked for {candidate_files} or report*.html in: {templates_dir}"
+        )
+
     # Read template
     with open(template_path, 'r', encoding='utf-8') as f:
         template_content = f.read()
-    
+
     # Use Jinja2 to render template
     template = Template(template_content)
     # Add helper function to template globals

@@ -45,6 +45,8 @@ services:
       - ./python-api:/app
       # Mount PRIME code for calculations
       - ./new_prime_python_code:/app/new_prime_python_code
+      # Mount templates for report generation
+      - ./templates:/app/templates
       # Mount shared data directories directly from host
       - ./data:/app/data
       - ./exports:/app/exports

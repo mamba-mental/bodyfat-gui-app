@@ -341,3 +341,70 @@
     color: var(--primary-foreground);
   }
 }
+
+/* ===== BROWSER EXTENSION COMPATIBILITY ===== */
+
+/* Mark elements that are safe from extension interference */
+[data-extension-aware] {
+  /* Prepare for potential extension modifications */
+  contain: style;
+}
+
+/* Prevent extension conflicts with app theming */
+[data-extension-aware][data-darkreader-mode],
+[data-extension-aware][data-nighteye],
+[data-extension-aware][data-night-mode] {
+  /* Ensure our theme variables take precedence */
+  color-scheme: unset !important;
+}
+
+/* Style overrides for extension-modified elements */
+[data-darkreader-mode] .extension-safe,
+[data-nighteye] .extension-safe,
+[data-night-mode] .extension-safe {
+  /* Preserve our styling when extensions are active */
+  filter: none !important;
+  backdrop-filter: none !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Screen reader announcer improvements */
+.sr-announcer {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Extension fallback loading states */
+.extension-loading {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.extension-loaded {
+  opacity: 1;
+}
+
+/* Prevent extension-induced layout shifts */
+[data-extension-aware] * {
+  /* Hint to extensions to avoid modifying critical layout elements */
+  contain: style layout;
+}
+
+/* Override extension styles on critical UI components */
+[data-extension-aware] .sidebar,
+[data-extension-aware] .header,
+[data-extension-aware] .main-content {
+  /* Protect critical layout from extension modifications */
+  filter: none !important;
+  transform: none !important;
+  transition: none !important;
+}

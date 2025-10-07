@@ -65,35 +65,42 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return
 
     const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
+    
+    // Use requestAnimationFrame to avoid conflicts with browser extensions
+    requestAnimationFrame(() => {
+      root.classList.remove('light', 'dark')
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      root.classList.add(systemTheme)
-    } else {
-      root.classList.add(theme)
-    }
+      if (theme === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        root.classList.add(systemTheme)
+      } else {
+        root.classList.add(theme)
+      }
+    })
   }, [theme, mounted])
 
   // Apply font changes
   useEffect(() => {
     if (!mounted) return
 
-    // Load Google Fonts
-    const fontLink = document.getElementById('google-fonts-link') as HTMLLinkElement
-    if (fontLink) {
-      fontLink.href = getGoogleFontsUrl([font])
-    } else {
-      const link = document.createElement('link')
-      link.id = 'google-fonts-link'
-      link.rel = 'stylesheet'
-      link.href = getGoogleFontsUrl([font])
-      document.head.appendChild(link)
-    }
+    // Use requestAnimationFrame to avoid conflicts with browser extensions
+    requestAnimationFrame(() => {
+      // Load Google Fonts
+      const fontLink = document.getElementById('google-fonts-link') as HTMLLinkElement
+      if (fontLink) {
+        fontLink.href = getGoogleFontsUrl([font])
+      } else {
+        const link = document.createElement('link')
+        link.id = 'google-fonts-link'
+        link.rel = 'stylesheet'
+        link.href = getGoogleFontsUrl([font])
+        document.head.appendChild(link)
+      }
 
-    // Apply font to root element
-    const root = window.document.documentElement
-    root.style.fontFamily = getFontFamily(font)
+      // Apply font to root element
+      const root = window.document.documentElement
+      root.style.fontFamily = getFontFamily(font)
+    })
   }, [font, mounted])
 
   const updateTheme = async (newTheme: Theme) => {

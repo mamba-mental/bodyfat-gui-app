@@ -38,7 +38,7 @@ function Progress({
   // Announce progress changes to screen readers
   React.useEffect(() => {
     if (announceChanges && value !== prevValue && value !== undefined) {
-      const announcement = formatter(value, max)
+      const announcement = formatter(value || 0, max)
       // Create a temporary element for announcement
       const announcer = document.createElement('div')
       announcer.setAttribute('aria-live', 'polite')

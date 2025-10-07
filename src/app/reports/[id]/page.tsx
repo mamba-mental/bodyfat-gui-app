@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Download, FileDown, FileText, Calendar, Weight, Target, TrendingDown, Brain, BarChart3 } from "lucide-react"
+import { ArrowLeft, Download, FileDown, FileText, Calendar, Weight, Target, TrendingDown, Brain, BarChart3, Eye } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { Report, WeeklyProgression } from "@/types"
@@ -121,6 +121,17 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
     }
   }
 
+  const handleViewFullReport = () => {
+    if (report?.html_content) {
+      const win = window.open("", "_blank")
+      if (win) {
+        win.document.write(report.html_content)
+        win.document.close()
+        win.document.title = report.title
+      }
+    }
+  }
+
   return (
     <div className="container max-w-7xl mx-auto space-y-6 p-6">
       {/* Header */}
@@ -138,6 +149,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {report.html_content && (
+            <Button onClick={handleViewFullReport} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <ClientIcon icon={Eye} className="mr-2 h-4 w-4" />
+              View Full Report
+            </Button>
+          )}
           <Button variant="outline" onClick={handleDownloadHTML}>
             <Download className="mr-2 h-4 w-4" />
             HTML
