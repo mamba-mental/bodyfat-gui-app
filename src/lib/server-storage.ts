@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { UserData, BodyFatEntry, Report, CalculationResult } from '@/types';
 import { createBackup, validateDataFile } from './server-storage-backup';
+import { removeIfExists } from './fs-utils';
 import { DATA_DIR } from './constants';
 
 const DATA_FILE = path.join(DATA_DIR, 'apexfit-data.json');
@@ -57,16 +58,26 @@ async function writeData(data: DataStore): Promise<void> {
   }
   
   // Write data with atomic operation
-  const tempFile = `${DATA_FILE}.tmp`;
-  await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
+  const tempSuffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const tempFile = `${DATA_FILE}.${tempSuffix}.tmp`;
+  try {
+    await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
   
-  // Validate the new file
-  if (await validateDataFile(tempFile)) {
-    await fs.rename(tempFile, DATA_FILE);
-  } else {
-    // Remove invalid temp file
-    await fs.unlink(tempFile);
-    throw new Error('Data validation failed');
+    // Validate the new file
+    if (await validateDataFile(tempFile)) {
+      await fs.rename(tempFile, DATA_FILE);
+    } else {
+      await removeIfExists(tempFile);
+      throw new Error('Data validation failed');
+    }
+  } catch (error) {
+    // Ensure temp file is removed on failure
+    try {
+      await removeIfExists(tempFile);
+    } catch {
+      // ignore
+    }
+    throw error;
   }
 }
 
@@ -85,8 +96,19 @@ export async function dbSaveUser(userData: UserData, userId: number = 1): Promis
 // Entry functions
 export async function dbGetEntries(userId: number = 1): Promise<BodyFatEntry[]> {
   const data = await readData();
+  const acceptedIds = new Set([
+    userId.toString(),
+    'default',
+    'test-user',
+    ''
+  ]);
+
   return data.entries
-    .filter(entry => entry.user_id === userId.toString())
+    .filter(entry => !entry.user_id || acceptedIds.has(entry.user_id))
+    .map(entry => ({
+      ...entry,
+      user_id: userId.toString()
+    }))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
@@ -111,8 +133,19 @@ export async function dbDeleteEntry(entryId: string): Promise<void> {
 // Report functions
 export async function dbGetReports(userId: number = 1): Promise<Report[]> {
   const data = await readData();
+  const acceptedIds = new Set([
+    userId.toString(),
+    'default',
+    'test-user',
+    ''
+  ]);
+
   return data.reports
-    .filter(report => report.user_id === userId.toString())
+    .filter(report => !report.user_id || acceptedIds.has(report.user_id))
+    .map(report => ({
+      ...report,
+      user_id: userId.toString()
+    }))
     .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
 }
 

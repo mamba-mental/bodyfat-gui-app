@@ -88,25 +88,32 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
   React.useEffect(() => {
     const errors = form.formState.errors
     const errorKeys = Object.keys(errors)
-    
+
     if (errorKeys.length > 0) {
       const errorMessages = errorKeys.map(key => {
         const error = errors[key as keyof typeof errors]
         return error?.message || `${key} field has an error`
       }).join(', ')
-      
+
       const announcer = document.createElement('div')
       announcer.setAttribute('aria-live', 'assertive')
       announcer.setAttribute('aria-atomic', 'true')
       announcer.className = 'sr-announcer'
       announcer.textContent = `Form has errors: ${errorMessages}`
       document.body.appendChild(announcer)
-      
-      setTimeout(() => {
+
+      const timeoutId = setTimeout(() => {
         if (document.body.contains(announcer)) {
           document.body.removeChild(announcer)
         }
       }, 3000)
+
+      return () => {
+        clearTimeout(timeoutId)
+        if (document.body.contains(announcer)) {
+          document.body.removeChild(announcer)
+        }
+      }
     }
   }, [form.formState.errors])
 
@@ -189,8 +196,23 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
                         aria-invalid={!!form.formState.errors.weight}
                         aria-required="true"
                         autoComplete="off"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        value={
+                          field.value === undefined || Number.isNaN(field.value)
+                            ? ""
+                            : field.value
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value
+                          if (value === "") {
+                            field.onChange(undefined)
+                          } else {
+                            const parsed = parseFloat(value)
+                            field.onChange(Number.isNaN(parsed) ? undefined : parsed)
+                          }
+                        }}
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormDescription id="weight-description">
@@ -218,10 +240,23 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
                         aria-describedby="bodyfat-description bodyfat-error"
                         aria-invalid={!!form.formState.errors.body_fat_percentage}
                         autoComplete="off"
-                        {...field}
-                        onChange={(e) => 
-                          field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
+                        value={
+                          field.value === undefined || Number.isNaN(field.value)
+                            ? ""
+                            : field.value
                         }
+                        onChange={(e) => {
+                          const value = e.target.value
+                          if (value === "") {
+                            field.onChange(undefined)
+                          } else {
+                            const parsed = parseFloat(value)
+                            field.onChange(Number.isNaN(parsed) ? undefined : parsed)
+                          }
+                        }}
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormDescription id="bodyfat-description">

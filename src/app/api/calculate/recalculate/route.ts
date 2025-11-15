@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
+import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
 const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+const PYTHON_TIMEOUT_MS = 12000
 
 // CORS headers
 const corsHeaders = {
@@ -31,16 +33,20 @@ export async function POST(request: NextRequest) {
     
     // Call the Python API to recalculate
     try {
-      const response = await fetch(`${PYTHON_API_URL}/recalculate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        `${PYTHON_API_URL}/recalculate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_data: userData,
+            entry: newEntry
+          }),
         },
-        body: JSON.stringify({
-          user_data: userData,
-          entry: newEntry
-        }),
-      })
+        PYTHON_TIMEOUT_MS,
+      )
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -51,24 +57,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json(result, { headers: corsHeaders })
     } catch (pythonApiError) {
-      console.warn('Python API recalculation failed, using fallback:', pythonApiError)
-      
-      // Fallback: Return updated user data without recalculation
-      // This allows the app to continue functioning
-      const fallbackResult: CalculationResult = {
-        user_data: updatedUserData,
-        progression: [], // Empty progression as we can't calculate without Python API
-        summary: {
-          total_weight_loss: userData.current_weight - userData.goal_weight,
-          body_fat_reduction: userData.current_bf - userData.goal_bf,
-          muscle_gain: 0,
-          timeline_weeks: Math.ceil((new Date(userData.end_date).getTime() - new Date(userData.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000))
-        },
-        confidence_score: 0,
-        ai_analysis: 'Python API unavailable for detailed calculations'
-      }
-      
-      return NextResponse.json(fallbackResult, { headers: corsHeaders })
+      throw pythonApiError
     }
   } catch (error) {
     console.error('Recalculation error:', error)

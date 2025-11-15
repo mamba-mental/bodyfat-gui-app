@@ -1,0 +1,348 @@
+"use client"
+
+import * as React from "react"
+import { Send, Brain, User, Loader2 } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { useApp } from "@/contexts/app-context"
+import { AIService } from "@/lib/ai-service"
+import { AISettingsService } from "@/lib/ai-settings-service"
+import { useAISettings } from "@/hooks/use-ai-settings"
+import ClientIcon from "@/components/ui/client-icon"
+
+interface ChatMessage {
+  id: string
+  type: 'user' | 'ai'
+  content: string
+  timestamp: Date
+  category?: string
+}
+
+export default function AIChatPage() {
+  const { state } = useApp()
+  const { current_user, current_calculation, entries } = state
+  
+  const [messages, setMessages] = React.useState<ChatMessage[]>([])
+  const [inputValue, setInputValue] = React.useState('')
+  const [isLoading, setIsLoading] = React.useState(false)
+  const messagesEndRef = React.useRef<HTMLDivElement>(null)
+
+  const aiService = AIService.getInstance()
+  const aiSettingsService = AISettingsService.getInstance()
+  const { settings: aiSettings, loading: settingsLoading } = useAISettings()
+
+  const getPersonalizedGreeting = React.useCallback(() => {
+    if (!current_user) return "Hello! I'm your AI fitness assistant. Please complete your profile setup to get personalized advice."
+    
+    const greetings = [
+      `Hi ${current_user.name}! I'm here to help you reach your fitness goals. How can I assist you today?`,
+      `Welcome back, ${current_user.name}! Ready to make progress toward your ${current_user.goal_weight} lb goal?`,
+      `Hello ${current_user.name}! I'm your AI coach. Ask me anything about your progress, nutrition, or workout tips.`,
+    ]
+    
+    return greetings[Math.floor(Math.random() * greetings.length)]
+  }, [current_user])
+
+  // Initial AI greeting
+  React.useEffect(() => {
+    if (messages.length === 0) {
+      const greeting = getPersonalizedGreeting()
+      setMessages([{
+        id: `ai-${Date.now()}`,
+        type: 'ai',
+        content: greeting,
+        timestamp: new Date(),
+        category: 'greeting'
+      }])
+    }
+  }, [messages.length, getPersonalizedGreeting])
+
+  // Auto-scroll to bottom when new messages arrive
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      type: 'user',
+      content: inputValue.trim(),
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInputValue('')
+    setIsLoading(true)
+
+    try {
+      // Check if we have a configured AI for chat
+      const chatConfig = aiSettingsService.getAreaConfig('chat_assistant')
+      
+      if (chatConfig.provider && chatConfig.apiKey && chatConfig.model) {
+        // Make API call with configured AI
+        const response = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMessage.content,
+            history: messages.slice(-10), // Send last 10 messages for context
+            user: current_user,
+            entries,
+            calculation: current_calculation,
+            aiProvider: chatConfig.provider,
+            aiModel: chatConfig.model,
+            aiApiKey: chatConfig.apiKey
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const aiMessage: ChatMessage = {
+            id: `ai-${Date.now()}`,
+            type: 'ai',
+            content: data.response,
+            timestamp: new Date(),
+            category: 'response'
+          }
+          setMessages(prev => [...prev, aiMessage])
+        } else {
+          throw new Error('API response not ok')
+        }
+      } else {
+        // Use local response generation
+        const response = await generateAIResponse(userMessage.content)
+        
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          type: 'ai',
+          content: response,
+          timestamp: new Date(),
+          category: 'response'
+        }
+
+        setMessages(prev => [...prev, aiMessage])
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error)
+      
+      const errorMessage: ChatMessage = {
+        id: `ai-error-${Date.now()}`,
+        type: 'ai',
+        content: "I'm sorry, I'm having trouble responding right now. Please check your AI settings or try again later.",
+        timestamp: new Date(),
+        category: 'error'
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const generateAIResponse = async (userInput: string): Promise<string> => {
+    const input = userInput.toLowerCase()
+    
+    // Context-aware responses based on user data
+    if (!current_user) {
+      return "I'd love to help you with your fitness journey! Please complete your profile setup first so I can provide personalized advice tailored to your goals."
+    }
+    
+    // Simple keyword-based responses
+    if (input.includes('progress') || input.includes('how am i doing')) {
+      if (entries.length >= 2) {
+        const latestEntry = entries[0]
+        const previousEntry = entries[1]
+        const weightChange = latestEntry.weight - previousEntry.weight
+        
+        if (weightChange < -1) {
+          return `Great question! You've made excellent progress, losing ${Math.abs(weightChange).toFixed(1)} lbs since your last entry. You're ${calculateProgressPercentage()}% of the way to your goal weight of ${current_user?.goal_weight} lbs. Keep up the fantastic work!`
+        } else if (weightChange > 1) {
+          return `I see your weight increased by ${weightChange.toFixed(1)} lbs since your last entry. This could be normal fluctuation due to hydration, sleep, or recent meals. The key is to look at trends over time rather than day-to-day changes. Would you like some tips on managing weight fluctuations?`
+        } else {
+          return `Your weight has remained stable since your last entry, which can be normal during body recomposition. Your body might be building muscle while losing fat. Consider taking body measurements or progress photos to track changes the scale might not show.`
+        }
+      } else {
+        return `You're just getting started! I'll be able to provide more detailed progress insights once you have a few more entries. For now, focus on consistency with your tracking and following your calculated calorie targets.`
+      }
+    }
+    
+    if (input.includes('calories') || input.includes('eat') || input.includes('nutrition')) {
+      const currentCalories = current_calculation?.progression?.[0]?.daily_calorie_intake || 0
+      const tdee = current_calculation?.progression?.[0]?.tdee || 0
+      const deficit = tdee - currentCalories
+      
+      return `Based on your current plan, you should aim for ${Math.round(currentCalories)} calories per day. This creates a ${Math.round(deficit)} calorie deficit from your TDEE of ${Math.round(tdee)} calories. This deficit should result in sustainable fat loss while preserving muscle mass. Remember to prioritize protein intake and eat nutrient-dense foods!`
+    }
+    
+    // Default response
+    return `That's a great question! While I'm still learning to provide more detailed responses, I can help you with questions about your progress, nutrition targets, workout tips, and motivation. What specific area would you like guidance on?`
+  }
+
+  const calculateProgressPercentage = (): number => {
+    if (!current_user || entries.length === 0) return 0
+    
+    const currentWeight = entries[0].weight
+    const startWeight = current_user.current_weight
+    const goalWeight = current_user.goal_weight
+    
+    if (startWeight === goalWeight) return 100
+    
+    const totalLossNeeded = startWeight - goalWeight
+    const progressMade = startWeight - currentWeight
+    
+    return Math.max(0, Math.min(100, (progressMade / totalLossNeeded) * 100))
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  return (
+    <div className="container max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">AI Coach Chat</h1>
+          <p className="text-muted-foreground">
+            Get personalized fitness guidance and support from your AI coach
+          </p>
+        </div>
+        <Badge variant="secondary" className="text-sm">
+          Beta Feature
+        </Badge>
+      </div>
+
+      <Card className="h-[calc(100vh-200px)]">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ClientIcon icon={Brain} className="h-5 w-5" />
+            <CardTitle>Chat with Your AI Coach</CardTitle>
+          </div>
+          <CardDescription>
+            Ask questions about your progress, nutrition, workouts, or get motivation
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="h-[calc(100%-120px)] flex flex-col">
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 w-full border rounded-lg p-4 mb-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`flex gap-2 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      message.type === 'user' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {message.type === 'user' ? (
+                        <ClientIcon icon={User} className="h-4 w-4" />
+                      ) : (
+                        <ClientIcon icon={Brain} className="h-4 w-4" />
+                      )}
+                    </div>
+                    
+                    <div className={`rounded-lg p-3 ${
+                      message.type === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {isLoading && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex gap-2">
+                    <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center">
+                      <ClientIcon icon={Brain} className="h-4 w-4" />
+                    </div>
+                    <div className="bg-muted text-muted-foreground rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <ClientIcon icon={Loader2} className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+          
+          {/* Input Area */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask me about your progress, nutrition, or workouts..."
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isLoading}
+                size="icon"
+              >
+                <ClientIcon icon={Send} className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInputValue("How am I doing with my progress?")}
+                disabled={isLoading}
+              >
+                Check Progress
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInputValue("What should my daily calories be?")}
+                disabled={isLoading}
+              >
+                Calorie Help
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInputValue("Give me workout recommendations")}
+                disabled={isLoading}
+              >
+                Workout Tips
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInputValue("I need some motivation")}
+                disabled={isLoading}
+              >
+                Motivate Me
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
+import { useMountedRef } from '@/hooks/use-mounted-ref'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -15,11 +16,12 @@ interface FontSelectorProps {
 
 export function FontSelector({ value, onChange }: FontSelectorProps) {
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set());
+  const mountedRef = useMountedRef();
 
   // Load Google Fonts dynamically
   useEffect(() => {
     const fontsToLoad = FONT_OPTIONS.filter(font => !loadedFonts.has(font.value));
-    
+
     if (fontsToLoad.length === 0) return;
 
     const link = document.createElement('link');
@@ -28,13 +30,18 @@ export function FontSelector({ value, onChange }: FontSelectorProps) {
     document.head.appendChild(link);
 
     link.onload = () => {
-      setLoadedFonts(new Set([...loadedFonts, ...fontsToLoad.map(f => f.value)]));
+      if (mountedRef.current) {
+        setLoadedFonts(new Set([...loadedFonts, ...fontsToLoad.map(f => f.value)]));
+      }
     };
 
     return () => {
-      // Cleanup if needed
+      // Remove link element on unmount
+      if (document.head.contains(link)) {
+        document.head.removeChild(link);
+      }
     };
-  }, []);
+  }, [mountedRef]);
 
   const sansSerifFonts = FONT_OPTIONS.filter(font => font.category === 'sans-serif');
   const serifFonts = FONT_OPTIONS.filter(font => font.category === 'serif');

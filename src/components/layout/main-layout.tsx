@@ -77,6 +77,11 @@ const toolItems = [
     icon: Calculator,
   },
   {
+    title: "Report Generator",
+    url: "/reports",
+    icon: FileText,
+  },
+  {
     title: "AI Settings",
     url: "/settings/ai",
     icon: Brain,

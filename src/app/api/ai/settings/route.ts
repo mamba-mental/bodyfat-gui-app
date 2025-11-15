@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     const settings: AISettings = await request.json()
     
     // Save settings to file
+    await fs.mkdir(DATA_DIR, { recursive: true })
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2))
     
     return NextResponse.json({ success: true })

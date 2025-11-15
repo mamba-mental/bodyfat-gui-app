@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
+import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
 const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+const PYTHON_TIMEOUT_MS = 12000
 
 // CORS headers
 const corsHeaders = {
@@ -57,13 +59,17 @@ export async function POST(request: NextRequest) {
     
     // Call the Python PRIME calculation engine
     try {
-      const response = await fetch(`${PYTHON_API_URL}/calculate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        `${PYTHON_API_URL}/calculate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(apiData),
         },
-        body: JSON.stringify(apiData),
-      })
+        PYTHON_TIMEOUT_MS,
+      )
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -77,26 +83,7 @@ export async function POST(request: NextRequest) {
         data: result,
       }, { headers: corsHeaders })
     } catch (pythonApiError) {
-      console.warn('Python API unavailable, falling back to mock data:', pythonApiError)
-      
-      // Fallback to mock data if Python API is unavailable
-      const mockResult: CalculationResult = {
-        user_data: userData,
-        progression: generateMockProgression(userData),
-        summary: {
-          total_weight_loss: userData.current_weight - userData.goal_weight,
-          body_fat_reduction: userData.current_bf - userData.goal_bf,
-          muscle_gain: 25.0,
-          timeline_weeks: 16,
-        },
-        confidence_score: 75.0,
-        ai_analysis: "Based on your profile, this appears to be an achievable goal with consistent adherence to the calculated calorie targets and training regimen. (Note: Using fallback calculation - start Python API for full PRIME engine)",
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: mockResult,
-      }, { headers: corsHeaders })
+      throw pythonApiError
     }
   } catch (error) {
     console.error('Calculation error:', error)
@@ -108,32 +95,4 @@ export async function POST(request: NextRequest) {
       { status: 500, headers: corsHeaders }
     )
   }
-}
-
-function generateMockProgression(userData: UserData) {
-  const weeks = 16
-  const totalWeightLoss = userData.current_weight - userData.goal_weight
-  const totalBfReduction = userData.current_bf - userData.goal_bf
-  const weeklyWeightLoss = totalWeightLoss / weeks
-  const weeklyBfReduction = totalBfReduction / weeks
-  
-  return Array.from({ length: weeks }, (_, i) => ({
-    date: new Date(Date.now() + i * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: '2-digit'
-    }),
-    weight: userData.current_weight - (weeklyWeightLoss * (i + 1)),
-    body_fat_percentage: userData.current_bf - (weeklyBfReduction * (i + 1)),
-    daily_calorie_intake: 2250 - (i * 10), // Gradual reduction
-    tdee: 2800,
-    weekly_caloric_output: 3850,
-    total_weight_lost: weeklyWeightLoss * (i + 1),
-    lean_mass: 180 + (i * 0.5), // Gradual muscle gain
-    fat_mass: userData.current_weight * (userData.current_bf / 100) - (weeklyWeightLoss * (i + 1) * 0.9),
-    muscle_gain: 0.5, // weekly
-    rmr: 1900,
-    tef: 225,
-    neat: 675,
-  }))
 }

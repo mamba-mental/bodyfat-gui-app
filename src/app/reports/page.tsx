@@ -20,11 +20,35 @@ export default function ReportsPage() {
   const { state, generateNewReport, deleteReport } = useApp()
   const { current_user, current_calculation, entries, reports, loading, error } = state
 
+  const buildFileApiPath = (report: Report, ext: string): string | undefined => {
+    if (report.file_base) {
+      return `/api/reports/files/${report.file_base}.${ext}`
+    }
+    const storagePath =
+      ext === "pdf" ? report.pdf_path :
+      ext === "md" ? report.markdown_path :
+      ext === "html" ? report.html_path :
+      undefined
+    if (storagePath) {
+      const filename = storagePath.split('/').pop()
+      if (filename) {
+        return `/api/reports/files/${filename}`
+      }
+    }
+    return undefined
+  }
+
   const handleGenerateReport = async () => {
     await generateNewReport()
   }
 
   const handleDownloadHTML = (report: any) => {
+    const apiPath = buildFileApiPath(report, "html")
+    if (apiPath) {
+      window.open(apiPath, "_blank", "noopener,noreferrer")
+      return
+    }
+
     if (report?.html_content) {
       const blob = new Blob([report.html_content], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
@@ -39,6 +63,12 @@ export default function ReportsPage() {
   }
 
   const handleDownloadMarkdown = (report: any) => {
+    const apiPath = buildFileApiPath(report, "md")
+    if (apiPath) {
+      window.open(apiPath, "_blank", "noopener,noreferrer")
+      return
+    }
+
     if (report?.calculation_result) {
       const calc = report.calculation_result
       const markdown = `# ${report.title}
@@ -87,6 +117,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
   }
 
   const handleDownloadPDF = async (report: Report) => {
+    const apiPath = buildFileApiPath(report, "pdf")
+    if (apiPath) {
+      window.open(apiPath, "_blank", "noopener,noreferrer")
+      return
+    }
+
     try {
       // Use the styled PDF generator
       await generateStyledPDF(report)
@@ -184,7 +220,7 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                This may take up to 30 seconds. Please do not refresh the page.
+                This may take up to 5 minutes. Please do not refresh the page.
               </p>
             </div>
           </CardContent>

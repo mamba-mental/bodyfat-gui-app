@@ -74,13 +74,13 @@ export interface WeeklyProgression {
 
 export interface BodyFatEntry {
   id: string;
-  date: Date;
+  date: Date | string;
   weight: number;
   body_fat_percentage?: number;
   notes?: string;
   user_id: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface CalculationResult {
@@ -100,11 +100,14 @@ export interface Report {
   id: string;
   user_id: string;
   title: string;
-  generated_at: Date;
-  calculation_result: CalculationResult;
-  html_content: string;
+  generated_at: Date | string;
+  calculation_result?: CalculationResult;
+  html_content?: string;
   pdf_path?: string;
   markdown_path?: string;
+  html_path?: string;
+  file_path?: string;
+  file_base?: string;
 }
 
 export interface AppState {
@@ -119,10 +122,12 @@ export interface AppState {
 export type AppAction =
   | { type: 'SET_USER_DATA'; payload: UserData }
   | { type: 'ADD_ENTRY'; payload: BodyFatEntry }
+  | { type: 'SET_ENTRIES'; payload: BodyFatEntry[] }
   | { type: 'UPDATE_ENTRY'; payload: BodyFatEntry }
   | { type: 'DELETE_ENTRY'; payload: string }
   | { type: 'SET_CALCULATION_RESULT'; payload: CalculationResult }
   | { type: 'ADD_REPORT'; payload: Report }
+  | { type: 'SET_REPORTS'; payload: Report[] }
   | { type: 'DELETE_REPORT'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }

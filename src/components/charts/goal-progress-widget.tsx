@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { UserData, BodyFatEntry, WeeklyProgression } from "@/types"
 import { useApp } from "@/contexts/app-context"
+import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
 
 interface GoalProgressWidgetProps {
   user?: UserData
@@ -17,33 +18,26 @@ interface GoalProgressWidgetProps {
   description?: string
 }
 
-export function GoalProgressWidget({ 
-  user, 
-  entries, 
+export function GoalProgressWidget({
+  user,
+  entries,
   progression,
   title = "Goal Progress Tracking",
   description = "Monitor your journey towards target goals"
 }: GoalProgressWidgetProps) {
   const { subscribeToDataChanges } = useApp()
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const isUpdatingRef = React.useRef(false)
+
+  // Use safe animation callback for data updates
+  const handleDataChange = useSafeAnimationCallback(() => {
+    setRefreshKey(prev => prev + 1)
+  }, [])
 
   // Subscribe to data changes for automatic refresh
   React.useEffect(() => {
-    const unsubscribe = subscribeToDataChanges(() => {
-      // Prevent multiple rapid updates
-      if (!isUpdatingRef.current) {
-        isUpdatingRef.current = true
-        setRefreshKey(prev => prev + 1)
-        // Reset the flag after a short delay
-        setTimeout(() => {
-          isUpdatingRef.current = false
-        }, 100)
-      }
-    })
-    
+    const unsubscribe = subscribeToDataChanges(handleDataChange)
     return unsubscribe
-  }, [subscribeToDataChanges])
+  }, [subscribeToDataChanges, handleDataChange])
   const latestEntry = entries[0] // entries are sorted by date desc
   const currentWeight = latestEntry?.weight || user?.current_weight || 0
   const currentBF = latestEntry?.body_fat_percentage || user?.current_bf || 0

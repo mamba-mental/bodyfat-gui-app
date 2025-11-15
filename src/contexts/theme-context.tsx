@@ -1,7 +1,9 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { getFontFamily, getGoogleFontsUrl, FONT_OPTIONS } from '@/lib/fonts'
+import { useMountedRef } from '@/hooks/use-mounted-ref'
+import { withBasePath } from '@/lib/api-path'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -14,23 +16,43 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
+const THEME_STORAGE_KEY = 'userSettings'
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system')
   const [font, setFont] = useState<string>('roboto')
   const [mounted, setMounted] = useState(false)
+  const mountedRef = useMountedRef()
+  const userIdRef = useRef<string>('default')
+
+  const resolveUserId = () => {
+    try {
+      const profile = localStorage.getItem('profileData')
+      if (profile) {
+        const parsed = JSON.parse(profile)
+        return parsed?.email || parsed?.name || 'default'
+      }
+    } catch (error) {
+      console.error('Failed to parse stored profile data:', error)
+    }
+    return 'default'
+  }
 
   // Load theme and font from localStorage and server on mount
   useEffect(() => {
     const loadThemeSettings = async () => {
+      // Resolve user identifier for server persistence
+      userIdRef.current = resolveUserId()
+
       // First try localStorage for immediate loading
-      const savedSettings = localStorage.getItem('userSettings')
+      const savedSettings = localStorage.getItem(THEME_STORAGE_KEY)
       if (savedSettings) {
         try {
           const settings = JSON.parse(savedSettings)
-          if (settings.display?.theme) {
+          if (mountedRef.current && settings.display?.theme) {
             setTheme(settings.display.theme)
           }
-          if (settings.display?.font) {
+          if (mountedRef.current && settings.display?.font) {
             setFont(settings.display.font)
           }
         } catch (error) {
@@ -38,36 +60,52 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Then try to load from server storage for synced settings
+      // Then try to load from theme API for cross-session persistence
       try {
-        const response = await fetch('/api/data/route?key=user_theme_settings')
+        const query = userIdRef.current ? `?user_id=${encodeURIComponent(userIdRef.current)}` : ''
+        const response = await fetch(withBasePath(`/api/theme${query}`))
         if (response.ok) {
           const data = await response.json()
-          if (data && data.theme) {
+          if (mountedRef.current && data?.theme) {
             setTheme(data.theme)
+            // Also mirror into localStorage for instant reloads
+            const existing = localStorage.getItem(THEME_STORAGE_KEY)
+            if (existing) {
+              try {
+                const parsed = JSON.parse(existing)
+                parsed.display = { ...parsed.display, theme: data.theme }
+                localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(parsed))
+              } catch {
+                // ignore malformed local storage
+              }
+            }
           }
-          if (data && data.font) {
+          if (mountedRef.current && data?.font) {
             setFont(data.font)
           }
         }
       } catch (error) {
         console.error('Failed to load theme from server:', error)
       }
-      
-      setMounted(true)
+
+      if (mountedRef.current) {
+        setMounted(true)
+      }
     }
 
     loadThemeSettings()
-  }, [])
+    // We intentionally exclude resolveUserId to keep dependencies stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mountedRef])
 
   // Apply theme changes
   useEffect(() => {
     if (!mounted) return
 
     const root = window.document.documentElement
-    
+
     // Use requestAnimationFrame to avoid conflicts with browser extensions
-    requestAnimationFrame(() => {
+    const frameId = requestAnimationFrame(() => {
       root.classList.remove('light', 'dark')
 
       if (theme === 'system') {
@@ -77,6 +115,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.classList.add(theme)
       }
     })
+
+    return () => {
+      cancelAnimationFrame(frameId)
+    }
   }, [theme, mounted])
 
   // Apply font changes
@@ -84,7 +126,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return
 
     // Use requestAnimationFrame to avoid conflicts with browser extensions
-    requestAnimationFrame(() => {
+    const frameId = requestAnimationFrame(() => {
       // Load Google Fonts
       const fontLink = document.getElementById('google-fonts-link') as HTMLLinkElement
       if (fontLink) {
@@ -101,18 +143,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const root = window.document.documentElement
       root.style.fontFamily = getFontFamily(font)
     })
+
+    return () => {
+      cancelAnimationFrame(frameId)
+    }
   }, [font, mounted])
 
   const updateTheme = async (newTheme: Theme) => {
     setTheme(newTheme)
+    if (userIdRef.current === 'default') {
+      userIdRef.current = resolveUserId()
+    }
     
     // Update localStorage
-    const savedSettings = localStorage.getItem('userSettings')
+    const savedSettings = localStorage.getItem(THEME_STORAGE_KEY)
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings)
         settings.display = { ...settings.display, theme: newTheme }
-        localStorage.setItem('userSettings', JSON.stringify(settings))
+        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(settings))
       } catch (error) {
         console.error('Failed to save theme to settings:', error)
       }
@@ -121,17 +170,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const defaultSettings = {
         display: { theme: newTheme, font: font }
       }
-      localStorage.setItem('userSettings', JSON.stringify(defaultSettings))
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(defaultSettings))
     }
 
-    // Also save to server storage for better persistence
+    // Persist to theme API for cross-session storage
     try {
-      await fetch('/api/data/route', {
-        method: 'POST',
+      await fetch(withBasePath('/api/theme'), {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          key: 'user_theme_settings', 
-          data: { theme: newTheme, font: font } 
+        body: JSON.stringify({
+          theme: newTheme,
+          user_id: userIdRef.current
         })
       })
     } catch (error) {
@@ -141,14 +190,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const updateFont = async (newFont: string) => {
     setFont(newFont)
+    if (userIdRef.current === 'default') {
+      userIdRef.current = resolveUserId()
+    }
     
     // Update localStorage
-    const savedSettings = localStorage.getItem('userSettings')
+    const savedSettings = localStorage.getItem(THEME_STORAGE_KEY)
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings)
         settings.display = { ...settings.display, font: newFont }
-        localStorage.setItem('userSettings', JSON.stringify(settings))
+        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(settings))
       } catch (error) {
         console.error('Failed to save font to settings:', error)
       }
@@ -157,21 +209,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const defaultSettings = {
         display: { theme: theme, font: newFont }
       }
-      localStorage.setItem('userSettings', JSON.stringify(defaultSettings))
-    }
-
-    // Also save to server storage for better persistence
-    try {
-      await fetch('/api/data/route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          key: 'user_theme_settings', 
-          data: { theme: theme, font: newFont } 
-        })
-      })
-    } catch (error) {
-      console.error('Failed to save font to server:', error)
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(defaultSettings))
     }
   }
 

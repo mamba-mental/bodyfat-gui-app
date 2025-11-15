@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { WeeklyProgression, UserData } from "@/types"
 import { useApp } from "@/contexts/app-context"
+import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
 
 interface CalorieManagementWidgetProps {
   progression?: WeeklyProgression[]
@@ -34,8 +35,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function CalorieManagementWidget({ 
-  progression, 
+export function CalorieManagementWidget({
+  progression,
   currentCalories = 0,
   title = "Calorie Management",
   description = "Track your caloric intake vs expenditure",
@@ -43,35 +44,15 @@ export function CalorieManagementWidget({
 }: CalorieManagementWidgetProps) {
   const { subscribeToDataChanges } = useApp()
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const isUpdatingRef = React.useRef(false)
-  const isMountedRef = React.useRef(true)
 
-  // Component cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [])
-
-  // Memoized callback to prevent subscription recreation
-  const handleDataChange = React.useCallback(() => {
-    // Prevent multiple rapid updates and check if component is still mounted
-    if (!isUpdatingRef.current && isMountedRef.current) {
-      isUpdatingRef.current = true
-      setRefreshKey(prev => prev + 1)
-      // Reset the flag after a short delay with mounted check
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          isUpdatingRef.current = false
-        }
-      }, 100)
-    }
+  // Use safe animation callback for data updates
+  const handleDataChange = useSafeAnimationCallback(() => {
+    setRefreshKey(prev => prev + 1)
   }, [])
 
   // Subscribe to data changes for automatic refresh
   React.useEffect(() => {
     const unsubscribe = subscribeToDataChanges(handleDataChange)
-
     return unsubscribe
   }, [subscribeToDataChanges, handleDataChange])
   const chartData = React.useMemo(() => {

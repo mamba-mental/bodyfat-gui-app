@@ -4,6 +4,7 @@ SQLite database for persistent storage
 
 import sqlite3
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -11,9 +12,10 @@ from typing import List, Dict, Any, Optional
 class Database:
     def __init__(self, db_path: str = None):
         if db_path is None:
-            # Use the main data directory instead of python-api/data
-            db_path = Path(__file__).parent.parent / "data" / "bodyfat.db"
-        
+            # Use the data directory (DATA_DIR environment variable or fallback)
+            data_dir = Path(os.environ.get('DATA_DIR', '/app/data'))
+            db_path = data_dir / "bodyfat.db"
+
         self.db_path = db_path
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.init_db()
@@ -162,7 +164,12 @@ class Database:
             for row in cursor:
                 report_data = json.loads(row['data'])
                 report_data['id'] = row['id']
-                report_data['file_path'] = row['file_path']
+                if row['file_path'] and not report_data.get('file_path'):
+                    report_data['file_path'] = row['file_path']
+                if not report_data.get('pdf_path') and row['file_path']:
+                    report_data['pdf_path'] = row['file_path']
+                if report_data.get('pdf_path') and not report_data.get('file_base'):
+                    report_data['file_base'] = Path(report_data['pdf_path']).stem
                 reports.append(report_data)
             
             return reports
@@ -203,7 +210,7 @@ class Database:
                 report.get('title', 'Report'),
                 report.get('date', datetime.now().isoformat()),
                 data_json,
-                report.get('file_path')
+                report.get('file_path') or report.get('pdf_path')
             ))
             conn.commit()
     

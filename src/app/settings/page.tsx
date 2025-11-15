@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,6 +55,23 @@ export default function SettingsPage() {
   const { current_user, entries, reports } = state
   const { theme, setTheme, font, setFont } = useTheme()
   const router = useRouter()
+
+  const formattedHeight = React.useMemo(() => {
+    if (!current_user) return "Not set"
+
+    const feet = current_user.height_feet
+    const inches = current_user.height_inches
+    const feetDisplay = feet != null && inches != null ? `${feet}'${inches}"` : "N/A"
+
+    const cm = current_user.height_cm
+    const cmDisplay = typeof cm === "number" ? `${cm.toFixed(1)} cm` : "N/A"
+
+    if (feetDisplay === "N/A" && cmDisplay === "N/A") {
+      return "Not set"
+    }
+
+    return `${feetDisplay} (${cmDisplay})`
+  }, [current_user])
   
   const [settings, setSettings] = useState<UserSettings>({
     units: "imperial",
@@ -82,6 +99,7 @@ export default function SettingsPage() {
   
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleSaveSettings = () => {
     try {
@@ -96,7 +114,8 @@ export default function SettingsPage() {
         setFont(settings.display.font)
       }
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current)
+      savedTimeoutRef.current = setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       setError("Failed to save settings")
     }
@@ -385,7 +404,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Height:</span>
-                      <span>{current_user.height_feet}'{current_user.height_inches}" ({current_user.height_cm.toFixed(1)} cm)</span>
+                      <span>{formattedHeight}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Starting Weight:</span>

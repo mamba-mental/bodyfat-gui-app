@@ -47,22 +47,34 @@ export function Dashboard() {
   const bfProgress = calculateProgressPercentage(startBF, currentBF, goalBF)
 
   // Calculate program timeline data
-  const programData = current_user ? (() => {
+  const programData = current_user?.start_date && current_user?.end_date ? (() => {
     const startDate = new Date(current_user.start_date)
     const endDate = new Date(current_user.end_date)
     const currentDate = new Date()
-    
-    const totalTime = Math.abs(endDate.getTime() - startDate.getTime())
-    const elapsedTime = Math.abs(currentDate.getTime() - startDate.getTime())
-    
-    const totalWeeks = Math.ceil(totalTime / (1000 * 60 * 60 * 24 * 7))
-    const currentWeek = Math.min(totalWeeks, Math.max(1, Math.ceil(elapsedTime / (1000 * 60 * 60 * 24 * 7))))
-    
+
+    const startMs = startDate.getTime()
+    const endMs = endDate.getTime()
+
+    if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
+      return { totalWeeks: 0, currentWeek: 0, daysIntoProgram: 0, programProgress: 0 }
+    }
+
+    const weekMs = 1000 * 60 * 60 * 24 * 7
+    const dayMs = 1000 * 60 * 60 * 24
+
+    const totalTime = endMs - startMs
+    const elapsedTime = Math.max(0, currentDate.getTime() - startMs)
+
+    const totalWeeks = Math.max(1, Math.ceil(totalTime / weekMs))
+    const currentWeek = Math.min(totalWeeks, Math.max(1, Math.ceil(elapsedTime / weekMs)))
+    const programProgress = Math.min(100, Math.max(0, (currentWeek / totalWeeks) * 100))
+    const daysIntoProgram = Math.min(Math.round(totalWeeks * 7), Math.max(0, Math.floor(elapsedTime / dayMs)))
+
     return {
       totalWeeks,
       currentWeek,
-      daysIntoProgram: Math.floor(elapsedTime / (1000 * 60 * 60 * 24)),
-      programProgress: Math.min(100, (currentWeek / totalWeeks) * 100)
+      daysIntoProgram,
+      programProgress
     }
   })() : { totalWeeks: 0, currentWeek: 0, daysIntoProgram: 0, programProgress: 0 }
 

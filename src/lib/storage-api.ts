@@ -4,24 +4,38 @@ const API_BASE_URL = '/api' // Next.js API routes
 
 // Helper function for API calls
 async function callApi<T>(endpoint: string, method: string = 'GET', data?: any): Promise<T> {
-  const options: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }
-  if (data) {
-    options.body = JSON.stringify(data)
-  }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000)
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, options)
+  try {
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    }
 
-  if (!response.ok) {
-    const errorData = await response.json()
-    throw new Error(errorData.message || `API call to ${endpoint} failed with status ${response.status}`)
+    if (data) {
+      options.body = JSON.stringify(data)
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options)
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `API call to ${endpoint} failed with status ${response.status}`)
+    }
+
+    return response.json()
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request to ${endpoint} timed out`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
-
-  return response.json()
 }
 
 // --- User Data ---
@@ -49,7 +63,11 @@ export async function getEntries(): Promise<BodyFatEntry[]> {
 }
 
 export async function saveEntry(entry: BodyFatEntry): Promise<BodyFatEntry> {
-  return await callApi<BodyFatEntry>('/data/entry', 'POST', entry)
+  return await callApi<BodyFatEntry>('/data/entries', 'POST', entry)
+}
+
+export async function deleteEntry(entryId: string): Promise<void> {
+  await callApi<void>('/data/entries', 'DELETE', { id: entryId })
 }
 
 // --- Reports ---
@@ -63,7 +81,7 @@ export async function getReports(): Promise<Report[]> {
 }
 
 export async function saveReport(report: Report): Promise<Report> {
-  return await callApi<Report>('/data/report', 'POST', report)
+  return await callApi<Report>('/data/reports', 'POST', report)
 }
 
 export async function saveReports(reports: Report[]): Promise<Report[]> {
@@ -71,7 +89,7 @@ export async function saveReports(reports: Report[]): Promise<Report[]> {
 }
 
 export async function deleteReport(reportId: string): Promise<void> {
-  return await callApi<void>(`/data/report/${reportId}`, 'DELETE')
+  return await callApi<void>('/data/reports', 'DELETE', { id: reportId })
 }
 
 // --- Calculations ---
@@ -123,6 +141,20 @@ export async function migrateFromLocalStorage(): Promise<boolean> {
   return false
 }
 
-export async function fetchGeneratedReport(userData: UserData): Promise<{ html_content: string; markdown_path: string; pdf_path: string }> {
-  return await callApi<{ html_content: string; markdown_path: string; pdf_path: string }>('/generate-report', 'POST', userData);
+export async function fetchGeneratedReport(
+  userData: UserData
+): Promise<{
+  html_content: string;
+  markdown_path?: string;
+  pdf_path?: string;
+  html_path?: string;
+  file_base?: string;
+}> {
+  return await callApi<{
+    html_content: string;
+    markdown_path?: string;
+    pdf_path?: string;
+    html_path?: string;
+    file_base?: string;
+  }>('/generate-report', 'POST', userData);
 }

@@ -29,6 +29,13 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
     return reports.find(r => r.id === unwrappedParams.id)
   }, [reports, unwrappedParams.id])
 
+  const calc = report?.calculation_result
+  const hasValidCalculation =
+    calc &&
+    typeof calc === 'object' &&
+    calc.summary &&
+    calc.user_data
+
   if (!report) {
     return (
       <div className="container max-w-4xl mx-auto space-y-6 p-6">
@@ -44,7 +51,31 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
     )
   }
 
-  const calc = report.calculation_result
+  if (!hasValidCalculation) {
+    return (
+      <div className="container max-w-4xl mx-auto space-y-6 p-6">
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold">{report.title}</h1>
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Data Unavailable</CardTitle>
+              <CardDescription>
+                This report does not include calculation details. Regenerate the report to view full metrics.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/reports')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Reports
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const { summary, user_data: userData } = calc
 
   const handleDownloadHTML = () => {
     if (report?.html_content) {
@@ -179,10 +210,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {calc.summary.total_weight_loss.toFixed(1)} lbs
+              {typeof summary.total_weight_loss === 'number'
+                ? `${summary.total_weight_loss.toFixed(1)} lbs`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.current_weight} → {calc.user_data.goal_weight} lbs
+              {`${userData.current_weight ?? '—'} → ${userData.goal_weight ?? '—'} lbs`}
             </p>
           </CardContent>
         </Card>
@@ -194,10 +227,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {calc.summary.body_fat_reduction.toFixed(1)}%
+              {typeof summary.body_fat_reduction === 'number'
+                ? `${summary.body_fat_reduction.toFixed(1)}%`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.current_bf}% → {calc.user_data.goal_bf}%
+              {`${userData.current_bf ?? '—'}% → ${userData.goal_bf ?? '—'}%`}
             </p>
           </CardContent>
         </Card>
@@ -209,10 +244,10 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {calc.summary.timeline_weeks} weeks
+              {summary.timeline_weeks ?? '—'} weeks
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date(calc.user_data.start_date).toLocaleDateString()} → {new Date(calc.user_data.end_date).toLocaleDateString()}
+              {`${userData.start_date ? new Date(userData.start_date).toLocaleDateString() : '—'} → ${userData.end_date ? new Date(userData.end_date).toLocaleDateString() : '—'}`}
             </p>
           </CardContent>
         </Card>
@@ -224,10 +259,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {calc.summary.muscle_gain.toFixed(1)} lbs
+              {typeof summary.muscle_gain === 'number'
+                ? `${summary.muscle_gain.toFixed(1)} lbs`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.workout_type} focused
+              {userData.workout_type ? `${userData.workout_type} focused` : '—'}
             </p>
           </CardContent>
         </Card>
@@ -246,15 +283,15 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Age:</span>
-                  <span>{calc.user_data.age} years</span>
+                  <span>{userData.age ?? '—'} years</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gender:</span>
-                  <span>{calc.user_data.gender === 'm' ? 'Male' : 'Female'}</span>
+                  <span>{userData.gender === 'm' ? 'Male' : userData.gender === 'f' ? 'Female' : '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Height:</span>
-                  <span>{calc.user_data.height_feet}'{calc.user_data.height_inches}"</span>
+                  <span>{userData.height_feet}'{userData.height_inches}"</span>
                 </div>
               </div>
             </div>
@@ -264,15 +301,15 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Workout Type:</span>
-                  <Badge variant="outline">{calc.user_data.workout_type}</Badge>
+                  <Badge variant="outline">{userData.workout_type ?? '—'}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Training Days:</span>
-                  <span>{calc.user_data.workout_days}/week</span>
+                  <span>{userData.workout_days ?? '—'}/week</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Activity Level:</span>
-                  <span>{calc.user_data.activity_level}/5</span>
+                  <span>{userData.activity_level ?? '—'}/5</span>
                 </div>
               </div>
             </div>
@@ -282,11 +319,11 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Protein Intake:</span>
-                  <span>{calc.user_data.protein_intake}g/day</span>
+                  <span>{userData.protein_intake ?? '—'}g/day</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Diet Type:</span>
-                  <Badge variant="outline">{calc.user_data.diet_type}</Badge>
+                  <Badge variant="outline">{userData.diet_type ?? '—'}</Badge>
                 </div>
                 {calc.confidence_score && (
                   <div className="flex justify-between">

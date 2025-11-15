@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 
 export type AnnouncementPriority = 'polite' | 'assertive'
 
@@ -12,6 +12,7 @@ interface AnnouncementOptions {
 
 export function useAnnouncements() {
   const announcerRef = useRef<HTMLDivElement | null>(null)
+  const timeoutIdsRef = useRef<Set<NodeJS.Timeout>>(new Set())
 
   const announce = useCallback((
     message: string, 
@@ -41,21 +42,25 @@ export function useAnnouncements() {
     announcerRef.current = announcer
 
     // Announce after delay to ensure screen readers pick it up
-    setTimeout(() => {
+    const initialTimeoutId = setTimeout(() => {
       if (announcer && document.body.contains(announcer)) {
         announcer.textContent = message
-        
+
         // Clean up after announcement
-        setTimeout(() => {
+        const cleanupTimeoutId = setTimeout(() => {
           if (document.body.contains(announcer)) {
             document.body.removeChild(announcer)
             if (announcerRef.current === announcer) {
               announcerRef.current = null
             }
           }
+          timeoutIdsRef.current.delete(cleanupTimeoutId)
         }, 3000) // Keep announcement for 3 seconds
+        timeoutIdsRef.current.add(cleanupTimeoutId)
       }
+      timeoutIdsRef.current.delete(initialTimeoutId)
     }, delay)
+    timeoutIdsRef.current.add(initialTimeoutId)
   }, [])
 
   const announceSuccess = useCallback((message: string) => {
@@ -77,6 +82,21 @@ export function useAnnouncements() {
   const announceProgress = useCallback((message: string) => {
     announce(message, { priority: 'polite', delay: 200 })
   }, [announce])
+
+  // Cleanup all pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all pending timeouts
+      timeoutIdsRef.current.forEach(timeoutId => clearTimeout(timeoutId))
+      timeoutIdsRef.current.clear()
+
+      // Remove any lingering announcer elements
+      if (announcerRef.current && document.body.contains(announcerRef.current)) {
+        document.body.removeChild(announcerRef.current)
+        announcerRef.current = null
+      }
+    }
+  }, [])
 
   return {
     announce,

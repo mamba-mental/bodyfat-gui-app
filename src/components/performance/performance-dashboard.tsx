@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePerformanceBundle } from '@/hooks/use-performance'
 import { useAPICache, api } from '@/lib/api-cache'
+import { useMountedRef } from '@/hooks/use-mounted-ref'
 
 interface PerformanceDashboardProps {
   isVisible?: boolean
@@ -29,13 +30,22 @@ export function PerformanceDashboard({ isVisible = false, onClose }: Performance
 
   const { stats: cacheStats } = useAPICache()
   const [backendStats, setBackendStats] = useState<any>(null)
+  const mountedRef = useMountedRef()
 
   useEffect(() => {
     if (isVisible) {
       // Fetch backend performance stats
       api.getPerformanceStats()
-        .then(setBackendStats)
-        .catch(() => setBackendStats(null))
+        .then(stats => {
+          if (mountedRef.current) {
+            setBackendStats(stats)
+          }
+        })
+        .catch(() => {
+          if (mountedRef.current) {
+            setBackendStats(null)
+          }
+        })
     }
   }, [isVisible])
 

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { calculateAge } from "@/lib/date-utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -28,11 +29,39 @@ export default function CustomSetupPage() {
   const { setUserData, state } = useApp()
   const { current_user } = state
   
+  const normalizeDateInput = (value?: string | null) => {
+    if (!value) return ""
+    if (value.includes('-')) {
+      return value
+    }
+    if (value.includes('/')) {
+      const [month, day, year] = value.split('/')
+      if (month && day && year) {
+        const normalizedYear = year.length === 2 ? `20${year}` : year.padStart(4, '0')
+        return `${normalizedYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      }
+    }
+    if (value.length === 6) {
+      const month = value.slice(0, 2)
+      const day = value.slice(2, 4)
+      const year = value.slice(4)
+      const normalizedYear = year.length === 2 ? `20${year}` : year
+      return `${normalizedYear}-${month}-${day}`
+    }
+    if (value.length === 8) {
+      const month = value.slice(0, 2)
+      const day = value.slice(2, 4)
+      const year = value.slice(4)
+      return `${year}-${month}-${day}`
+    }
+    return value
+  }
+
   // Pre-populate form with existing user data if available
   const [formData, setFormData] = useState({
     name: current_user?.name || "",
     age: current_user?.age?.toString() || "",
-    dob: current_user?.dob || "",
+    dob: normalizeDateInput(current_user?.dob) || "",
     gender: current_user?.gender || "",
     height_feet: current_user?.height_feet?.toString() || "",
     height_inches: current_user?.height_inches?.toString() || "",
@@ -74,7 +103,7 @@ export default function CustomSetupPage() {
       setFormData({
         name: current_user.name || "",
         age: current_user.age?.toString() || "",
-        dob: current_user.dob || "",
+        dob: normalizeDateInput(current_user.dob) || "",
         gender: current_user.gender || "",
         height_feet: current_user.height_feet?.toString() || "",
         height_inches: current_user.height_inches?.toString() || "",
@@ -149,9 +178,17 @@ export default function CustomSetupPage() {
     e.preventDefault()
     
     // Convert string numbers to actual numbers
+    const normalizedDob = normalizeDateInput(formData.dob) || ""
+    const timelineWeeksNumber = parseInt(formData.timeline_weeks?.toString() || '16', 10) || 16
+    const startDateIso = new Date().toISOString().split('T')[0]
+    const endDateIso = new Date(Date.now() + timelineWeeksNumber * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const derivedAge = normalizedDob
+      ? calculateAge(normalizedDob)
+      : parseInt(formData.age || '', 10)
+
     const processedData = {
       ...formData,
-      age: parseInt(formData.age),
+      age: Number.isNaN(derivedAge) ? undefined : derivedAge,
       gender: formData.gender as "m" | "f",
       height_feet: parseInt(formData.height_feet),
       height_inches: parseFloat(formData.height_inches),
@@ -168,14 +205,10 @@ export default function CustomSetupPage() {
       intensity_score: parseFloat(formData.intensity_score),
       frequency_score: parseFloat(formData.frequency_score),
       protein_intake: parseFloat(formData.protein_intake) || 0,
-      timeline_weeks: parseInt(formData.timeline_weeks?.toString() || '16'),
-      
-      // Generate dates
-      start_date: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-      end_date: new Date(Date.now() + parseInt(formData.timeline_weeks?.toString() || '16') * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-      
-      // Use provided DOB or generate from age
-      dob: formData.dob ? new Date(formData.dob).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '') : new Date(new Date().getFullYear() - parseInt(formData.age?.toString() || '25'), 6, 15).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '')
+      timeline_weeks: timelineWeeksNumber,
+      start_date: startDateIso,
+      end_date: endDateIso,
+      dob: normalizedDob || undefined
     }
 
     setUserData(processedData)

@@ -8,7 +8,7 @@ import { useApp } from '@/contexts/app-context'
 import { saveUserData } from '@/lib/storage-api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { calculateAge } from '@/lib/date-utils'
+import { formatAge } from '@/lib/date-utils'
 
 interface ProfileHeaderProps {
   className?: string
@@ -181,57 +181,64 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
             )}
           </div>
         )}
-      </div>
 
-      {/* Profile Picture */}
-      <div className={cn(
-        "absolute left-4 md:left-8",
-        compact ? "-bottom-8" : "-bottom-12"
-      )}>
-        <div className="relative">
-          <Avatar className={cn(
-            "border-4 border-background",
-            compact ? "h-16 w-16" : "h-24 w-24"
-          )}>
-            <AvatarImage src={user.profile_picture} alt={user.name} />
-            <AvatarFallback className="text-xl font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          
-          {showEditButtons && (
-            <>
-              <label htmlFor="picture-upload" className="cursor-pointer" title={user.profile_picture ? "Change Profile Picture" : "Upload Profile Picture"}>
-                <div className="absolute bottom-0 right-0 rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition-colors">
-                  <Camera className="h-4 w-4" />
-                </div>
-                <input
-                  id="picture-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e, 'profile_picture')}
-                  disabled={isUploadingPicture}
-                />
-              </label>
-              {user.profile_picture && (
-                <button
-                  onClick={() => handleClearImage('profile_picture')}
-                  className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/90 transition-colors"
-                  title="Remove Profile Picture"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </>
+        <div
+          className={cn(
+            "absolute",
+            compact ? "left-4 top-3" : "left-6 md:left-10 top-6 md:top-10"
           )}
+        >
+          <div className="relative">
+            <Avatar
+              className={cn(
+                "border-4 border-background shadow-lg",
+                compact ? "h-16 w-16" : "h-24 w-24"
+              )}
+            >
+              <AvatarImage src={user.profile_picture} alt={user.name} />
+              <AvatarFallback className="text-xl font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+
+            {showEditButtons && (
+              <>
+                <label
+                  htmlFor="picture-upload"
+                  className="cursor-pointer"
+                  title={user.profile_picture ? "Change Profile Picture" : "Upload Profile Picture"}
+                >
+                  <div className="absolute -bottom-1 -right-1 rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition-colors shadow-md">
+                    <Camera className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="picture-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'profile_picture')}
+                    disabled={isUploadingPicture}
+                  />
+                </label>
+                {user.profile_picture && (
+                  <button
+                    onClick={() => handleClearImage('profile_picture')}
+                    className="absolute -top-2 -left-2 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-md"
+                    title="Remove Profile Picture"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* User Info */}
       <div className={cn(
         "px-4 md:px-8 pb-4",
-        compact ? "pt-10" : "pt-16"
+        compact ? "pt-8" : "pt-12"
       )}>
         <h2 className={cn(
           "font-bold",
@@ -241,7 +248,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
           "text-muted-foreground",
           compact && "text-sm"
         )}>
-          {calculateAge(user.dob)} years • {user.gender === 'm' ? 'Male' : 'Female'} • {user.current_weight} lbs
+          {formatAge(user.dob, user.age)} • {user.gender === 'm' ? 'Male' : 'Female'} • {user.current_weight} lbs
         </p>
       </div>
     </div>
