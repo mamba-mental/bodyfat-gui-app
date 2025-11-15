@@ -3,25 +3,30 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { UserData, BodyFatEntry, Report, CalculationResult, AppState, AppAction } from '@/types'
 // Use API storage for server persistence
-import { 
-  getUserData, 
-  getEntries, 
-  getReports, 
+import {
+  getUserData,
+  getEntries,
+  getReports,
   getLastCalculationResult,
   saveUserData,
   saveEntry,
   saveReport,
-  saveReports,
   saveCalculationResult,
   generateId,
   clearAllData,
   migrateFromLocalStorage,
+  deleteEntry as deleteEntryFromStorage,
   deleteReport as deleteReportFromStorage,
   fetchGeneratedReport,
   fetchCalculation,
   fetchRecalculation
 } from '@/lib/storage-api'
 import { CalculationError } from '@/lib/calculations'
+import { useMountedRef } from '@/hooks/use-mounted-ref'
+import { useAnnouncements } from '@/hooks/use-announcements'
+
+const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes to match backend SLA
+const REPORT_GENERATION_TIMEOUT_BUFFER_MS = REPORT_GENERATION_TIMEOUT_MS + 5000 // Allow small buffer for client coordination
 
 interface AppContextType {
   state: AppState
@@ -29,8 +34,8 @@ interface AppContextType {
   // Action creators
   setUserData: (userData: UserData) => void
   addEntry: (entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>
-  updateEntry: (entry: BodyFatEntry) => void
-  deleteEntry: (entryId: string) => void
+  updateEntry: (entry: BodyFatEntry) => Promise<void>
+  deleteEntry: (entryId: string) => Promise<void>
   calculateAndUpdateProgression: (userData?: UserData) => Promise<void>
   generateNewReport: (userData?: UserData) => Promise<void>
   deleteReport: (reportId: string) => Promise<void>
@@ -59,6 +64,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         error: null,
       }
     
+    case 'SET_ENTRIES':
+      return {
+        ...state,
+        entries: [...action.payload]
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        error: null,
+      }
+
     case 'ADD_ENTRY':
       return {
         ...state,
@@ -88,6 +101,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         error: null,
       }
     
+    case 'SET_REPORTS':
+      return {
+        ...state,
+        reports: [...action.payload]
+          .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime()),
+        error: null,
+      }
+
     case 'ADD_REPORT':
       return {
         ...state,
@@ -129,6 +150,33 @@ function appReducer(state: AppState, action: AppAction): AppState {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const refreshCallbacksRef = React.useRef<(() => void)[]>([])
+  const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const refreshWidgets = React.useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
+
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshCallbacksRef.current.forEach(callback => {
+        try {
+          callback()
+        } catch (error) {
+          console.error('Error refreshing widget:', error)
+        }
+      })
+      refreshTimeoutRef.current = null
+    }, 50)
+  }, [])
+
+  const subscribeToDataChanges = React.useCallback((callback: () => void) => {
+    refreshCallbacksRef.current = [...refreshCallbacksRef.current, callback]
+
+    return () => {
+      refreshCallbacksRef.current = refreshCallbacksRef.current.filter(cb => cb !== callback)
+    }
+  }, [])
+  const mountedRef = useMountedRef()
+  const { announceInfo, announceSuccess, announceError } = useAnnouncements()
 
   // Load initial data from storage
   useEffect(() => {
@@ -144,29 +192,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.log('Data migrated from localStorage to server')
         }
         
-        // Load data from server
-        const userData = await getUserData()
-        const entries = await getEntries()
-        const reports = await getReports()
-        const lastCalculation = await getLastCalculationResult()
+        const [
+          userResult,
+          entriesResult,
+          reportsResult,
+          calculationResult,
+        ] = await Promise.allSettled([
+          getUserData(),
+          getEntries(),
+          getReports(),
+          getLastCalculationResult(),
+        ])
 
-        // Only update state if component is still mounted
-        if (isMounted) {
-          if (userData) {
-            dispatch({ type: 'SET_USER_DATA', payload: userData })
-          }
+        if (!isMounted) {
+          return
+        }
 
-          entries.forEach(entry => {
-            dispatch({ type: 'ADD_ENTRY', payload: entry })
-          })
+        let didUpdate = false
 
-          reports.forEach(report => {
-            dispatch({ type: 'ADD_REPORT', payload: report })
-          })
+        if (userResult.status === 'fulfilled' && userResult.value) {
+          dispatch({ type: 'SET_USER_DATA', payload: userResult.value })
+          didUpdate = true
+        } else if (userResult.status === 'rejected') {
+          console.warn('Failed to load user profile:', userResult.reason)
+        }
 
-          if (lastCalculation) {
-            dispatch({ type: 'SET_CALCULATION_RESULT', payload: lastCalculation })
-          }
+        if (entriesResult.status === 'fulfilled') {
+          dispatch({ type: 'SET_ENTRIES', payload: entriesResult.value })
+          didUpdate = true
+        } else if (entriesResult.status === 'rejected') {
+          console.warn('Failed to load entries:', entriesResult.reason)
+        }
+
+        if (reportsResult.status === 'fulfilled') {
+          dispatch({ type: 'SET_REPORTS', payload: reportsResult.value })
+          didUpdate = true
+        } else if (reportsResult.status === 'rejected') {
+          console.warn('Failed to load reports:', reportsResult.reason)
+        }
+
+        if (calculationResult.status === 'fulfilled' && calculationResult.value) {
+          dispatch({ type: 'SET_CALCULATION_RESULT', payload: calculationResult.value })
+          didUpdate = true
+        } else if (calculationResult.status === 'rejected') {
+          console.warn('Failed to load calculation result:', calculationResult.reason)
+        }
+
+        const allRejected =
+          (userResult.status === 'rejected' || userResult.status === 'fulfilled' && !userResult.value) &&
+          entriesResult.status === 'rejected' &&
+          reportsResult.status === 'rejected' &&
+          calculationResult.status === 'rejected'
+
+        if (didUpdate) {
+          dispatch({ type: 'CLEAR_ERROR' })
+          refreshWidgets()
+        } else if (allRejected) {
+          dispatch({ type: 'SET_ERROR', payload: 'Failed to load data from server' })
         }
       } catch (error) {
         console.error('Failed to load data:', error)
@@ -198,7 +280,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setUserData = (userData: UserData) => {
-    saveUserData(userData)
+    void saveUserData(userData)
     dispatch({ type: 'SET_USER_DATA', payload: userData })
   }
 
@@ -217,91 +299,136 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updated_at: now,
     }
 
-    // Save entry
-    saveEntry(entry)
-    dispatch({ type: 'ADD_ENTRY', payload: entry })
+    let persistedEntry: BodyFatEntry
+    try {
+      persistedEntry = await saveEntry(entry)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save entry'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      console.error('Error saving entry:', error)
+      return
+    }
+
+    dispatch({ type: 'ADD_ENTRY', payload: persistedEntry })
+    refreshWidgets()
 
     // Trigger recalculation with new entry
     try {
+      if (!mountedRef.current) return
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       const entryForRecalc = {
-        date: entry.date.toISOString().split('T')[0],
-        weight: entry.weight,
-        body_fat_percentage: entry.body_fat_percentage,
-        notes: entry.notes,
+        date: new Date(persistedEntry.date).toISOString().split('T')[0],
+        weight: persistedEntry.weight,
+        body_fat_percentage: persistedEntry.body_fat_percentage,
+        notes: persistedEntry.notes,
       }
 
       const result = await fetchRecalculation(state.current_user, entryForRecalc)
-      
+
+      if (!mountedRef.current) return
       saveCalculationResult(result)
       dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
-      
+
       // Auto-generate report after each entry
       await generateNewReport(result.user_data)
-      
+
       // Refresh all widgets after data update
-      refreshWidgets()
-      
+      if (mountedRef.current) {
+        refreshWidgets()
+      }
+
     } catch (error) {
-      const errorMessage = error instanceof CalculationError 
-        ? error.message 
+      if (!mountedRef.current) return
+      const errorMessage = error instanceof CalculationError
+        ? error.message
         : 'Failed to recalculate progression'
       dispatch({ type: 'SET_ERROR', payload: errorMessage })
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false })
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
     }
   }
 
-  const updateEntry = (entry: BodyFatEntry) => {
-    saveEntry(entry)
-    dispatch({ type: 'UPDATE_ENTRY', payload: entry })
+  const updateEntry = async (entry: BodyFatEntry) => {
+    try {
+      const persisted = await saveEntry(entry)
+      dispatch({ type: 'UPDATE_ENTRY', payload: persisted })
+      refreshWidgets()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update entry'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      console.error('Error updating entry:', error)
+    }
   }
 
-  const deleteEntry = (entryId: string) => {
-    dispatch({ type: 'DELETE_ENTRY', payload: entryId })
+  const deleteEntry = async (entryId: string) => {
+    try {
+      await deleteEntryFromStorage(entryId)
+      dispatch({ type: 'DELETE_ENTRY', payload: entryId })
+      refreshWidgets()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete entry'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      console.error('Error deleting entry:', error)
+    }
   }
 
   const calculateAndUpdateProgression = async (userData?: UserData) => {
     const userToCalculate = userData || state.current_user
     if (!userToCalculate) {
-      dispatch({ type: 'SET_ERROR', payload: 'No user data available for calculation' })
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_ERROR', payload: 'No user data available for calculation' })
+      }
       return
     }
 
     try {
+      if (!mountedRef.current) return
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'CLEAR_ERROR' })
-      
+
       const result = await fetchCalculation(userToCalculate)
-      
+
+      if (!mountedRef.current) return
       saveCalculationResult(result)
       dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
-      
+
     } catch (error) {
-      const errorMessage = error instanceof CalculationError 
-        ? error.message 
+      if (!mountedRef.current) return
+      const errorMessage = error instanceof CalculationError
+        ? error.message
         : 'Failed to calculate progression'
       dispatch({ type: 'SET_ERROR', payload: errorMessage })
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false })
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
     }
   }
 
   const generateNewReport = async (userData?: UserData) => {
     const userToReport = userData || state.current_user
     if (!userToReport) {
-      dispatch({ type: 'SET_ERROR', payload: 'No user data available for report generation' })
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_ERROR', payload: 'No user data available for report generation' })
+      }
       return
     }
 
     try {
+      if (!mountedRef.current) return
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'CLEAR_ERROR' })
+      announceInfo('Generating report. This may take up to 5 minutes.')
       
       // Add a timeout for the entire report generation process
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Report generation timed out. Please ensure the Python API is running.')), 35000) // 35 seconds total (5s buffer over API timeout)
+        setTimeout(
+          () => reject(new Error('Report generation timed out. Please ensure the Python API is running.')),
+          REPORT_GENERATION_TIMEOUT_BUFFER_MS
+        ) // Mirrors backend timeout with slight buffer for client coordination
       )
 
       // Update user data with latest entry if available
@@ -318,19 +445,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let calculationToUse: CalculationResult
       try {
         const result = await fetchCalculation(updatedUserData)
+        if (!mountedRef.current) return
         saveCalculationResult(result)
         dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
         calculationToUse = result
       } catch (error) {
-        const errorMessage = error instanceof CalculationError 
-          ? error.message 
+        if (!mountedRef.current) return
+        const errorMessage = error instanceof CalculationError
+          ? error.message
           : 'Failed to calculate progression for report'
         dispatch({ type: 'SET_ERROR', payload: errorMessage })
         return
       }
 
       if (!calculationToUse) {
-        dispatch({ type: 'SET_ERROR', payload: 'Unable to generate calculation for report' })
+        if (mountedRef.current) {
+          dispatch({ type: 'SET_ERROR', payload: 'Unable to generate calculation for report' })
+        }
         return
       }
 
@@ -377,65 +508,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         timeline_weeks: typeof updatedUserData.timeline_weeks === 'string' ? parseInt(updatedUserData.timeline_weeks) : updatedUserData.timeline_weeks || 16
       }
       
-      // Race between report generation and timeout
       const generatedReportData = await Promise.race([
         fetchGeneratedReport(completeUserData),
         timeoutPromise
-      ]) as { html_content: string; markdown_path: string; pdf_path: string }
-      
-      report.html_content = generatedReportData.html_content
+      ]) as {
+        html_content: string;
+        markdown_path?: string;
+        pdf_path?: string;
+        html_path?: string;
+        file_base?: string;
+      }
 
-      saveReport(report)
-      dispatch({ type: 'ADD_REPORT', payload: report })
-      
+      if (!mountedRef.current) return
+
+      const deriveFileBase = (data: { file_base?: string; pdf_path?: string }): string | undefined => {
+        if (data.file_base) return data.file_base
+        if (data.pdf_path) {
+          const filename = data.pdf_path.split('/').pop()
+          if (filename) {
+            return filename.replace(/\.[^/.]+$/, "")
+          }
+        }
+        return undefined
+      }
+
+      if (!generatedReportData?.html_content) {
+        throw new Error('Report service did not return HTML content')
+      }
+
+      report.html_content = generatedReportData.html_content
+      const fileBase = deriveFileBase(generatedReportData)
+      report.file_base = fileBase
+      report.file_path = generatedReportData.pdf_path
+      report.pdf_path = generatedReportData.pdf_path
+      report.markdown_path = generatedReportData.markdown_path
+      report.html_path = generatedReportData.html_path
+
+      const persistedReport = await saveReport(report)
+      dispatch({ type: 'ADD_REPORT', payload: persistedReport })
+      announceSuccess('Report generated successfully.')
+
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      if (!mountedRef.current) return
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Failed to generate report'
       dispatch({ type: 'SET_ERROR', payload: errorMessage })
+      announceError(errorMessage)
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false })
+      if (mountedRef.current) {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
     }
   }
 
   const deleteReport = async (reportId: string) => {
-    // Remove from server storage
-    await deleteReportFromStorage(reportId)
-    
-    // Update state
-    dispatch({ type: 'DELETE_REPORT', payload: reportId })
-  }
-
-  // Widget refresh system with guard against rapid calls
-  const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
-  const refreshWidgets = React.useCallback(() => {
-    // Cancel any pending refresh
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current)
-    }
-    
-    // Debounce refresh calls to prevent rapid updates
-    refreshTimeoutRef.current = setTimeout(() => {
-      refreshCallbacksRef.current.forEach(callback => {
-        try {
-          callback()
-        } catch (error) {
-          console.error('Error refreshing widget:', error)
-        }
-      })
-      refreshTimeoutRef.current = null
-    }, 50) // 50ms debounce
-  }, [])
-
-  const subscribeToDataChanges = (callback: () => void) => {
-    refreshCallbacksRef.current = [...refreshCallbacksRef.current, callback]
-    
-    // Return unsubscribe function
-    return () => {
-      refreshCallbacksRef.current = refreshCallbacksRef.current.filter(cb => cb !== callback)
+    try {
+      await deleteReportFromStorage(reportId)
+      dispatch({ type: 'DELETE_REPORT', payload: reportId })
+      refreshWidgets()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete report'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      console.error('Error deleting report:', error)
     }
   }
-
   const contextValue: AppContextType = {
     state,
     dispatch,
