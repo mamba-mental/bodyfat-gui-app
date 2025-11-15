@@ -10,11 +10,13 @@ const computedBasePath = (() => {
 const nextConfig: NextConfig = {
   ...(computedBasePath ? { basePath: computedBasePath } : {}),
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  output: 'standalone',
+  // Reduce parallelization to avoid hanging
+  experimental: {
+    cpus: 1,
   },
 
   // API rewrites for development
