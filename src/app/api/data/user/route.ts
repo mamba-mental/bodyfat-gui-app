@@ -70,14 +70,14 @@ export async function GET() {
       }
     }
 
-    const headers = { ...corsHeaders };
+    const headers: Record<string, string> = { ...corsHeaders };
     if (pythonError) {
       headers['x-python-warning'] = pythonError;
     }
     return NextResponse.json(mergedUser, { headers });
   }
 
-  const headers = { ...corsHeaders };
+  const headers: Record<string, string> = { ...corsHeaders };
   if (pythonError) {
     headers['x-python-warning'] = pythonError;
   }
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       pythonError = error instanceof Error ? error.message : 'Failed to forward to Python API';
     }
 
-    const headers = { ...corsHeaders };
+    const headers: Record<string, string> = { ...corsHeaders };
     if (pythonError) {
       headers['x-python-warning'] = pythonError;
       console.warn('Python API user sync warning:', pythonError);

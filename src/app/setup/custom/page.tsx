@@ -188,7 +188,7 @@ export default function CustomSetupPage() {
 
     const processedData = {
       ...formData,
-      age: Number.isNaN(derivedAge) ? undefined : derivedAge,
+      age: Number.isNaN(derivedAge) ? 0 : derivedAge,
       gender: formData.gender as "m" | "f",
       height_feet: parseInt(formData.height_feet),
       height_inches: parseFloat(formData.height_inches),

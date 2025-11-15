@@ -64,7 +64,7 @@ export async function GET() {
     }
   }
 
-  const headers = { ...corsHeaders };
+  const headers: Record<string, string> = { ...corsHeaders };
   if (pythonError) {
     headers['x-python-warning'] = pythonError;
     console.warn('Python API reports warning:', pythonError);
@@ -140,7 +140,7 @@ export async function DELETE(request: NextRequest) {
       pythonError = error instanceof Error ? error.message : 'Failed to delete report in Python API';
     }
 
-    const headers = { ...corsHeaders };
+    const headers: Record<string, string> = { ...corsHeaders };
     if (pythonError) {
       headers['x-python-warning'] = pythonError;
       console.warn('Python API report delete warning:', pythonError);

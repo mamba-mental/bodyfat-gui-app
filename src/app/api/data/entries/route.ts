@@ -62,7 +62,7 @@ export async function GET() {
     }
   }
 
-  const headers = { ...corsHeaders };
+  const headers: Record<string, string> = { ...corsHeaders };
   if (pythonError) {
     headers['x-python-warning'] = pythonError;
     console.warn('Python API entries warning:', pythonError);
