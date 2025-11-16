@@ -12,12 +12,58 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
   document.body.appendChild(container)
 
   try {
-    // Convert HTML to canvas
+    // Convert HTML to canvas with options to handle modern CSS
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false,
       windowWidth: 800,
+      ignoreElements: (element) => {
+        // Skip elements that might have problematic CSS
+        return false
+      },
+      onclone: (clonedDoc) => {
+        // Replace modern CSS color functions with fallbacks
+        const styleSheets = clonedDoc.styleSheets
+        for (let i = 0; i < styleSheets.length; i++) {
+          try {
+            const sheet = styleSheets[i] as CSSStyleSheet
+            if (sheet.cssRules) {
+              for (let j = 0; j < sheet.cssRules.length; j++) {
+                const rule = sheet.cssRules[j] as CSSStyleRule
+                if (rule.style) {
+                  // Convert lab() colors to rgb() fallbacks
+                  for (let k = 0; k < rule.style.length; k++) {
+                    const prop = rule.style[k]
+                    const value = rule.style.getPropertyValue(prop)
+                    if (value && value.includes('lab(')) {
+                      // Replace with a safe fallback color
+                      rule.style.setProperty(prop, '#000000', 'important')
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Skip stylesheets we can't access (CORS)
+            continue
+          }
+        }
+        
+        // Also update inline styles
+        const allElements = clonedDoc.querySelectorAll('*')
+        allElements.forEach((el: Element) => {
+          if (el instanceof HTMLElement && el.style) {
+            for (let i = 0; i < el.style.length; i++) {
+              const prop = el.style[i]
+              const value = el.style.getPropertyValue(prop)
+              if (value && value.includes('lab(')) {
+                el.style.setProperty(prop, '#000000', 'important')
+              }
+            }
+          }
+        })
+      }
     })
 
     // Calculate PDF dimensions
@@ -70,6 +116,13 @@ export function generatePDFFromReport(report: Report): void {
   const margin = 20
   const contentWidth = pageWidth - 2 * margin
   let yPosition = margin
+
+  // Early return if no calculation result
+  if (!report.calculation_result) {
+    pdf.text('Report data unavailable', margin, yPosition)
+    pdf.save(`report-${report.id}.pdf`)
+    return
+  }
 
   // Helper function to add text with word wrap
   const addText = (text: string, fontSize = 12, fontStyle: 'normal' | 'bold' = 'normal') => {
@@ -197,6 +250,13 @@ export async function generateStyledPDF(report: Report): Promise<void> {
   const margin = 15
   const contentWidth = pageWidth - 2 * margin
   let y = margin
+
+  // Early return if no calculation result
+  if (!report.calculation_result) {
+    pdf.text('Report data unavailable', margin, y)
+    pdf.save(`report-${report.id}.pdf`)
+    return
+  }
 
   // Colors
   const primaryColor: [number, number, number] = [52, 152, 219] // Blue

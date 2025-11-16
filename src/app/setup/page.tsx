@@ -20,11 +20,39 @@ export default function SetupPage() {
   // Check if user is already set up
   const isUserSetUp = !!current_user
 
-  const handleStartNewProgram = () => {
-    // Clear existing data and start fresh
-    if (window.confirm('This will clear all your current data and start a new program. Are you sure?')) {
-      localStorage.clear()
-      window.location.reload()
+  const handleStartNewProgram = async () => {
+    // Start a new program while keeping entries and reports
+    if (window.confirm('This will start a new goal/program. Your existing entries and reports will be preserved. Continue?')) {
+      try {
+        // Only clear user profile data and calculation, keep entries and reports
+        const entriesToKeep = localStorage.getItem('bodyfat_entries')
+        const reportsToKeep = localStorage.getItem('bodyfat_reports')
+        const settingsToKeep = localStorage.getItem('theme-preferences')
+        const aiSettingsToKeep = localStorage.getItem('ai-settings')
+        
+        // Clear user data in localStorage
+        localStorage.removeItem('bodyfat_user_data')
+        localStorage.removeItem('bodyfat_calculation_result')
+        
+        // Clear user data via API (which handles Redis)
+        try {
+          await fetch('/api/data/user', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          })
+        } catch (apiError) {
+          console.warn('Could not clear user via API, continuing...', apiError)
+        }
+        
+        // Use context method to clear user data
+        setUserData(null as any)
+        
+        // Redirect to setup to create new profile
+        router.push('/setup/custom')
+      } catch (error) {
+        console.error('Error starting new program:', error)
+        alert('There was an error starting a new program. Please try again.')
+      }
     }
   }
 
