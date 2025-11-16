@@ -12,6 +12,7 @@ import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { Report, WeeklyProgression } from "@/types"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
+import TurndownService from 'turndown'
 
 interface ReportViewPageProps {
   params: Promise<{
@@ -92,39 +93,25 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
   }
 
   const handleDownloadMarkdown = () => {
-    if (report?.calculation_result) {
-      const calc = report.calculation_result
-      const markdown = `# ${report.title}
-
-## Summary
-- **Total Weight Loss:** ${calc.summary?.total_weight_loss?.toFixed(1) || 'N/A'} lbs
-- **Body Fat Reduction:** ${calc.summary?.body_fat_reduction?.toFixed(1) || 'N/A'}%
-- **Muscle Gain:** ${calc.summary?.muscle_gain?.toFixed(1) || 'N/A'} lbs
-- **Timeline:** ${calc.summary?.timeline_weeks || 'N/A'} weeks
-
-## Current Stats
-- **Weight:** ${calc.user_data?.current_weight || 'N/A'} lbs
-- **Body Fat:** ${calc.user_data?.current_bf || 'N/A'}%
-
-## Goal Stats
-- **Target Weight:** ${calc.user_data?.goal_weight || 'N/A'} lbs
-- **Target Body Fat:** ${calc.user_data?.goal_bf || 'N/A'}%
-
-${calc.confidence_score ? `## Plan Confidence Score: ${calc.confidence_score}/100` : ''}
-
-## Weekly Progression
-| Week | Date | Weight (lbs) | Body Fat % | Daily Calories | TDEE | Lean Mass | Fat Mass |
-|------|------|-------------|------------|----------------|------|-----------|----------|
-${calc.progression.map((week: WeeklyProgression, index: number) => 
-  `| ${index + 1} | ${week.date} | ${week.weight.toFixed(1)} | ${week.body_fat_percentage.toFixed(1)} | ${Math.round(week.daily_calorie_intake)} | ${Math.round(week.tdee)} | ${week.lean_mass.toFixed(1)} | ${week.fat_mass.toFixed(1)} |`
-).join('\n')}
-
-${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
-
----
-*Generated on ${new Date(report.generated_at).toLocaleString()}*
-`
+    // Convert the Python-generated HTML to markdown using Turndown
+    if (report?.html_content) {
+      const turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        emDelimiter: '*',
+        bulletListMarker: '-'
+      })
       
+      // Add custom rule for tables to preserve formatting
+      turndownService.addRule('tables', {
+        filter: 'table',
+        replacement: function(content) {
+          return '\n\n' + content + '\n\n'
+        }
+      })
+
+      const markdown = turndownService.turndown(report.html_content)
+
       const blob = new Blob([markdown], { type: 'text/markdown' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -138,16 +125,19 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
   }
 
   const handleDownloadPDF = async () => {
+    // Use the Python-generated HTML as the source for PDF
+    if (report?.html_content) {
+      await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
+      return
+    }
+
+    // Fallback: try the styled generator if no html_content available
     if (report) {
       try {
-        // Use the styled PDF generator
         await generateStyledPDF(report)
       } catch (error) {
         console.error('PDF generation failed:', error)
-        // Fallback to HTML-based PDF
-        if (report.html_content) {
-          await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
-        }
+        alert('Unable to generate PDF: no report content available')
       }
     }
   }

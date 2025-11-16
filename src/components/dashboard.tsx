@@ -31,7 +31,16 @@ import {
 
 export function Dashboard() {
   const { state, calculateAndUpdateProgression, generateNewReport } = useApp()
-  const { current_user, current_calculation, entries, reports, loading, error } = state
+  const {
+    current_user,
+    current_calculation,
+    entries,
+    reports,
+    loading,
+    error,
+    report_generation_status,
+    report_generation_entry_date,
+  } = state
 
   // Calculate current metrics
   const latestEntry = entries[0] // entries are sorted by date desc
@@ -150,7 +159,7 @@ export function Dashboard() {
             </Button>
           </Link>
           <Button variant="outline" onClick={handleGenerateReport} disabled={loading}>
-            Generate Report
+            {loading && report_generation_status ? 'Generating Report…' : 'Generate Report'}
           </Button>
         </div>
       </div>
@@ -165,6 +174,19 @@ export function Dashboard() {
       {loading && (
         <Alert>
           <AlertDescription>Calculating progression...</AlertDescription>
+        </Alert>
+      )}
+
+      {report_generation_status && (
+        <Alert>
+          <AlertDescription>
+            Report status: {report_generation_status}
+            {report_generation_entry_date && (
+              <span className="ml-1">
+                (Entry date: {report_generation_entry_date})
+              </span>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       
@@ -431,6 +453,30 @@ export function Dashboard() {
                       <div className="text-center py-2 text-muted-foreground">
                         <p className="text-xs">No activity yet</p>
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Report Diagnostics */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <span className="text-lg">&#x1F50E;</span>
+                    Report Diagnostics
+                  </h4>
+                  <div className="text-xs space-y-1 text-muted-foreground">
+                    <p>
+                      <span className="font-semibold">Status:</span>{" "}
+                      {report_generation_status || "No report generation in progress."}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Entry used:</span>{" "}
+                      {report_generation_entry_date || "Not recorded"}
+                    </p>
+                    {reports[0] && (
+                      <p>
+                        <span className="font-semibold">Last report:</span>{" "}
+                        {new Date(reports[0].generated_at).toLocaleString()}
+                      </p>
                     )}
                   </div>
                 </div>

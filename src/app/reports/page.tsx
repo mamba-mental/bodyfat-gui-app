@@ -15,10 +15,22 @@ import { useApp } from "@/contexts/app-context"
 import { ProgressTrendChart } from "@/components/charts/progress-trend-chart"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
 import { Report } from "@/types"
+import TurndownService from 'turndown'
 
 export default function ReportsPage() {
   const { state, generateNewReport, deleteReport } = useApp()
-  const { current_user, current_calculation, entries, reports, loading, error } = state
+  const {
+    current_user,
+    current_calculation,
+    entries,
+    reports,
+    loading,
+    error,
+    report_generation_status,
+    report_generation_entry_date,
+  } = state
+
+  console.log('[ReportsPage] render', { loading, report_generation_status, reportsCount: reports.length })
 
   const buildFileApiPath = (report: Report, ext: string): string | undefined => {
     if (report.file_base) {
@@ -43,12 +55,7 @@ export default function ReportsPage() {
   }
 
   const handleDownloadHTML = (report: any) => {
-    const apiPath = buildFileApiPath(report, "html")
-    if (apiPath) {
-      window.open(apiPath, "_blank", "noopener,noreferrer")
-      return
-    }
-
+    // Always use in-memory html_content for consistency
     if (report?.html_content) {
       const blob = new Blob([report.html_content], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
@@ -63,47 +70,25 @@ export default function ReportsPage() {
   }
 
   const handleDownloadMarkdown = (report: any) => {
-    const apiPath = buildFileApiPath(report, "md")
-    if (apiPath) {
-      window.open(apiPath, "_blank", "noopener,noreferrer")
-      return
-    }
-
-    if (report?.calculation_result) {
-      const calc = report.calculation_result
-      const markdown = `# ${report.title}
-
-## Summary
-- **Total Weight Loss:** ${calc.total_weight_loss?.toFixed(1) || 'N/A'} lbs
-- **Body Fat Reduction:** ${((calc.current_body_fat_percentage || 0) - (calc.goal_body_fat_percentage || 0)).toFixed(1)}%
-- **Muscle Preservation:** ${calc.muscle_preservation || 'N/A'}%
-- **Timeline:** ${calc.timeline_weeks || 'N/A'} weeks
-
-## Current Stats
-- **Weight:** ${calc.current_weight || report.user_id || 'N/A'} lbs
-- **Body Fat:** ${calc.current_body_fat_percentage || 'N/A'}%
-
-## Goal Stats
-- **Target Weight:** ${calc.goal_weight || 'N/A'} lbs
-- **Target Body Fat:** ${calc.goal_body_fat_percentage || 'N/A'}%
-
-${calc.confidence_score ? `## Plan Confidence Score: ${calc.confidence_score}/100` : ''}
-
-## Weekly Progression
-| Week | Weight (lbs) | Body Fat % | Daily Calories |
-|------|-------------|------------|----------------|
-${calc.progression && Array.isArray(calc.progression) ? 
-  calc.progression.slice(0, 8).map((week: any, index: number) => 
-    `| ${index + 1} | ${week.weight.toFixed(1)} | ${week.body_fat_percentage.toFixed(1)} | ${Math.round(week.daily_calorie_intake)} |`
-  ).join('\n') : 'No progression data available'
-}
-
-${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
-
----
-*Generated on ${new Date(report.generated_at).toLocaleString()}*
-`
+    // Convert the Python-generated HTML to markdown using Turndown
+    if (report?.html_content) {
+      const turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        emDelimiter: '*',
+        bulletListMarker: '-'
+      })
       
+      // Add custom rule for tables to preserve formatting
+      turndownService.addRule('tables', {
+        filter: 'table',
+        replacement: function(content) {
+          return '\n\n' + content + '\n\n'
+        }
+      })
+
+      const markdown = turndownService.turndown(report.html_content)
+
       const blob = new Blob([markdown], { type: 'text/markdown' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -117,21 +102,18 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
   }
 
   const handleDownloadPDF = async (report: Report) => {
-    const apiPath = buildFileApiPath(report, "pdf")
-    if (apiPath) {
-      window.open(apiPath, "_blank", "noopener,noreferrer")
+    // Use the Python-generated HTML as the source for PDF
+    if (report.html_content) {
+      await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
       return
     }
 
+    // Fallback: try the styled generator if no html_content available
     try {
-      // Use the styled PDF generator
       await generateStyledPDF(report)
     } catch (error) {
       console.error('PDF generation failed:', error)
-      // Fallback to HTML-based PDF
-      if (report.html_content) {
-        await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
-      }
+      alert('Unable to generate PDF: no report content available')
     }
   }
 
@@ -196,7 +178,20 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
         </Alert>
       )}
 
+      {report_generation_status && (
+        <Alert>
+          <ClientIcon icon={CheckCircle} className="h-4 w-4" />
+          <AlertDescription>
+            Report status: {report_generation_status}
+            {report_generation_entry_date && (
+              <span className="ml-1">(Entry date: {report_generation_entry_date})</span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+ 
       {loading && (
+
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-4">
@@ -219,10 +214,16 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                   Generating AI insights and recommendations...
                 </p>
               </div>
+              {report_generation_status && (
+                <p className="text-xs font-medium text-primary">
+                  Current status: {report_generation_status}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-2">
                 This may take up to 5 minutes. Please do not refresh the page.
               </p>
             </div>
+
           </CardContent>
         </Card>
       )}
@@ -240,6 +241,23 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Report Diagnostics</CardTitle>
+                  <ClientIcon icon={Brain} className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="font-medium">
+                    {report_generation_status || 'No report generation in progress.'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Entry used: {report_generation_entry_date || 'Not recorded'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Last report: {reports.length > 0 ? new Date(reports[0].generated_at).toLocaleString() : 'None generated yet'}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
                   <ClientIcon icon={FileText} className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -253,6 +271,7 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                   </p>
                 </CardContent>
               </Card>
+
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

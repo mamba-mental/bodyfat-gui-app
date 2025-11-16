@@ -52,6 +52,8 @@ const initialState: AppState = {
   reports: [],
   current_calculation: null,
   loading: false,
+  report_generation_status: '',
+  report_generation_entry_date: null,
   error: null,
 }
 
@@ -117,6 +119,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
         error: null,
       }
     
+    case 'SET_REPORT_GENERATION_STATUS':
+      return {
+        ...state,
+        report_generation_status: action.payload.status,
+        report_generation_entry_date: action.payload.entryDate ?? state.report_generation_entry_date,
+      }
+
     case 'SET_LOADING':
       return {
         ...state,
@@ -409,18 +418,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   const generateNewReport = async (userData?: UserData) => {
+    console.log('[AppContext] generateNewReport invoked')
     const userToReport = userData || state.current_user
     if (!userToReport) {
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_ERROR', payload: 'No user data available for report generation' })
-      }
+      console.warn('[AppContext] No user data available, aborting report generation')
+      dispatch({ type: 'SET_ERROR', payload: 'No user data available for report generation' })
+      dispatch({
+        type: 'SET_REPORT_GENERATION_STATUS',
+        payload: {
+          status: 'Report generation failed: missing user profile.',
+        },
+      })
       return
     }
 
+    // Determine which entry will be used and record its date for diagnostics
+    const latestEntryForReport = state.entries[0]
+    const entryDateForStatus = latestEntryForReport
+      ? new Date(latestEntryForReport.date).toISOString().split('T')[0]
+      : undefined
+
+    dispatch({
+      type: 'SET_REPORT_GENERATION_STATUS',
+      payload: {
+        status: 'Starting report generation...',
+        entryDate: entryDateForStatus,
+      },
+    })
+
     try {
-      if (!mountedRef.current) return
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'CLEAR_ERROR' })
+      console.log('[AppContext] Report generation started; latest entry date:', entryDateForStatus)
       announceInfo('Generating report. This may take up to 5 minutes.')
       
       // Add a timeout for the entire report generation process
@@ -431,8 +460,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ) // Mirrors backend timeout with slight buffer for client coordination
       )
 
+      dispatch({
+        type: 'SET_REPORT_GENERATION_STATUS',
+        payload: {
+          status: 'Calculating progression for report...',
+          entryDate: entryDateForStatus,
+        },
+      })
+
+
       // Update user data with latest entry if available
       let updatedUserData = { ...userToReport }
+      console.log('[AppContext] entries available:', state.entries.length)
       if (state.entries.length > 0) {
         const latestEntry = state.entries[0] // entries are sorted by date desc
         updatedUserData.current_weight = latestEntry.weight
@@ -440,28 +479,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           updatedUserData.current_bf = latestEntry.body_fat_percentage
         }
       }
+      console.log('[AppContext] Using updated user data for report:', updatedUserData)
 
       // Always recalculate with the latest data for reports
       let calculationToUse: CalculationResult
       try {
+        dispatch({
+          type: 'SET_REPORT_GENERATION_STATUS',
+          payload: {
+            status: 'Requesting progression calculation from backend...',
+            entryDate: entryDateForStatus,
+          },
+        })
+
+        console.log('[AppContext] Calling fetchCalculation for report...')
         const result = await fetchCalculation(updatedUserData)
-        if (!mountedRef.current) return
+        console.log('[AppContext] Calculation received for report generation')
         saveCalculationResult(result)
         dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
         calculationToUse = result
       } catch (error) {
-        if (!mountedRef.current) return
         const errorMessage = error instanceof CalculationError
           ? error.message
           : 'Failed to calculate progression for report'
         dispatch({ type: 'SET_ERROR', payload: errorMessage })
+        dispatch({
+          type: 'SET_REPORT_GENERATION_STATUS',
+          payload: {
+            status: `Failed while calculating progression: ${errorMessage}`,
+            entryDate: entryDateForStatus,
+          },
+        })
         return
       }
 
       if (!calculationToUse) {
-        if (mountedRef.current) {
-          dispatch({ type: 'SET_ERROR', payload: 'Unable to generate calculation for report' })
-        }
+        const message = 'Unable to generate calculation for report'
+        dispatch({ type: 'SET_ERROR', payload: message })
+        dispatch({
+          type: 'SET_REPORT_GENERATION_STATUS',
+          payload: {
+            status: `Failed before report request: ${message}`,
+            entryDate: entryDateForStatus,
+          },
+        })
         return
       }
 
@@ -475,6 +536,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         calculation_result: calculationToUse,
         html_content: "", // Will be populated by backend
       }
+
+      dispatch({
+        type: 'SET_REPORT_GENERATION_STATUS',
+        payload: {
+          status: 'Requesting detailed report from Python service...',
+          entryDate: entryDateForStatus,
+        },
+      })
+
 
       // Call backend to generate the full report with updated data
       // Ensure all required fields are present for Python API
@@ -508,6 +578,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         timeline_weeks: typeof updatedUserData.timeline_weeks === 'string' ? parseInt(updatedUserData.timeline_weeks) : updatedUserData.timeline_weeks || 16
       }
       
+      console.log('[AppContext] Requesting Python-generated report...')
       const generatedReportData = await Promise.race([
         fetchGeneratedReport(completeUserData),
         timeoutPromise
@@ -518,8 +589,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         html_path?: string;
         file_base?: string;
       }
+      console.log('[AppContext] Report data received from Python service')
 
-      if (!mountedRef.current) return
 
       const deriveFileBase = (data: { file_base?: string; pdf_path?: string }): string | undefined => {
         if (data.file_base) return data.file_base
@@ -545,20 +616,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       report.html_path = generatedReportData.html_path
 
       const persistedReport = await saveReport(report)
+      console.log('[AppContext] Report saved successfully with id:', persistedReport.id)
       dispatch({ type: 'ADD_REPORT', payload: persistedReport })
       announceSuccess('Report generated successfully.')
+      dispatch({
+        type: 'SET_REPORT_GENERATION_STATUS',
+        payload: {
+          status: 'Report generated and saved successfully.',
+          entryDate: entryDateForStatus,
+        },
+      })
 
     } catch (error) {
       if (!mountedRef.current) return
       const errorMessage = error instanceof Error
         ? error.message
         : 'Failed to generate report'
+      console.error('[AppContext] Report generation failed:', errorMessage)
       dispatch({ type: 'SET_ERROR', payload: errorMessage })
       announceError(errorMessage)
+      dispatch({
+        type: 'SET_REPORT_GENERATION_STATUS',
+        payload: {
+          status: `Report generation failed: ${errorMessage}`,
+          entryDate: entryDateForStatus,
+        },
+      })
     } finally {
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_LOADING', payload: false })
-      }
+      dispatch({ type: 'SET_LOADING', payload: false })
     }
   }
 

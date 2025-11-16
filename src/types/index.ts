@@ -116,6 +116,8 @@ export interface AppState {
   reports: Report[];
   current_calculation: CalculationResult | null;
   loading: boolean;
+  report_generation_status: string; // e.g., "Starting", "Calculating", "Calling Python", "Saving", "Complete"
+  report_generation_entry_date: string | null; // Date of the entry used for the report
   error: string | null;
 }
 
@@ -129,6 +131,7 @@ export type AppAction =
   | { type: 'ADD_REPORT'; payload: Report }
   | { type: 'SET_REPORTS'; payload: Report[] }
   | { type: 'DELETE_REPORT'; payload: string }
+  | { type: 'SET_REPORT_GENERATION_STATUS'; payload: { status: string; entryDate?: string } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'CLEAR_ERROR' };

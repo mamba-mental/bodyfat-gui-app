@@ -137,7 +137,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
           <img
             src={user.profile_banner}
             alt="Profile banner"
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: 'center' }}
           />
         ) : (
@@ -146,7 +146,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
         
         {showEditButtons && (
           <div className="absolute top-4 right-4 flex gap-2">
-            <label htmlFor="banner-upload" className="cursor-pointer">
+            <label htmlFor="banner-upload" className="cursor-pointer" title="Recommended size: 1500x400px. Max 5MB. JPG, PNG, or WebP format.">
               <Button
                 size="sm"
                 variant="secondary"
@@ -156,7 +156,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
               >
                 <span>
                   <Upload className="h-4 w-4" />
-                  {isUploadingBanner ? 'Uploading...' : user.profile_banner ? 'Change Banner' : 'Upload Banner'}
+                  {isUploadingBanner ? 'Uploading...' : user.profile_banner ? 'Change Banner' : 'Upload Banner (1500x400px)'}
                 </span>
               </Button>
               <input
