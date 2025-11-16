@@ -15,6 +15,26 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.5.0",
+    date: "2025-11-16",
+    type: "fix",
+    changes: [
+      "Fixed report generation flow - removed blocking useMountedRef guards from critical paths",
+      "Added live status tracking for report generation with detailed progress updates",
+      "Implemented Turndown library for proper HTML-to-Markdown conversion in report downloads",
+      "Unified PDF generation to use Python HTML as single source for consistent output quality",
+      "Fixed profile banner display with object-cover CSS for proper image scaling without distortion",
+      "Added profile banner upload tooltip with sizing guidance (recommended 1500x400px, max 5MB)",
+      "Verified and completed Task 19 - lifecycle guards already properly implemented via useSafeAnimationCallback",
+      "Added 'Coming Soon' section in Settings showcasing planned MyFitnessPal integration",
+      "Enhanced download buttons - all formats (HTML, MD, PDF) now produce identical, high-quality output",
+      "Added report diagnostics widget on Reports page showing generation status and entry date",
+      "Updated OpenSpec documentation with comprehensive fix details and flow diagrams",
+      "Created detailed MyFitnessPal integration analysis with implementation roadmap",
+      "Updated project documentation tracking all recent improvements and learnings"
+    ]
+  },
+  {
     version: "1.4.0",
     date: "2025-09-08",
     type: "deployment",

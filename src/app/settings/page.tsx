@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain } from "lucide-react"
+import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain, Sparkles, Calendar, Apple } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/contexts/theme-context"
@@ -228,6 +228,7 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
+          <TabsTrigger value="coming-soon">Coming Soon</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences" className="space-y-4">
@@ -655,6 +656,115 @@ export default function SettingsPage() {
                   Open AI Settings
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="coming-soon" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClientIcon icon={Sparkles} className="h-5 w-5" />
+                Coming Soon
+              </CardTitle>
+              <CardDescription>Exciting features we're working on for future releases</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {/* MyFitnessPal Integration */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ClientIcon icon={Apple} className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">MyFitnessPal Integration</h3>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Planned
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Track your actual calorie intake and compare it against your PRIME progression plan target calories.
+                    </p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>CSV Import: Upload your MyFitnessPal export data</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Manual Entry: Log daily calories directly in the app</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Variance Tracking: See daily/weekly differences vs. targets</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Dashboard Widget: Visual comparison charts</span>
+                      </div>
+                    </div>
+                    <Alert className="mt-3">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>Note:</strong> MyFitnessPal discontinued their public API in 2020. We're designing a user-friendly CSV import system and manual entry option to bring this functionality to you.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Future Features */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-100">
+                    <ClientIcon icon={Calendar} className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">Progress Photos Timeline</h3>
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                        Under Consideration
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Track visual progress alongside your metrics with timestamped photos and side-by-side comparisons.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-green-100">
+                    <ClientIcon icon={Brain} className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">Advanced AI Insights</h3>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Research Phase
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Enhanced AI-powered analysis of your progress patterns, including anomaly detection, personalized recommendations, and predictive success modeling.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="text-center space-y-2 pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Have a feature request or feedback?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  These features are based on user feedback and development roadmap priorities. Implementation timelines may vary.
+                </p>
+              </div>
+
             </CardContent>
           </Card>
         </TabsContent>
