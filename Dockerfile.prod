@@ -1,0 +1,105 @@
+# Production-optimized multi-stage build for Body Fat Tracker Frontend
+# Security: Using specific Node.js version and non-root user
+# Performance: Multi-stage build with optimized caching
+
+ARG NODE_VERSION=18.19.1
+FROM node:${NODE_VERSION}-alpine AS base
+
+# Install security updates and dumb-init for proper signal handling
+RUN apk update && apk upgrade && \
+    apk add --no-cache dumb-init libc6-compat && \
+    rm -rf /var/cache/apk/*
+
+# Security: Create non-root user early
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY package.json package-lock.json* ./
+
+# Security: Install dependencies with exact versions and audit
+RUN npm ci --only=production --audit=false && \
+    npm cache clean --force
+
+# Copy dev dependencies for build stage
+FROM base AS deps-build
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --include=dev --audit=false && \
+    npm cache clean --force
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps-build /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Security: Disable telemetry
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Performance: Build with optimizations
+ENV NODE_ENV production
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+# Security: Production environment
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Application directories
+ENV DATA_DIR /app/data
+ENV UPLOAD_DIR /app/public/uploads
+ENV EXPORT_DIR /app/exports
+
+# Create application directories with proper permissions
+RUN mkdir -p /app/data /app/exports /app/public/uploads/profiles /app/public/uploads/banners && \
+    chown -R nextjs:nodejs /app
+
+# Copy public assets
+COPY --from=builder /app/public ./public
+
+# Copy built application with proper ownership
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy health check script
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/health-check.js ./scripts/health-check.js
+
+# Security: Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Network configuration
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node scripts/health-check.js || exit 1
+
+# Performance: Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application
+CMD ["node", "server.js"]
+
+# Security: Add labels for container scanning
+LABEL org.opencontainers.image.title="ApexFit AI Frontend"
+LABEL org.opencontainers.image.description="AI-powered body fat estimation frontend"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="ApexFit"
+LABEL security.contact="security@apexfit.ai"

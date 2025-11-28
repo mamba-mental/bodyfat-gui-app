@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dbGetLastCalculation, dbSaveCalculation } from '@/lib/server-storage';
+import { getLastCalculation, saveLastCalculation } from '@/lib/redis';
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout';
 
 const corsHeaders = {
@@ -23,7 +23,7 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-  const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL;
+  const pythonApiUrl = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
 
   if (pythonApiUrl) {
     try {
@@ -39,7 +39,7 @@ export async function GET() {
         const calculation = await response.json();
         // Persist the latest calculation for offline fallback
         try {
-          await dbSaveCalculation(calculation, 1);
+          await saveLastCalculation('1', calculation);
         } catch (error) {
           console.warn('Failed to persist calculation locally:', error);
         }
@@ -58,7 +58,7 @@ export async function GET() {
 
   // Fallback to the last stored calculation, if any
   try {
-    const cached = await dbGetLastCalculation(1);
+    const cached = await getLastCalculation('1');
     if (cached) {
       return NextResponse.json(
         { ...cached, fallback: true },
@@ -76,7 +76,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL;
+  const pythonApiUrl = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
 
   let calculation;
   try {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
   const persisted = upstreamResponse ?? calculation;
 
   try {
-    await dbSaveCalculation(persisted, 1);
+    await saveLastCalculation('1', persisted);
   } catch (error) {
     console.warn('Failed to persist calculation locally:', error);
   }

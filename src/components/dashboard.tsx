@@ -16,21 +16,40 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useApp } from "@/contexts/app-context"
 import { calculateProgressPercentage, estimateTimeToGoal } from "@/lib/calculations"
-import { 
+import { formatDate } from "@/lib/date-utils"
+import {
   ProgressTrendChart,
   CalorieManagementWidget,
   GoalProgressWidget,
   MetabolicInsightsWidget
 } from "@/components/charts/lazy-chart-components"
-import { 
+import {
   AIInsightsPanel,
   AIChatWidget
 } from "@/components/ai/lazy-ai-components"
 
 export function Dashboard() {
-  const { state, calculateAndUpdateProgression, generateNewReport } = useApp()
+  const [mounted, setMounted] = React.useState(false)
+  const { state, calculateAndUpdateProgression, generateNewReport, setUserData, createNewProgram } = useApp()
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+
   const {
     current_user,
     current_calculation,
@@ -42,15 +61,44 @@ export function Dashboard() {
     report_generation_entry_date,
   } = state
 
-  // Calculate current metrics
-  const latestEntry = entries[0] // entries are sorted by date desc
+  // Filter entries for the current program
+  const programEntries = React.useMemo(() => {
+    // If user has a current_program_id, filter by program_id
+    if (current_user?.current_program_id) {
+      const filtered = entries.filter(entry =>
+        entry.program_id === current_user.current_program_id
+      )
+      // If we have program-filtered entries, use them
+      // Otherwise fall back to date-based filtering for legacy data
+      if (filtered.length > 0) {
+        return filtered
+      }
+    }
+
+    // Fallback: filter by start_date for legacy entries without program_id
+    if (!current_user?.start_date) return entries
+    const startDate = new Date(current_user.start_date)
+    // Reset time to start of day for fair comparison
+    startDate.setHours(0, 0, 0, 0)
+
+    return entries.filter(entry => {
+      const entryDate = new Date(entry.date)
+      entryDate.setHours(0, 0, 0, 0)
+      return entryDate >= startDate
+    })
+  }, [entries, current_user?.start_date, current_user?.current_program_id])
+
+  // Calculate current metrics based on program entries
+  const latestEntry = programEntries[0] // entries are sorted by date desc
   const currentWeight = latestEntry?.weight || current_user?.current_weight || 0
   const currentBF = latestEntry?.body_fat_percentage || current_user?.current_bf || 0
-  
+
   const goalWeight = current_user?.goal_weight || 0
   const goalBF = current_user?.goal_bf || 0
-  const startWeight = current_user?.current_weight || 0
-  const startBF = current_user?.current_bf || 0
+  // In our model, current_user.current_weight IS the start weight of the program
+  // But if program_reference exists (New Program started), use that as the definitive start point
+  const startWeight = current_user?.program_reference?.initial_weight || current_user?.current_weight || 0
+  const startBF = current_user?.program_reference?.initial_bf || current_user?.current_bf || 0
 
   const weightProgress = calculateProgressPercentage(startWeight, currentWeight, goalWeight)
   const bfProgress = calculateProgressPercentage(startBF, currentBF, goalBF)
@@ -117,8 +165,50 @@ export function Dashboard() {
     }
   }, [current_user, current_calculation, loading, calculateAndUpdateProgression])
 
+  if (!mounted) return null
+
+
   const handleGenerateReport = async () => {
     await generateNewReport()
+  }
+
+  const handleStartNewProgram = async () => {
+    if (!current_user) return
+
+    // Use createNewProgram from context which:
+    // 1. Generates a new program_id
+    // 2. Creates a program_reference snapshot with current metrics
+    // 3. Updates user data with current_program_id
+    // 4. Refreshes widgets
+    const newProgramId = createNewProgram()
+
+    if (!newProgramId) {
+      console.error('[Dashboard] Failed to create new program')
+      return
+    }
+
+    // Also update the timeline dates for UI purposes
+    const startDateIso = new Date().toISOString().split('T')[0]
+    const timelineWeeks = current_user.timeline_weeks || 16
+    const endDateIso = new Date(Date.now() + timelineWeeks * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    // Get the updated user from state after createNewProgram
+    // Note: createNewProgram already saved the user, but we need to update dates
+    const newStartWeight = entries[0]?.weight || current_user.current_weight
+    const newStartBF = entries[0]?.body_fat_percentage || current_user.current_bf
+
+    const updatedUser = {
+      ...current_user,
+      current_program_id: newProgramId,
+      current_weight: newStartWeight,
+      current_bf: newStartBF,
+      start_date: startDateIso,
+      end_date: endDateIso
+    }
+
+    setUserData(updatedUser)
+    // Recalculate progression with new baseline
+    await calculateAndUpdateProgression(updatedUser)
   }
 
   if (!current_user) {
@@ -147,6 +237,28 @@ export function Dashboard() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex items-center space-x-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="border-dashed">
+                Start New Program
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Start a New Program?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will reset your progress tracking to start from today.
+                  Your current weight ({entries[0]?.weight || current_user.current_weight} lbs) will become your new starting weight.
+                  Past entries will be preserved in history but won't affect new program stats.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleStartNewProgram}>Start New Program</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Link href="/setup/custom">
             <Button variant="secondary">
               Update Profile
@@ -189,48 +301,48 @@ export function Dashboard() {
           </AlertDescription>
         </Alert>
       )}
-      
+
       <Tabs defaultValue="overview" className="space-y-4" aria-label="Dashboard sections">
-        <TabsList 
+        <TabsList
           className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900"
           role="tablist"
           aria-label="Dashboard navigation tabs"
         >
-          <TabsTrigger 
-            value="overview" 
+          <TabsTrigger
+            value="overview"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white"
             aria-label="Overview section - View current metrics and progress summary"
           >
             <span aria-hidden="true">&#x1F4CA;</span> Overview
           </TabsTrigger>
-          <TabsTrigger 
-            value="progress" 
+          <TabsTrigger
+            value="progress"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white"
             aria-label="Progress section - View detailed progress charts and trends"
           >
             <span aria-hidden="true">&#x1F4C8;</span> Progress
           </TabsTrigger>
-          <TabsTrigger 
-            value="nutrition" 
+          <TabsTrigger
+            value="nutrition"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white"
             aria-label="Nutrition section - View calorie and nutrition guidance"
           >
             <span aria-hidden="true">&#x1F34E;</span> Nutrition
           </TabsTrigger>
-          <TabsTrigger 
-            value="ai-coach" 
+          <TabsTrigger
+            value="ai-coach"
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
             aria-label="AI Coach section - Get personalized AI insights and chat"
           >
             <span aria-hidden="true">&#x1F916;</span> AI Coach
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="overview" className="space-y-4" role="tabpanel" aria-labelledby="overview-tab">
           <section aria-labelledby="metrics-heading">
             <h3 id="metrics-heading" className="sr-only">Current Metrics Overview</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card 
+              <Card
                 className="relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 dark:from-emerald-900/20 dark:to-emerald-800/20"
                 role="article"
                 aria-labelledby="current-weight-title"
@@ -259,7 +371,7 @@ export function Dashboard() {
                 </CardContent>
                 <div className="absolute -right-4 -bottom-4 text-6xl opacity-10" aria-hidden="true">&#x2696;&#xFE0F;</div>
               </Card>
-            
+
               <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">Body Fat %</CardTitle>
@@ -281,7 +393,7 @@ export function Dashboard() {
                 </CardContent>
                 <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">&#x1F3AF;</div>
               </Card>
-            
+
               <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 dark:from-orange-900/20 dark:to-orange-800/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">This Week's Calories</CardTitle>
@@ -299,7 +411,7 @@ export function Dashboard() {
                 </CardContent>
                 <div className="absolute -right-4 -bottom-4 text-6xl opacity-10">&#x1F525;</div>
               </Card>
-            
+
               <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-900/20 dark:to-purple-800/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">Program Progress</CardTitle>
@@ -319,7 +431,7 @@ export function Dashboard() {
               </Card>
             </div>
           </section>
-          
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
@@ -329,15 +441,15 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ProgressTrendChart 
-                  entries={entries.slice(0, 8)} // Show last 8 entries for overview
+                <ProgressTrendChart
+                  entries={programEntries.slice(0, 8)} // Show last 8 entries of current program
                   progression={current_calculation?.progression?.slice(0, 6)} // Next 6 weeks prediction
                   title=""
                   description=""
                 />
               </CardContent>
             </Card>
-            
+
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Progress Summary</CardTitle>
@@ -353,14 +465,14 @@ export function Dashboard() {
                     </div>
                     <div className="relative">
                       <Progress value={Math.max(0, Math.min(100, weightProgress))} className="h-3 bg-emerald-100" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full" 
-                           style={{ width: `${Math.max(0, Math.min(100, weightProgress))}%` }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full"
+                        style={{ width: `${Math.max(0, Math.min(100, weightProgress))}%` }} />
                     </div>
                     <div className="text-center text-xs text-emerald-600">
                       {currentWeight.toFixed(1)} lbs → {goalWeight.toFixed(1)} lbs
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-blue-700">&#x1F3AF; Body Fat Reduction</span>
@@ -368,8 +480,8 @@ export function Dashboard() {
                     </div>
                     <div className="relative">
                       <Progress value={Math.max(0, Math.min(100, bfProgress))} className="h-3 bg-blue-100" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full" 
-                           style={{ width: `${Math.max(0, Math.min(100, bfProgress))}%` }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                        style={{ width: `${Math.max(0, Math.min(100, bfProgress))}%` }} />
                     </div>
                     <div className="text-center text-xs text-blue-600">
                       {currentBF.toFixed(1)}% → {goalBF.toFixed(1)}%
@@ -383,8 +495,8 @@ export function Dashboard() {
                     </div>
                     <div className="relative">
                       <Progress value={programData.programProgress} className="h-3 bg-purple-100" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full" 
-                           style={{ width: `${Math.min(100, programData.programProgress)}%` }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"
+                        style={{ width: `${Math.min(100, programData.programProgress)}%` }} />
                     </div>
                     <div className="text-center text-xs text-purple-600">
                       Day {programData.daysIntoProgram} of {Math.round(programData.totalWeeks * 7)}
@@ -399,8 +511,8 @@ export function Dashboard() {
                       </div>
                       <div className="relative">
                         <Progress value={current_calculation?.confidence_score || 0} className="h-3 bg-amber-100" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full" 
-                             style={{ width: `${current_calculation?.confidence_score || 0}%` }} />
+                        <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full"
+                          style={{ width: `${current_calculation?.confidence_score || 0}%` }} />
                       </div>
                       <div className="text-xs text-amber-600 text-center">
                         Plan reliability assessment
@@ -416,7 +528,7 @@ export function Dashboard() {
                     Recent Activity
                   </h4>
                   <div className="space-y-3">
-                    {entries.slice(0, 2).map((entry, index) => (
+                    {programEntries.slice(0, 2).map((entry, index) => (
                       <div key={entry.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/50">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                           &#x1F4C8;
@@ -427,13 +539,13 @@ export function Dashboard() {
                             {entry.body_fat_percentage && ` (${entry.body_fat_percentage.toFixed(1)}% BF)`}
                           </p>
                           <p className="text-xs text-blue-600">
-                            {new Date(entry.date).toLocaleDateString()}
+                            {formatDate(entry.date)}
                             {index === 0 && <span className="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full text-xs">Latest</span>}
                           </p>
                         </div>
                       </div>
                     ))}
-                    
+
                     {reports.slice(0, 1).map((report) => (
                       <div key={report.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gradient-to-r from-emerald-50/50 to-green-50/50 border border-emerald-100/50">
                         <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -449,7 +561,7 @@ export function Dashboard() {
                       </div>
                     ))}
 
-                    {entries.length === 0 && reports.length === 0 && (
+                    {programEntries.length === 0 && reports.length === 0 && (
                       <div className="text-center py-2 text-muted-foreground">
                         <p className="text-xs">No activity yet</p>
                       </div>
@@ -487,7 +599,7 @@ export function Dashboard() {
           {/* AI Insights Panel on Overview */}
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <AIInsightsPanel 
+              <AIInsightsPanel
                 title="AI Insights & Guidance"
                 showHeader={true}
                 maxInsights={4}
@@ -499,27 +611,27 @@ export function Dashboard() {
             </div>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="progress" className="space-y-4">
-          <ProgressTrendChart 
-            entries={entries}
+          <ProgressTrendChart
+            entries={programEntries}
             progression={current_calculation?.progression}
           />
-          
+
           <div className="grid gap-4 lg:grid-cols-2">
-            <GoalProgressWidget 
+            <GoalProgressWidget
               user={current_user}
-              entries={entries}
+              entries={programEntries}
               progression={current_calculation?.progression}
             />
-            <MetabolicInsightsWidget 
+            <MetabolicInsightsWidget
               progression={current_calculation?.progression}
             />
           </div>
         </TabsContent>
-        
+
         <TabsContent value="nutrition" className="space-y-4">
-          <CalorieManagementWidget 
+          <CalorieManagementWidget
             progression={current_calculation?.progression}
             currentCalories={currentCalories}
             user={current_user}
@@ -529,7 +641,7 @@ export function Dashboard() {
         <TabsContent value="ai-coach" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
-              <AIInsightsPanel 
+              <AIInsightsPanel
                 title="Personalized AI Insights"
                 showHeader={true}
                 maxInsights={6}

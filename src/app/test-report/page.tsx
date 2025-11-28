@@ -141,8 +141,9 @@ export default function TestReportPage() {
         <CardHeader>
           <CardTitle>Instructions</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>1. Make sure the Python API is running on port 8000</p>
+          <CardContent className="space-y-2 text-sm">
+            <p>1. Make sure the Python API is running on port 8001</p>
+
           <p>2. Click "Generate Test Report"</p>
           <p>3. Check the browser console for detailed logs</p>
           <p>4. If successful, click "View Report in New Tab" to see the generated report</p>

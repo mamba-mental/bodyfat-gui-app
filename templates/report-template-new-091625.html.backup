@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<!-- saved from url=(0116)file:///C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/templates/report_template.html -->
+<html lang="en" data-darkreader-proxy-injected="true"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Fat and Weight Loss Calculator Report - {{ name }}</title>
+    <link rel="stylesheet" href="file:///C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/templates/styles/report_style.css">
+</head>
+<body>
+    <!-- Page 1 -->
+    <header>
+        <h1>Body Fat and Weight Loss Calculator Report - {{ name }}</h1>
+        <p>Report Date: {{ report_date }}</p>
+    </header>
+
+    <section>
+        <h2>1. Current Profile</h2>
+        <table>
+            <tbody><tr><td>Height:</td><td>{{ height }}</td></tr>
+            <tr><td>Current Weight:</td><td>{{ "%.2f"|format(initial_weight) }} lbs</td></tr>
+            <tr><td>Current Body Fat:</td><td>{{ "%.2f"|format(initial_body_fat) }}%</td></tr>
+            <tr><td>Current Lean Mass:</td><td>{{ "%.2f"|format(initial_lean_mass) }} lbs</td></tr>
+            <tr><td>Current Fat Mass:</td><td>{{ "%.2f"|format(initial_fat_mass) }} lbs</td></tr>
+            <tr><td>Age:</td><td>{{ age }} years</td></tr>
+            <tr><td>Gender:</td><td>{{ gender }}</td></tr>
+        </tbody></table>
+    </section>
+
+    <section>
+        <h2>2. Target Goals</h2>
+        <table>
+            <tbody><tr><td>Goal Weight:</td><td>{{ "%.2f"|format(goal_weight) }} lbs</td></tr>
+            <tr><td>Goal Body Fat:</td><td>{{ "%.2f"|format(goal_body_fat) }}%</td></tr>
+            <tr><td>Timeline:</td><td>{{ start_date }} to {{ end_date }}</td></tr>
+            <tr><td>Total Duration:</td><td>{{ total_weeks }} weeks</td></tr>
+        </tbody></table>
+    </section>
+
+    <section>
+        <h2>3. Current Activity Profile</h2>
+        <table>
+            <tbody><tr><td>Activity Level:</td><td>{{ activity_level }}</td></tr>
+            <tr><td>Training Experience:</td><td>{{ experience_level }}</td></tr>
+            <tr><td>Workout Type:</td><td>{{ workout_type }}</td></tr>
+            <tr><td>Weekly Workout Frequency:</td><td>{{ workout_frequency }} days</td></tr>
+            <tr><td>Currently Using Resistance Training:</td><td>{{ resistance_training }}</td></tr>
+            <tr><td>Athlete Status:</td><td>{{ athlete_status }}</td></tr>
+        </tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Understanding Your Activity Profile:</h3>
+            <ul>
+                <li><strong>Activity Level:</strong> Your {{ activity_level }} lifestyle contributes significantly to your daily caloric expenditure.</li>
+                <li><strong>Training Experience:</strong> As a {{ experience_level }} trainee, this affects your potential muscle gain and recovery needs.</li>
+                <li><strong>Workout Frequency:</strong> Training {{ workout_frequency }} days per week helps optimize your metabolic rate and recovery periods.</li>
+                <li><strong>Resistance Training:</strong> {{ "Your use of" if resistance_training == "Yes" else "Not currently using" }} resistance training {{ "enhances" if resistance_training == "Yes" else "could enhance" }} muscle preservation during weight loss.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 2 -->
+    <div class="page-break"></div>
+    
+    <section>
+        <h2>4. Current Metabolic Profile</h2>
+        <table>
+            <tbody><tr><td>Base Metabolic Rate (RMR):</td><td>{{ "%.2f"|format(initial_rmr) }} cal/day</td></tr>
+            <tr><td>Total Daily Energy Expenditure (TDEE):</td><td>{{ "%.2f"|format(initial_tdee) }} cal/day</td></tr>
+            <tr><td>Thermic Effect of Food (TEF):</td><td>{{ "%.2f"|format(tef) }} cal/day</td></tr>
+            <tr><td>Non-Exercise Activity Thermogenesis (NEAT):</td><td>{{ "%.2f"|format(neat) }} cal/day</td></tr>
+            <tr><td>Recommended Daily Calorie Intake:</td><td>{{ "%.2f"|format(initial_daily_calorie_intake) }} cal/day</td></tr>
+        </tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Understanding Your Metabolic Profile:</h3>
+            <ul>
+                <li><strong>RMR (Resting Metabolic Rate):</strong> Your body burns {{ "%.2f"|format(initial_rmr) }} calories daily at rest. This is calculated using the Mifflin-St Jeor equation, adjusted for your body composition.</li>
+                <li><strong>TDEE (Total Daily Energy Expenditure):</strong> Based on your activity level, you burn approximately {{ "%.2f"|format(initial_tdee) }} calories per day.</li>
+                <li><strong>TEF (Thermic Effect of Food):</strong> You burn about {{ "%.2f"|format(tef) }} calories digesting food, particularly protein.</li>
+                <li><strong>NEAT:</strong> Your daily activities burn approximately {{ "%.2f"|format(neat) }} additional calories.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Additional Lifestyle Factors</h2>
+        <table>
+            <tbody><tr><td>Target Daily Protein Intake:</td><td>{{ protein_intake }} grams</td></tr>
+            <tr><td>Diet Type:</td><td>{{ diet_type }}</td></tr>
+            <tr><td>Reported PED Use:</td><td>{{ ped_use }}</td></tr>
+            <tr><td>Reported Sleep Quality:</td><td>{{ sleep_quality }}</td></tr>
+        </tbody></table>
+        <div class="supplemental-info">
+            <h3>Impact of These Factors:</h3>
+            <ul>
+                <li><strong>Protein Intake ({{ protein_intake }}g):</strong> Adequate protein is crucial for muscle repair, growth, and satiety. Higher protein intake also increases TEF.</li>
+                <li><strong>Diet Type ({{ diet_type }}):</strong> Your chosen diet type influences macronutrient distribution, which can affect energy levels, satiety, and adherence. Specific diet types also have varying impacts on TEF and nutrient partitioning.</li>
+                <li><strong>PED Use ({{ ped_use }}):</strong> If PEDs are used, this can significantly alter metabolic rate, muscle protein synthesis, and nutrient partitioning, leading to faster changes than naturally achievable. Calculations are adjusted accordingly.</li>
+                <li><strong>Sleep Quality ({{ sleep_quality }}):</strong> Sleep is vital for recovery, hormone regulation (including those related to appetite and muscle growth), and overall well-being. Poor sleep can hinder progress.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>5. Workout Analysis</h2>
+        <table>
+            <tbody><tr><td>Type:</td><td>{{ workout_type }}</td></tr>
+            <tr><td>Frequency:</td><td>{{ workout_frequency }} days/week</td></tr>
+            <tr><td>Volume Score:</td><td>{{ "%.2f"|format(volume_score) }} - {{ get_score_description(volume_score) }}</td></tr>
+            <tr><td>Intensity Score:</td><td>{{ "%.2f"|format(intensity_score) }} - {{ get_score_description(intensity_score) }}</td></tr>
+            <tr><td>Frequency Score:</td><td>{{ "%.2f"|format(frequency_score) }} - {{ get_score_description(frequency_score) }}</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Impact on Your Caloric Needs:</h3>
+            <ul>
+                <li><strong>Volume Score {{ "%.2f"|format(volume_score) }}:</strong> Your training volume contributes approximately {{ "%.2f"|format(volume_score * 500) }} additional calories to your daily expenditure.</li>
+                <li><strong>Intensity Score {{ "%.2f"|format(intensity_score) }}:</strong> Your training intensity increases your metabolic rate by about {{ "%.2f"|format(intensity_score * 15) }}% for up to 48 hours post-workout.</li>
+                <li><strong>Frequency Score {{ "%.2f"|format(frequency_score) }}:</strong> Training {{ workout_frequency }} days per week optimizes your caloric burn and recovery periods.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 3 -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>6. Predicted Progress Charts</h2>
+        <div class="charts-container">
+            <div class="chart">
+                <h3>Predicted Weight Changes</h3>
+                <img src="data:image/png;base64,{{ weight_progress_chart }}" alt="Weight Progress Chart">
+            </div>
+            <div class="chart">
+                <h3>Predicted Body Fat Changes</h3>
+                <img src="data:image/png;base64,{{ body_composition_chart }}" alt="Body Composition Chart">
+            </div>
+        </div>
+    </section>
+
+    <!-- Page 4 -->
+    <div class="page-break"></div>
+
+    <div class="combined-sections">
+        <section>
+            <h2>7. Weekly Progress Forecast</h2>
+            
+            {% for week in weekly_progress %}
+            
+            {% endfor %}
+        <table class="small-table">
+            <tbody><tr>
+                <th>Date</th>
+                <th>Weight (lbs)</th>
+                <th>Body Fat %</th>
+                <th>Daily Cal Intake</th>
+                <th>TDEE</th>
+                <th>Weekly Cal Output</th>
+                <th>Total Weight Lost (lbs)</th>
+                <th>Lean Mass (lbs)</th>
+                <th>Fat Mass (lbs)</th>
+                <th>Muscle Gain (lbs)</th>
+                <th>RMR</th>
+            </tr><tr>
+                <td>{{ week.date }}</td>
+                <td>{{ "%.2f"|format(week.weight) }}</td>
+                <td>{{ "%.2f"|format(week.body_fat_percentage) }}</td>
+                <td>{{ "%.2f"|format(week.daily_calorie_intake) }}</td>
+                <td>{{ "%.2f"|format(week.tdee) }}</td>
+                <td>{{ "%.2f"|format(week.weekly_caloric_output) }}</td>
+                <td>{{ "%.2f"|format(week.total_weight_lost) }}</td>
+                <td>{{ "%.2f"|format(week.lean_mass) }}</td>
+                <td>{{ "%.2f"|format(week.fat_mass) }}</td>
+                <td>{{ "%.2f"|format(week.muscle_gain) }}</td>
+                <td>{{ "%.2f"|format(week.rmr) }}</td>
+            </tr></tbody></table>
+    </section>
+
+        <section>
+            <h2>8. Body Composition Changes</h2>
+            
+            {% for change in body_composition_changes %}
+            
+            {% endfor %}
+        <table class="small-table">
+            <tbody><tr>
+                <th>Body Fat Category</th>
+                <th>Body Fat %</th>
+                <th>Date Reached</th>
+                <th>Description</th>
+                <th>Est. Time to Six-Pack</th>
+            </tr><tr>
+                <td>{{ change.category }}</td>
+                <td>{{ "%.2f"|format(change.body_fat_percentage) }}%</td>
+                <td>{{ change.date_reached }}</td>
+                <td>{{ change.description }}</td>
+                <td>{{ change.time_to_six_pack }}</td>
+            </tr></tbody></table>
+        </section>
+    </div>
+
+    <!-- Page 5 -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>9. Expected Results</h2>
+        <table>
+            <tbody><tr><td>Total Weight Loss:</td><td>{{ "%.2f"|format(total_weight_loss) }} lbs</td></tr>
+            <tr><td>Fat Loss:</td><td>{{ "%.2f"|format(total_bf_loss) }}%</td></tr>
+            <tr><td>Muscle Gain:</td><td>{{ "%.2f"|format(total_muscle_gain) }} lbs</td></tr>
+        </tbody></table>
+        
+        <h3>Average Weekly Changes:</h3>
+        <table>
+            <tbody><tr><td>Weight Loss:</td><td>{{ "%.2f"|format(avg_weekly_loss) }} lbs</td></tr>
+            <tr><td>Muscle Gain:</td><td>{{ "%.2f"|format(avg_muscle_gain) }} lbs</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Your Results:</h3>
+            <ul>
+                <li><strong>Total Weight Loss:</strong> Your projected loss of {{ "%.2f"|format(total_weight_loss) }} lbs is designed to be sustainable and preserve muscle mass.</li>
+                <li><strong>Fat Loss:</strong> A reduction of {{ "%.2f"|format(total_bf_loss) }}% body fat represents a healthy rate of fat loss.</li>
+                <li><strong>Muscle Changes:</strong> The program aims to gain/maintain {{ "%.2f"|format(total_muscle_gain) }} lbs of muscle while losing fat.</li>
+                <li><strong>Weekly Progress:</strong> Targeting {{ "%.2f"|format(avg_weekly_loss) }} lbs per week ensures steady, sustainable progress.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>10. Metabolic Adaptation Forecast</h2>
+        <table>
+            <tbody><tr><td>Initial Week:</td><td>{{ "%.2f"|format(week_1_adaptation) }} multiplier</td></tr>
+            <tr><td>Final Week:</td><td>{{ "%.2f"|format(final_week_adaptation) }} multiplier</td></tr>
+            <tr><td>Expected Adaptation:</td><td>{{ "%.2f"|format(adaptation_percentage) }}% change</td></tr>
+            <tr><td>Lean Mass Preservation:</td><td>{{ "%.2f"|format(lean_mass_preserved) }}%</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Metabolic Adaptation:</h3>
+            <ul>
+                <li><strong>Initial Response:</strong> Your metabolism starts at {{ "%.2f"|format(week_1_adaptation) }}x baseline, reflecting your current activity level.</li>
+                <li><strong>Progressive Changes:</strong> A {{ "%.2f"|format(adaptation_percentage) }}% adaptation is expected as your body becomes more efficient.</li>
+                <li><strong>Muscle Preservation:</strong> The program is designed to maintain {{ "%.2f"|format(lean_mass_preserved) }}% of your lean mass.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>11. Final Phase Targets</h2>
+        <table>
+            <tbody><tr><td>Maintenance Calories:</td><td>{{ "%.2f"|format(final_tdee) }} calories/day</td></tr>
+            <tr><td>Weekly Energy Output:</td><td>{{ "%.2f"|format(final_weekly_caloric_output) }} calories</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Your Final Targets:</h3>
+            <ul>
+                <li><strong>Maintenance Level:</strong> Your final daily maintenance of {{ "%.2f"|format(final_tdee) }} calories reflects your new metabolic baseline.</li>
+                <li><strong>Weekly Output:</strong> Maintaining a weekly energy output of {{ "%.2f"|format(final_weekly_caloric_output) }} calories will help sustain your results.</li>
+                <li><strong>Long-term Success:</strong> These targets are designed to help you maintain your new weight and body composition.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 6+ -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>12. Input Parameter Analysis</h2>
+        <div class="supplemental-info">
+            <h3>All Input Parameters Used in Calculations:</h3>
+            <p>This section confirms that all provided input parameters are directly used in the body composition calculations.</p>
+        </div>
+        
+        
+            {% for param in input_parameters %}
+            
+            {% endfor %}
+        <table>
+            <tbody><tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Used in Calculation</th>
+                <th>Calculation Component</th>
+            </tr><tr>
+                <td>{{ param.name }}</td>
+                <td>{{ param.value }}</td>
+                <td>{{ "✓ Yes" if param.used else "✗ No" }}</td>
+                <td>{{ param.usage_description }}</td>
+            </tr></tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Input Reliability Analysis:</h3>
+            
+                {% if input_analysis %}
+                
+                {% endif %}
+            <table>
+                <tbody><tr>
+                    <th>Category</th>
+                    <th>Score</th>
+                    <th>Assessment</th>
+                </tr><tr>
+                    <td>Anthropometric Data</td>
+                    <td>{{ "%.1f"|format(input_analysis.anthropometric_reliability) }}/100</td>
+                    <td>{{ "Excellent" if input_analysis.anthropometric_reliability &gt;= 90 else "Good" if input_analysis.anthropometric_reliability &gt;= 75 else "Fair" if input_analysis.anthropometric_reliability &gt;= 60 else "Poor" }}</td>
+                </tr>
+                <tr>
+                    <td>Activity Data</td>
+                    <td>{{ "%.1f"|format(input_analysis.activity_reliability) }}/100</td>
+                    <td>{{ "Excellent" if input_analysis.activity_reliability &gt;= 90 else "Good" if input_analysis.activity_reliability &gt;= 75 else "Fair" if input_analysis.activity_reliability &gt;= 60 else "Poor" }}</td>
+                </tr>
+                <tr>
+                    <td>Goal Data</td>
+                    <td>{{ "%.1f"|format(input_analysis.goal_reliability) }}/100</td>
+                    <td>{{ "Excellent" if input_analysis.goal_reliability &gt;= 90 else "Good" if input_analysis.goal_reliability &gt;= 75 else "Fair" if input_analysis.goal_reliability &gt;= 60 else "Poor" }}</td>
+                </tr>
+                <tr>
+                    <td>Data Completeness</td>
+                    <td>{{ "%.1f"|format(input_analysis.data_completeness) }}/100</td>
+                    <td>{{ "Complete" if input_analysis.data_completeness &gt;= 95 else "Nearly Complete" if input_analysis.data_completeness &gt;= 85 else "Mostly Complete" if input_analysis.data_completeness &gt;= 70 else "Incomplete" }}</td>
+                </tr></tbody></table>
+        </div>
+    </section>
+    
+    <!-- Page Break before AI Confidence Analysis if it exists -->
+    {% if confidence_analysis %}
+    <div class="page-break"></div>
+    <section>
+        <h2>13. AI Confidence Analysis</h2>
+        <div class="supplemental-info">
+            <h3>AI-Powered Assessment of Your Plan:</h3>
+            <p>This analysis uses advanced AI to evaluate the reliability and feasibility of your body composition goals.</p>
+        </div>
+        
+        <table>
+            <tbody><tr>
+                <th>Analysis Component</th>
+                <th>Score</th>
+                <th>Assessment</th>
+            </tr>
+            <tr>
+                <td>Overall Confidence</td>
+                <td>{{ "%.1f"|format(confidence_analysis.overall_score) }}/100</td>
+                <td>{{ "Very High" if confidence_analysis.overall_score &gt;= 85 else "High" if confidence_analysis.overall_score &gt;= 70 else "Moderate" if confidence_analysis.overall_score &gt;= 55 else "Low" }}</td>
+            </tr>
+            <tr>
+                <td>Input Reliability</td>
+                <td>{{ "%.1f"|format(confidence_analysis.input_reliability) }}/100</td>
+                <td>{{ "Very Reliable" if confidence_analysis.input_reliability &gt;= 85 else "Reliable" if confidence_analysis.input_reliability &gt;= 70 else "Moderately Reliable" if confidence_analysis.input_reliability &gt;= 55 else "Needs Improvement" }}</td>
+            </tr>
+            <tr>
+                <td>Calculation Accuracy</td>
+                <td>{{ "%.1f"|format(confidence_analysis.calculation_accuracy) }}/100</td>
+                <td>{{ "Very Accurate" if confidence_analysis.calculation_accuracy &gt;= 85 else "Accurate" if confidence_analysis.calculation_accuracy &gt;= 70 else "Moderately Accurate" if confidence_analysis.calculation_accuracy &gt;= 55 else "Needs Review" }}</td>
+            </tr>
+            <tr>
+                <td>Goal Feasibility</td>
+                <td>{{ "%.1f"|format(confidence_analysis.goal_feasibility) }}/100</td>
+                <td>{{ "Highly Feasible" if confidence_analysis.goal_feasibility &gt;= 85 else "Feasible" if confidence_analysis.goal_feasibility &gt;= 70 else "Challenging" if confidence_analysis.goal_feasibility &gt;= 55 else "Very Challenging" }}</td>
+            </tr>
+        </tbody></table>
+
+        {% if confidence_analysis.overall_confidence_explanation %}
+        <div class="supplemental-info">
+            <h3>📊 Score Explanations:</h3>
+            <table>
+                <tbody><tr>
+                    <th>Component</th>
+                    <th>Score</th>
+                    <th>AI Explanation</th>
+                </tr>
+                <tr>
+                    <td>Overall Confidence</td>
+                    <td>{{ "%.1f"|format(confidence_analysis.overall_score) }}/100</td>
+                    <td>{{ confidence_analysis.overall_confidence_explanation }}</td>
+                </tr>
+                <tr>
+                    <td>Input Reliability</td>
+                    <td>{{ "%.1f"|format(confidence_analysis.input_reliability) }}/100</td>
+                    <td>{{ confidence_analysis.input_reliability_explanation }}</td>
+                </tr>
+                <tr>
+                    <td>Calculation Accuracy</td>
+                    <td>{{ "%.1f"|format(confidence_analysis.calculation_accuracy) }}/100</td>
+                    <td>{{ confidence_analysis.calculation_accuracy_explanation }}</td>
+                </tr>
+                <tr>
+                    <td>Goal Feasibility</td>
+                    <td>{{ "%.1f"|format(confidence_analysis.goal_feasibility) }}/100</td>
+                    <td>{{ confidence_analysis.goal_feasibility_explanation }}</td>
+                </tr>
+            </tbody></table>
+        </div>
+        {% endif %}
+
+        {% if confidence_analysis.warnings %}
+        <div class="supplemental-info">
+            <h3>⚠️ Important Warnings:</h3>
+            <ul>
+                {% for warning in confidence_analysis.warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if confidence_analysis.suggestions %}
+        <div class="supplemental-info">
+            <h3>💡 AI Recommendations:</h3>
+            <ul>
+                {% for suggestion in confidence_analysis.suggestions %}
+                <li>{{ suggestion }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if confidence_analysis.confidence_factors %}
+        <div class="supplemental-info">
+            <h3>Detailed Confidence Factors:</h3>
+            
+                {% for factor, score in confidence_analysis.confidence_factors.items() %}
+                
+                {% endfor %}
+            <table>
+                <tbody><tr>
+                    <th>Factor</th>
+                    <th>Score</th>
+                </tr><tr>
+                    <td>{{ factor.replace('_', ' ').title() }}</td>
+                    <td>{{ "%.1f"|format(score) }}/100</td>
+                </tr></tbody></table>
+        </div>
+        {% endif %}
+
+        {% if confidence_analysis.detailed_analysis %}
+        <div class="supplemental-info">
+            <h3>🔍 Detailed AI Analysis Summary:</h3>
+            <p>{{ confidence_analysis.detailed_analysis }}</p>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+    
+    <!-- Page Break before Comprehensive Parameter Reference Guide -->
+    <div class="page-break"></div>
+    <!-- Comprehensive Parameter Reference Guide -->
+    <section class="section">
+        <h2>{{ "14" if confidence_analysis else "13" }}. Comprehensive Parameter Reference Guide</h2>
+        <p>This section details exactly how each input parameter affects your calculations and results:</p>
+        
+        <div class="supplemental-info">
+            <h3>🔢 Parameter Usage in Calculations:</h3>
+            <table>
+                <tbody><tr>
+                    <th>Parameter</th>
+                    <th>Your Value</th>
+                    <th>Usage Location</th>
+                    <th>Impact on Results</th>
+                </tr>
+                <tr>
+                    <td>Age</td>
+                    <td>{{ age }} years</td>
+                    <td>RMR Calculation (Mifflin-St Jeor)</td>
+                    <td>Base metabolic rate decreases ~1-2% per decade after age 30</td>
+                </tr>
+                <tr>
+                    <td>Weight</td>
+                    <td>{{ initial_weight }} lbs</td>
+                    <td>RMR, TDEE, Body Composition</td>
+                    <td>Primary factor in all metabolic calculations - higher weight = higher energy needs</td>
+                </tr>
+                <tr>
+                    <td>Height</td>
+                    <td>{{ height }}</td>
+                    <td>RMR Calculation, BMI</td>
+                    <td>Taller individuals have higher metabolic rates due to larger body surface area</td>
+                </tr>
+                <tr>
+                    <td>Gender</td>
+                    <td>{{ gender }}</td>
+                    <td>RMR Calculation (different formulas)</td>
+                    <td>Males typically have 10-15% higher RMR than females due to muscle mass differences</td>
+                </tr>
+                <tr>
+                    <td>Activity Level</td>
+                    <td>{{ activity_level }}</td>
+                    <td>TDEE Multiplier</td>
+                    <td>Multiplies RMR by 1.2-1.9 based on activity level</td>
+                </tr>
+                <tr>
+                    <td>Body Fat %</td>
+                    <td>{{ initial_body_fat }}%</td>
+                    <td>Lean Body Mass, Metabolic Calculations</td>
+                    <td>Lower body fat = higher lean mass = higher metabolic rate per pound</td>
+                </tr>
+                <tr>
+                    <td>Goal Weight</td>
+                    <td>{{ goal_weight }} lbs</td>
+                    <td>Calorie Adjustment, Macro Distribution</td>
+                    <td>Target weight determines caloric deficit/surplus needed</td>
+                </tr>
+                <tr>
+                    <td>Resistance Training</td>
+                    <td>{{ resistance_training }}</td>
+                    <td>PRIME_Diet_Calculations_v2.py:161</td>
+                    <td>{% if resistance_training == 'Yes' %}Increases protein needs and metabolic boost{% else %}Uses baseline 0.05 multiplier for muscle preservation{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Athlete Status</td>
+                    <td>{{ athlete_status }}</td>
+                    <td>PRIME_Utils.py:105-106</td>
+                    <td>{% if athlete_status == 'Yes' %}Adds 10% RMR boost for enhanced metabolic capacity{% else %}Uses standard metabolic calculations{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Workout Type</td>
+                    <td>{{ workout_type }}</td>
+                    <td>Macro Distribution, TEF Calculations</td>
+                    <td>{{ workout_type }} training affects protein/carb/fat ratios and thermic effect</td>
+                </tr>
+                <tr>
+                    <td>Experience Level</td>
+                    <td>{{ experience_level }}</td>
+                    <td>NEAT Estimation, Performance Adjustments</td>
+                    <td>{{ experience_level }} affects recovery needs and energy expenditure patterns</td>
+                </tr>
+                <tr>
+                    <td>PED Use</td>
+                    <td>{{ ped_use }}</td>
+                    <td>PRIME_Calculations.py, PRIME_Diet_Calculations_v2.py</td>
+                    <td>{% if ped_use == 'Yes' %}Increases muscle gain by 50% (1.5x multiplier) and improves fat loss ratio by 20%{% else %}Standard natural muscle gain and fat loss rates apply{% endif %}</td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div class="supplemental-info">
+            <h3>🎯 Calculation Impact Summary:</h3>
+            <ul>
+                <li><strong>Your RMR:</strong> {{ "%.0f"|format(initial_rmr) }} calories - calculated using age ({{ age }}), weight ({{ initial_weight }}lbs), height ({{ height }}), and gender ({{ gender }})</li>
+                <li><strong>Your TDEE:</strong> {{ "%.0f"|format(initial_tdee) }} calories - RMR multiplied by activity factor for {{ activity_level }} activity level</li>
+                <li><strong>Your Goal Calories:</strong> {{ "%.0f"|format(initial_daily_calorie_intake) }} calories - TDEE adjusted for your goal</li>
+                <li><strong>Body Fat Impact:</strong> {{ initial_body_fat }}% body fat indicates {{ "%.0f"|format(initial_lean_mass) }}lbs lean mass, affecting metabolic calculations</li>
+                {% if athlete_status == 'Yes' %}<li><strong>Athlete Bonus:</strong> 10% RMR increase applied due to athlete status</li>{% endif %}
+                {% if ped_use == 'Yes' %}<li><strong>PED Enhancement:</strong> 50% muscle gain increase and 20% improved fat loss ratio applied</li>{% endif %}
+            </ul>
+        </div>
+
+        <div class="supplemental-info">
+            <h3>📍 Code References:</h3>
+            <ul>
+                <li><strong>Resistance Training Check:</strong> PRIME_Diet_Calculations_v2.py line 161 - Uses 0.05 baseline if False</li>
+                <li><strong>Athlete RMR Boost:</strong> PRIME_Utils.py lines 105-106 - Adds 10% if True</li>
+                <li><strong>Diet Type Multipliers:</strong> Multiple locations with fat loss/muscle gain adjustments</li>
+                <li><strong>Exercise Type NEAT:</strong> NEAT estimation and performance adjustment calculations</li>
+                <li><strong>Activity Level Multipliers:</strong> Standard TDEE calculation with activity-specific factors</li>
+                <li><strong>PED Use Multipliers:</strong> PRIME_Calculations.py line 81 - 1.5x muscle gain; PRIME_Diet_Calculations_v2.py lines 109-110, 166-167 - Enhanced fat loss and muscle gain</li>
+            </ul>
+        </div>
+    </section>
+
+    <div class="page-break"></div>
+
+    <section>
+        <h2>{{ "14" if confidence_analysis else "13" }}. Comprehensive Reference Guide</h2>
+        
+        <div class="data-container">
+            {% for section in [
+                {
+                    'title': 'Activity Levels and Caloric Impact',
+                    'headers': ['Level', 'Description', 'TDEE Multiplier', 'Daily Caloric Impact', 'Example Activities'],
+                    'data': [
+                        ['Sedentary', 'Little to no exercise, desk job', '1.2', '+20% above RMR', 'Office work, driving, watching TV'],
+                        ['Lightly Active', 'Light exercise 1-3 days/week', '1.375', '+37.5% above RMR', 'Walking, light gardening, yoga'],
+                        ['Moderately Active', 'Moderate exercise 3-5 days/week', '1.55', '+55% above RMR', 'Jogging, cycling, recreational sports'],
+                        ['Very Active', 'Heavy exercise 6-7 days/week', '1.725', '+72.5% above RMR', 'Construction work, competitive sports'],
+                        ['Extremely Active', 'Very heavy exercise, physical job', '1.9', '+90% above RMR', 'Professional athletes, heavy manual labor']
+                    ]
+                },
+                {
+                    'title': 'Training Experience and Muscle Gain Potential',
+                    'headers': ['Level', 'Years of Training', 'Monthly Muscle Gain', 'Caloric Requirements', 'Recovery Needs'],
+                    'data': [
+                        ['Beginner', '0-2 years', '0.5-1% body weight', '+500 cal/day surplus', '24-36 hours between sessions'],
+                        ['Intermediate', '2-4 years', '0.25-0.5% body weight', '+300-400 cal/day surplus', '36-48 hours between sessions'],
+                        ['Advanced', '4+ years', '0.125-0.25% body weight', '+200-300 cal/day surplus', '48-72 hours between sessions']
+                    ]
+                }
+            ] %}
+            <div class="data-section">
+                <h3>{{ section.title }}</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            {% for header in section.headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in section.data %}
+                            <tr>
+                                {% for cell in row %}
+                                    <td>{{ cell }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+
+            <div class="data-section">
+                <h3>Workout Types and Metabolic Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Type</th>
+                        <th>Primary Focus</th>
+                        <th>Caloric Burn</th>
+                        <th>EPOC Effect</th>
+                        <th>Recovery Demand</th>
+                    </tr>
+                    <tr>
+                        <td>Bodybuilding</td>
+                        <td>Muscle growth and aesthetics</td>
+                        <td>600-800 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>High protein needs (1g/lb)</td>
+                    </tr>
+                    <tr>
+                        <td>Strength Training</td>
+                        <td>Maximal strength</td>
+                        <td>400-600 cal/session</td>
+                        <td>24-48 hours</td>
+                        <td>High CNS recovery needs</td>
+                    </tr>
+                    <tr>
+                        <td>Powerlifting</td>
+                        <td>Specific lift performance</td>
+                        <td>500-700 cal/session</td>
+                        <td>36-48 hours</td>
+                        <td>Very high CNS demands</td>
+                    </tr>
+                    <tr>
+                        <td>Olympic Weightlifting</td>
+                        <td>Power and technique</td>
+                        <td>600-800 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>Technical recovery focus</td>
+                    </tr>
+                    <tr>
+                        <td>CrossFit</td>
+                        <td>Overall fitness</td>
+                        <td>800-1000 cal/session</td>
+                        <td>36-48 hours</td>
+                        <td>High systemic demands</td>
+                    </tr>
+                    <tr>
+                        <td>Calisthenics</td>
+                        <td>Bodyweight control</td>
+                        <td>400-600 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>Joint/tendon focus</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Resistance Training Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Status</th>
+                        <th>Muscle Preservation</th>
+                        <th>Metabolic Impact</th>
+                    </tr>
+                    <tr>
+                        <td>With RT</td>
+                        <td>90-100%</td>
+                        <td>+100-300 cal/day</td>
+                    </tr>
+                    <tr>
+                        <td>Without RT</td>
+                        <td>60-80%</td>
+                        <td>No additional benefit</td>
+                    </tr>
+                </tbody></table>
+                <p><strong>Impact on Calculations:</strong> Resistance training increases your daily caloric needs by 100-300 calories through increased muscle mass and EPOC (Excess Post-exercise Oxygen Consumption).</p>
+            </div>
+
+            <div class="data-section">
+                <h3>Athlete Status Effects</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Status</th>
+                        <th>Metabolic Rate</th>
+                        <th>Nutrient Partitioning</th>
+                    </tr>
+                    <tr>
+                        <td>Athlete</td>
+                        <td>+10-15% higher</td>
+                        <td>Enhanced efficiency</td>
+                    </tr>
+                    <tr>
+                        <td>Non-Athlete</td>
+                        <td>Standard</td>
+                        <td>Normal efficiency</td>
+                    </tr>
+                </tbody></table>
+                <p><strong>Impact on Calculations:</strong> Athletic status can increase your TDEE by 10-15% due to enhanced metabolic efficiency and muscle mass.</p>
+            </div>
+
+            <div class="data-section">
+                <h3>Volume Score Components</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>Sets per Muscle</th>
+                        <th>Weekly Volume</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>1-5 sets</td>
+                        <td>Low stimulus</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>6-10 sets</td>
+                        <td>Maintenance</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>10-15 sets</td>
+                        <td>Growth stimulus</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>15-20 sets</td>
+                        <td>Optimal growth</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>20+ sets</td>
+                        <td>Maximum stimulus</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Intensity Score Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>% of 1RM</th>
+                        <th>Rep Range</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>30-50%</td>
+                        <td>15+ reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>50-65%</td>
+                        <td>12-15 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>65-75%</td>
+                        <td>8-12 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>75-85%</td>
+                        <td>5-8 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>85%+</td>
+                        <td>1-5 reps</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Frequency Score Effects</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>Sessions/Week</th>
+                        <th>Recovery Time</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>1x/week</td>
+                        <td>7 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>2x/week</td>
+                        <td>3-4 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>3x/week</td>
+                        <td>2-3 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>4x/week</td>
+                        <td>1-2 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>5+x/week</td>
+                        <td>&lt;1 day</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Calculation Formulas and Methodology</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Component</th>
+                        <th>Formula</th>
+                        <th>Variables</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td>RMR (Male)</td>
+                        <td>(10 × weight kg) + (6.25 × height cm) - (5 × age) + 5</td>
+                        <td>Weight, Height, Age</td>
+                        <td>70kg man: 1,745 cal</td>
+                    </tr>
+                    <tr>
+                        <td>RMR (Female)</td>
+                        <td>(10 × weight kg) + (6.25 × height cm) - (5 × age) - 161</td>
+                        <td>Weight, Height, Age</td>
+                        <td>60kg woman: 1,374 cal</td>
+                    </tr>
+                    <tr>
+                        <td>TDEE</td>
+                        <td>RMR × Activity Multiplier + Exercise Calories</td>
+                        <td>RMR, Activity Level</td>
+                        <td>1,745 × 1.55 = 2,705 cal</td>
+                    </tr>
+                    <tr>
+                        <td>Caloric Deficit</td>
+                        <td>TDEE - Daily Intake</td>
+                        <td>TDEE, Target Loss</td>
+                        <td>2,705 - 2,205 = 500 cal</td>
+                    </tr>
+                    <tr>
+                        <td>Weekly Fat Loss</td>
+                        <td>(Weekly Deficit) ÷ 3,500</td>
+                        <td>Daily Deficit × 7</td>
+                        <td>(500 × 7) ÷ 3,500 = 1 lb</td>
+                    </tr>
+                    <tr>
+                        <td>Muscle Gain</td>
+                        <td>(Body Weight × Experience Factor)</td>
+                        <td>Weight, Training Level</td>
+                        <td>70kg × 0.01 = 0.7kg/month</td>
+                    </tr>
+                </tbody></table>
+            </div>
+        </div>
+    </section>
+
+
+</body></html>

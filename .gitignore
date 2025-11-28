@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,6 +16,7 @@
 
 # next.js
 /.next/
+.next.backup/
 /out/
 
 # production
@@ -44,10 +46,12 @@ next-env.d.ts
 logs
 *.log
 dev-debug.log
-# Dependency directories
-node_modules/
+
 # Environment variables
 .env
+.env.local
+.env.*.local
+
 # Editor directories and files
 .idea
 .vscode
@@ -56,7 +60,10 @@ node_modules/
 *.njsproj
 *.sln
 *.sw?
+
 # OS specific
+.DS_Store
+Thumbs.db
 
 # Docker volume mount directories
 nas-data/
@@ -64,10 +71,66 @@ nas-uploads/
 nas-exports/
 !nas-data/.gitkeep
 !nas-uploads/.gitkeep
-!nas-exports/.gitkeep 
+!nas-exports/.gitkeep
+
+# Python virtual environments
+venv/
+.venv/
+python-api/.venv
+python-api/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# AI/Tool Configuration (local only)
+.claude/
+.claude.backup*/
+.codex/
+.cursor/
+.factory/
+.kilocode/
+.opencode/
+.serena/
+.specify/
+.specify.backup*/
+.taskmaster/
+
+# Backups (local only)
+.backups/
+backups/
+
+# Data and storage (local only - contains user data)
+data/
+storage/
+
+# Test outputs
+tests/test_output/
+playwright-report/
+test-results/
+
+# Hooks (development only)
+hooks/
+
+# MCP configuration (contains API keys)
+.mcp.json
+.mcp-additions.json
+.mcp.*.json
+
+# Screenshots and temporary files
+screenshots*/
+*.tmp
+*.temp
 
 # Task files
-# tasks.json
-# tasks/ 
-python-api/.venv
-.claude/agents
+tasks.json
+tasks/
+nul
+
+# Files with API keys/secrets (local only)
+CLAUDE_CODE_MCP_COMMANDS.md
+CLAUDE_CODE_MCP_SETUP.md
+setup-*-mcp-servers*.sh
+setup-mcp-servers.sh
+ai-settings.json
+claude-code-mcp-servers.json

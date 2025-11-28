@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Prompts Config</title>
+</head>
+<body>
+    <h1>AI Prompts Configuration Test</h1>
+    <button onclick="clearCache()">Clear Prompts Cache</button>
+    <button onclick="showConfig()">Show Current Config</button>
+    <pre id="output"></pre>
+    
+    <script>
+        function clearCache() {
+            localStorage.removeItem('ai-prompts-config');
+            document.getElementById('output').textContent = 'Cache cleared! Refresh the AI Settings page.';
+        }
+        
+        function showConfig() {
+            const config = localStorage.getItem('ai-prompts-config');
+            document.getElementById('output').textContent = config || 'No saved configuration';
+        }
+        
+        // Show config on load
+        showConfig();
+    </script>
+</body>
+</html>

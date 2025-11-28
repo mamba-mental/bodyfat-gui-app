@@ -1,0 +1,224 @@
+openapi: 3.1.0
+info:
+  title: Report Verification API
+  description: API for verifying PRIME report calculations and visual presentation against terminal reference
+  version: 1.3.1
+  contact:
+    name: ApexFit AI Development Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: http://python-api:8000
+    description: Python FastAPI microservice
+
+paths:
+  /api/reports/verify:
+    post:
+      summary: Verify report calculations match terminal reference
+      description: |
+        Compares generated report against terminal version reference PDF to ensure:
+        1. PRIME calculations produce 100% numerically identical values (FR-003, FR-027 criterion #1)
+        2. Visual presentation (formatting, layout, styling) aligns with terminal aesthetic (FR-003)
+
+        This endpoint implements Constitution Article V: Report System Integrity requirement
+        that report output MUST match terminal version exactly.
+      operationId: verifyReportMatch
+      tags:
+        - Report Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationRequest'
+            examples:
+              terminal_reference:
+                summary: Verify against terminal reference PDF
+                value:
+                  report_id: "550e8400-e29b-41d4-a716-446655440000"
+                  terminal_reference_path: "Z:/2024.0917 - Bf-estimator-v2/122924_bf-estimator-terminal/results/Master_Journey_Prime_Prime_20250916_164621.pdf"
+      responses:
+        '200':
+          description: Verification complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResponse'
+              examples:
+                match_success:
+                  summary: Report matches terminal reference
+                  value:
+                    calculation_match: true
+                    visual_match: true
+                    discrepancies: []
+                    terminal_match_verified: true
+                    calculation_details:
+                      prime_version: "PRIME_Report_Generator_v3_Fast"
+                      calculation_count: 127
+                      matched_calculations: 127
+                    visual_details:
+                      layout_match: true
+                      formatting_match: true
+                      style_match: true
+                calculation_mismatch:
+                  summary: Calculation discrepancy detected
+                  value:
+                    calculation_match: false
+                    visual_match: true
+                    discrepancies:
+                      - field: "body_fat_percentage"
+                        expected: 18.5
+                        actual: 18.6
+                        delta: 0.1
+                    terminal_match_verified: false
+        '400':
+          description: Invalid request (missing report_id or terminal_reference_path)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Report not found or terminal reference file not accessible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Verification failed due to internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    VerificationRequest:
+      type: object
+      required:
+        - report_id
+        - terminal_reference_path
+      properties:
+        report_id:
+          type: string
+          format: uuid
+          description: UUID of the report to verify
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        terminal_reference_path:
+          type: string
+          description: File path to terminal reference PDF for comparison
+          example: "Z:/2024.0917 - Bf-estimator-v2/122924_bf-estimator-terminal/results/Master_Journey_Prime_Prime_20250916_164621.pdf"
+        verification_options:
+          type: object
+          description: Optional verification configuration
+          properties:
+            tolerance:
+              type: number
+              description: Numerical tolerance for floating-point comparison (default 0.0001)
+              example: 0.0001
+            visual_strict_mode:
+              type: boolean
+              description: If true, require exact pixel-perfect match (default false)
+              default: false
+
+    VerificationResponse:
+      type: object
+      required:
+        - calculation_match
+        - visual_match
+        - discrepancies
+        - terminal_match_verified
+      properties:
+        calculation_match:
+          type: boolean
+          description: True if all PRIME calculations match terminal reference numerically
+        visual_match:
+          type: boolean
+          description: True if visual presentation aligns with terminal reference aesthetic
+        discrepancies:
+          type: array
+          description: Array of any calculation or visual mismatches found
+          items:
+            $ref: '#/components/schemas/Discrepancy'
+        terminal_match_verified:
+          type: boolean
+          description: Overall verification status (true only if both calculation and visual match)
+        calculation_details:
+          $ref: '#/components/schemas/CalculationDetails'
+        visual_details:
+          $ref: '#/components/schemas/VisualDetails'
+
+    Discrepancy:
+      type: object
+      required:
+        - field
+        - expected
+        - actual
+      properties:
+        field:
+          type: string
+          description: Name of the field with mismatch
+          example: "body_fat_percentage"
+        expected:
+          oneOf:
+            - type: number
+            - type: string
+          description: Expected value from terminal reference
+        actual:
+          oneOf:
+            - type: number
+            - type: string
+          description: Actual value from generated report
+        delta:
+          type: number
+          description: Numerical difference (for numeric fields)
+          example: 0.1
+        discrepancy_type:
+          type: string
+          enum: [calculation, visual, formatting]
+          description: Type of discrepancy detected
+
+    CalculationDetails:
+      type: object
+      properties:
+        prime_version:
+          type: string
+          description: PRIME module version used for calculation
+          example: "PRIME_Report_Generator_v3_Fast"
+        calculation_count:
+          type: integer
+          description: Total number of calculations verified
+          example: 127
+        matched_calculations:
+          type: integer
+          description: Number of calculations matching terminal reference
+          example: 127
+
+    VisualDetails:
+      type: object
+      properties:
+        layout_match:
+          type: boolean
+          description: True if layout structure matches terminal reference
+        formatting_match:
+          type: boolean
+          description: True if text formatting (fonts, sizes) matches
+        style_match:
+          type: boolean
+          description: True if visual styling (colors, spacing) aligns with terminal aesthetic
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context

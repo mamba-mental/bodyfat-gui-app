@@ -12,6 +12,8 @@ import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { Report, WeeklyProgression } from "@/types"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
+import { formatDate } from "@/lib/date-utils"
+// @ts-ignore
 import TurndownService from 'turndown'
 
 interface ReportViewPageProps {
@@ -101,12 +103,21 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
         emDelimiter: '*',
         bulletListMarker: '-'
       })
-      
+
       // Add custom rule for tables to preserve formatting
       turndownService.addRule('tables', {
         filter: 'table',
-        replacement: function(content) {
+        replacement: function (content: string) {
           return '\n\n' + content + '\n\n'
+        }
+      })
+
+      // Remove images to avoid huge base64 strings
+      turndownService.addRule('images', {
+        filter: 'img',
+        replacement: function (content: string, node: any) {
+          const alt = (node as HTMLElement).getAttribute('alt') || 'Chart'
+          return `\n\n*[Image: ${alt} - View in HTML/PDF version]*\n\n`
         }
       })
 
@@ -376,7 +387,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
                 {calc.progression.map((week, index) => (
                   <TableRow key={index} className={index % 2 === 0 ? "bg-muted/50" : ""}>
                     <TableCell className="font-medium">{index + 1}</TableCell>
-                    <TableCell>{week.date}</TableCell>
+                    <TableCell>{formatDate(week.date)}</TableCell>
                     <TableCell className="text-right font-mono">
                       {week.weight.toFixed(1)} lbs
                     </TableCell>
@@ -396,8 +407,8 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
                       {week.fat_mass.toFixed(1)} lbs
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {index > 0 ? 
-                        `${(calc.progression[index - 1].weight - week.weight).toFixed(1)} lbs` : 
+                      {index > 0 ?
+                        `${(calc.progression[index - 1].weight - week.weight).toFixed(1)} lbs` :
                         '-'
                       }
                     </TableCell>
@@ -418,39 +429,39 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ? 
+              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ?
                 calc.progression.slice(0, 4).map((week, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Week {index + 1}</span>
-                    <Badge variant="outline">{week.date}</Badge>
+                  <div key={index} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Week {index + 1}</span>
+                      <Badge variant="outline">{formatDate(week.date)}</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">RMR:</span>
+                        <span className="font-mono">{Math.round(week.rmr)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">TEF:</span>
+                        <span className="font-mono">{Math.round(week.tef)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">NEAT:</span>
+                        <span className="font-mono">{Math.round(week.neat)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Deficit:</span>
+                        <span className="font-mono text-green-600">
+                          {Math.round(week.tdee - week.daily_calorie_intake)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">RMR:</span>
-                      <span className="font-mono">{Math.round(week.rmr)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">TEF:</span>
-                      <span className="font-mono">{Math.round(week.tef)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">NEAT:</span>
-                      <span className="font-mono">{Math.round(week.neat)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Deficit:</span>
-                      <span className="font-mono text-green-600">
-                        {Math.round(week.tdee - week.daily_calorie_intake)}
-                      </span>
-                    </div>
+                )) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    No metabolic data available
                   </div>
-                </div>
-              )) : (
-                <div className="text-center text-muted-foreground py-4">
-                  No metabolic data available
-                </div>
-              )}
+                )}
             </div>
           </CardContent>
         </Card>
@@ -462,37 +473,37 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ? 
+              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ?
                 calc.progression.slice(0, 6).map((week, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <div className="text-sm">
+                        <div className="font-medium">{formatDate(week.date)}</div>
+                        <div className="text-muted-foreground">
+                          {week.weight.toFixed(1)} lbs • {week.body_fat_percentage.toFixed(1)}%
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm">
-                      <div className="font-medium">{week.date}</div>
+                    <div className="text-right text-sm">
+                      <div className="font-medium text-green-600">
+                        +{week.muscle_gain.toFixed(2)} lbs muscle
+                      </div>
                       <div className="text-muted-foreground">
-                        {week.weight.toFixed(1)} lbs • {week.body_fat_percentage.toFixed(1)}%
+                        {index > 0 ?
+                          `${(calc.progression[index - 1].fat_mass - week.fat_mass).toFixed(1)} lbs fat lost` :
+                          'Baseline'
+                        }
                       </div>
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    <div className="font-medium text-green-600">
-                      +{week.muscle_gain.toFixed(2)} lbs muscle
-                    </div>
-                    <div className="text-muted-foreground">
-                      {index > 0 ? 
-                        `${(calc.progression[index - 1].fat_mass - week.fat_mass).toFixed(1)} lbs fat lost` : 
-                        'Baseline'
-                      }
-                    </div>
+                )) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    No body composition data available
                   </div>
-                </div>
-              )) : (
-                <div className="text-center text-muted-foreground py-4">
-                  No body composition data available
-                </div>
-              )}
+                )}
             </div>
           </CardContent>
         </Card>

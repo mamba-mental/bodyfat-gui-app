@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import ClientWrapper from "@/components/ui/client-wrapper"
-import { ChangelogDialog } from "@/components/changelog"
 import { ProfileHeader } from "@/components/profile/profile-header"
 
 import { cn } from "@/lib/utils"
@@ -91,6 +90,11 @@ const toolItems = [
     url: "/settings",
     icon: Settings,
   },
+  {
+    title: "Changelog",
+    url: "/changelog",
+    icon: History,
+  },
 ]
 
 const aiItems = [
@@ -129,18 +133,18 @@ function AppSidebar() {
                 // Check if this is the setup item and user has data
                 const isSetupComplete = item.conditional === "setup" && typeof window !== "undefined" && localStorage.getItem('userData')
                 const isDisabled = item.conditional === "setup" && isSetupComplete
-                
+
                 return (
                   <SidebarMenuItem key={item.title} role="menuitem">
-                    <SidebarMenuButton 
-                      asChild={!isDisabled} 
+                    <SidebarMenuButton
+                      asChild={!isDisabled}
                       isActive={pathname === item.url}
                       className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                       aria-current={pathname === item.url ? "page" : undefined}
                       aria-disabled={isDisabled ? "true" : undefined}
                     >
                       {isDisabled ? (
-                        <div 
+                        <div
                           className="flex items-center gap-2"
                           aria-label={`${item.title} - Already completed`}
                         >
@@ -149,7 +153,7 @@ function AppSidebar() {
                           <span className="ml-auto text-xs text-muted-foreground" aria-label="Completed">✓</span>
                         </div>
                       ) : (
-                        <Link 
+                        <Link
                           href={item.url}
                           aria-label={`Navigate to ${item.title}`}
                         >
@@ -171,12 +175,12 @@ function AppSidebar() {
             <SidebarMenu role="menu" aria-labelledby="tools-section">
               {toolItems.map((item) => (
                 <SidebarMenuItem key={item.title} role="menuitem">
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname === item.url}
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
-                    <Link 
+                    <Link
                       href={item.url}
                       aria-label={`Access ${item.title}`}
                     >
@@ -186,9 +190,6 @@ function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuItem role="menuitem">
-                <ChangelogDialog />
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -199,12 +200,12 @@ function AppSidebar() {
             <SidebarMenu role="menu" aria-labelledby="ai-features-section">
               {aiItems.map((item) => (
                 <SidebarMenuItem key={item.title} role="menuitem">
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname === item.url}
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
-                    <Link 
+                    <Link
                       href={item.url}
                       aria-label={`Access ${item.title}`}
                     >
@@ -231,19 +232,19 @@ export function MainLayout({ children }: MainLayoutProps) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full" role="application" aria-label="ApexFit AI Fitness Tracker">
         {/* Screen reader announcements region */}
-        <div 
-          id="sr-announcements" 
-          aria-live="polite" 
+        <div
+          id="sr-announcements"
+          aria-live="polite"
           aria-atomic="false"
           className="sr-announcer"
         />
-        
+
         <aside role="complementary" aria-label="Application navigation">
-          <ClientWrapper 
+          <ClientWrapper
             fallback={
-              <div 
-                className="w-64 bg-background border-r" 
-                role="navigation" 
+              <div
+                className="w-64 bg-background border-r"
+                role="navigation"
                 aria-label="Loading navigation"
               >
                 <div className="p-4">
@@ -263,21 +264,21 @@ export function MainLayout({ children }: MainLayoutProps) {
             <AppSidebar />
           </ClientWrapper>
         </aside>
-        
+
         <div className="flex-1 flex flex-col">
-          <header 
+          <header
             className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
             role="banner"
           >
             <div className="container flex h-14 items-center">
-              <SidebarTrigger 
+              <SidebarTrigger
                 aria-label="Toggle navigation menu"
                 aria-expanded="false"
                 aria-controls="sidebar-content"
               />
               <nav className="ml-auto flex items-center space-x-4" aria-label="Secondary navigation">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   aria-label="Export your fitness data to external file"
                 >
@@ -286,10 +287,10 @@ export function MainLayout({ children }: MainLayoutProps) {
               </nav>
             </div>
           </header>
-          
-          <main 
-            className="flex-1" 
-            role="main" 
+
+          <main
+            className="flex-1"
+            role="main"
             id="main-content"
             aria-label="Main application content"
             tabIndex={-1}
@@ -297,8 +298,8 @@ export function MainLayout({ children }: MainLayoutProps) {
             <section role="complementary" aria-label="User profile information">
               <ProfileHeader className="border-b" compact={true} />
             </section>
-            
-            <section 
+
+            <section
               className="space-y-4 p-4 md:p-8 pt-6"
               role="main"
               aria-label="Primary content area"

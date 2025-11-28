@@ -1,0 +1,292 @@
+openapi: 3.0.3
+info:
+  title: Entry Management API
+  version: 1.3.1
+  description: |
+    API contract for entry CRUD operations supporting FR-005, FR-006, FR-012, FR-013.
+    
+    Constitutional Requirements:
+    - Article II: All historical entries MUST be preserved
+    - No data loss across application sessions and updates
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server (Next.js)
+
+paths:
+  /entries:
+    get:
+      summary: Retrieve all user entries with pagination
+      description: |
+        Fetches all-time entry history for authenticated user.
+        
+        Functional Requirements Addressed:
+        - FR-005: Restore and display all-time entry history
+        - FR-006: Entry data persists across sessions
+        
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: ["recordedAt", "weight", "bodyFatPercentage"]
+            default: "recordedAt"
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: ["asc", "desc"]
+            default: "desc"
+      
+      responses:
+        '200':
+          description: Entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryListResponse'
+              example:
+                entries:
+                  - entryId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    recordedAt: "2025-07-21T10:30:00Z"
+                    weight: 82.5
+                    bodyFatPercentage: 18.2
+                    height: 178
+                    age: 35
+                    gender: "male"
+                    activityLevel: "moderate"
+                total: 12
+                hasMore: false
+                
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /entries/latest:
+    get:
+      summary: Retrieve user's most recent entry
+      description: |
+        Fetches latest entry for report form auto-populate.
+        
+        Functional Requirements Addressed:
+        - FR-012: Auto-populate with most recent entry data
+        - FR-013: Query database for latest entry values
+        
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      
+      responses:
+        '200':
+          description: Latest entry retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '404':
+          description: No entries found for user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /entries/{entryId}:
+    get:
+      summary: Retrieve specific entry by ID
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Entry retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '404':
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update existing entry
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryUpdate'
+      responses:
+        '200':
+          description: Entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '400':
+          description: Invalid update data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Entry:
+      type: object
+      required:
+        - entryId
+        - userId
+        - recordedAt
+        - weight
+        - bodyFatPercentage
+        - height
+        - age
+        - gender
+        - activityLevel
+      properties:
+        entryId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        recordedAt:
+          type: string
+          format: date-time
+        weight:
+          type: number
+          format: float
+          minimum: 0.1
+          description: Weight in kg or lbs
+        bodyFatPercentage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        waistCircumference:
+          type: number
+          format: float
+          minimum: 0
+          nullable: true
+          description: Waist circumference in cm or inches
+        height:
+          type: number
+          format: float
+          minimum: 0.1
+          description: Height in cm or inches
+        age:
+          type: integer
+          minimum: 1
+          maximum: 150
+        gender:
+          type: string
+          enum: ["male", "female", "other"]
+        activityLevel:
+          type: string
+          enum: ["sedentary", "light", "moderate", "active", "very_active"]
+        notes:
+          type: string
+          nullable: true
+          maxLength: 1000
+    
+    EntryUpdate:
+      type: object
+      properties:
+        weight:
+          type: number
+          format: float
+          minimum: 0.1
+        bodyFatPercentage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        waistCircumference:
+          type: number
+          format: float
+          minimum: 0
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+          maxLength: 1000
+    
+    EntryListResponse:
+      type: object
+      required:
+        - entries
+        - total
+        - hasMore
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+        total:
+          type: integer
+          description: Total number of entries matching query
+        hasMore:
+          type: boolean
+          description: Whether more entries exist beyond current page
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+

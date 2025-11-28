@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dbSaveUser, dbGetUser } from '@/lib/server-storage';
+import { saveUserData, getUserData } from '@/lib/redis';
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout';
 import { UserData } from '@/types';
 import { mergeUserProfiles } from '@/lib/data-reconciliation';
@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8000';
+const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
 const PYTHON_TIMEOUT_MS = 8000;
 const USER_ID = 1;
 
@@ -33,7 +33,7 @@ export async function OPTIONS() {
 export async function GET() {
   let pythonError: string | null = null;
   let pythonUser: UserData | null = null;
-  const localUser = await dbGetUser(USER_ID);
+  const localUser = await getUserData(String(USER_ID));
 
   // Try Python API first so we keep both stores in sync when available
   try {
@@ -64,11 +64,12 @@ export async function GET() {
   if (mergedUser) {
     if (pythonUser) {
       try {
-        await dbSaveUser(mergedUser, USER_ID);
+        await saveUserData(String(USER_ID), mergedUser);
       } catch (error) {
         console.warn('Failed to persist merged user locally:', error);
       }
     }
+
 
     const headers: Record<string, string> = { ...corsHeaders };
     if (pythonError) {
@@ -88,7 +89,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const userData = await request.json();
-    await dbSaveUser(userData as UserData, USER_ID);
+    await saveUserData(String(USER_ID), userData as UserData);
 
     let pythonError: string | null = null;
     try {

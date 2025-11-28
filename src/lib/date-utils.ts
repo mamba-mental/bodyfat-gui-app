@@ -76,3 +76,37 @@ export function formatAge(dob?: string, fallbackAge?: number): string {
   }
   return `${age} years`;
 }
+
+export function parseDateToLocal(dateStr: string): Date | null {
+  const normalized = normaliseDobString(dateStr);
+  if (!normalized) return null;
+
+  // Construct date as local time to avoid timezone shifts
+  // normalized string is always YYYY-MM-DD
+  const [year, month, day] = normalized.split('-').map(Number);
+  // Note: month is 0-indexed in Date constructor
+  return new Date(year, month - 1, day);
+}
+
+export function formatDate(dateStr: string | Date): string {
+  if (!dateStr) return '';
+
+  // If it's a Date object
+  if (dateStr instanceof Date) {
+    return dateStr.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Use the shared parsing logic
+  const date = parseDateToLocal(dateStr);
+  if (date) {
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Fallback: try parsing directly (though parseDateToLocal covers most cases)
+  const parsed = new Date(dateStr);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  return dateStr;
+}

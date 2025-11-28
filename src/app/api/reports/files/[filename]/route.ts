@@ -14,9 +14,10 @@ const CONTENT_TYPES: Record<string, string> = {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const filename = path.basename(params.filename)
+  const { filename: rawFilename } = await params
+  const filename = path.basename(rawFilename)
   const filePath = path.join(REPORTS_DIR, filename)
 
   try {

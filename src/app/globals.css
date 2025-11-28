@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Limit Tailwind content scanning to src directory only for faster compilation */
+@source "../**/*.{js,ts,jsx,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -45,100 +48,157 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.125 0 0); /* Enhanced contrast: was 0.145, now 0.125 for 4.5:1 ratio */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.125 0 0); /* Enhanced contrast */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.125 0 0); /* Enhanced contrast */
-  --primary: oklch(0.18 0 0); /* Enhanced contrast: was 0.205, now 0.18 */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.95 0 0); /* Enhanced contrast: was 0.97, now 0.95 */
-  --secondary-foreground: oklch(0.18 0 0); /* Enhanced contrast */
-  --muted: oklch(0.95 0 0); /* Enhanced contrast */
-  --muted-foreground: oklch(0.35 0 0); /* Enhanced contrast: was 0.45, now 0.35 for better readability */
-  --accent: oklch(0.95 0 0); /* Enhanced contrast */
-  --accent-foreground: oklch(0.18 0 0); /* Enhanced contrast */
-  --destructive: oklch(0.55 0.245 27.325); /* Slightly enhanced for better contrast */
-  --destructive-foreground: oklch(0.98 0 0); /* Added for better destructive text contrast */
-  --border: oklch(0.85 0 0); /* Enhanced contrast: was 0.922, now 0.85 */
-  --input: oklch(0.85 0 0); /* Enhanced contrast */
-  --ring: oklch(0.5 0 0); /* Enhanced contrast: was 0.708, now 0.5 for better focus visibility */
-  --chart-1: oklch(0.6 0.222 41.116); /* Enhanced contrast */
-  --chart-2: oklch(0.55 0.118 184.704); /* Enhanced contrast */
-  --chart-3: oklch(0.35 0.07 227.392); /* Enhanced contrast */
-  --chart-4: oklch(0.75 0.189 84.429); /* Enhanced contrast */
-  --chart-5: oklch(0.7 0.188 70.08); /* Enhanced contrast */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.125 0 0); /* Enhanced contrast */
-  --sidebar-primary: oklch(0.18 0 0); /* Enhanced contrast */
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0 0); /* Enhanced contrast */
-  --sidebar-accent-foreground: oklch(0.18 0 0); /* Enhanced contrast */
-  --sidebar-border: oklch(0.85 0 0); /* Enhanced contrast */
-  --sidebar-ring: oklch(0.5 0 0); /* Enhanced contrast */
-  
+  --background: 0 0% 100%;
+  --foreground: 0 0% 12.5%;
+  /* Enhanced contrast */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 12.5%;
+  /* Enhanced contrast */
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 12.5%;
+  /* Enhanced contrast */
+  --primary: 0 0% 18%;
+  /* Enhanced contrast */
+  --primary-foreground: 0 0% 98.5%;
+  --secondary: 0 0% 95%;
+  /* Enhanced contrast */
+  --secondary-foreground: 0 0% 18%;
+  /* Enhanced contrast */
+  --muted: 0 0% 95%;
+  /* Enhanced contrast */
+  --muted-foreground: 0 0% 35%;
+  /* Enhanced contrast */
+  --accent: 0 0% 95%;
+  /* Enhanced contrast */
+  --accent-foreground: 0 0% 18%;
+  /* Enhanced contrast */
+  --destructive: 10 80% 55%;
+  /* Slightly enhanced for better contrast */
+  --destructive-foreground: 0 0% 98%;
+  /* Added for better destructive text contrast */
+  --border: 0 0% 85%;
+  /* Enhanced contrast */
+  --input: 0 0% 85%;
+  /* Enhanced contrast */
+  --ring: 0 0% 50%;
+  /* Enhanced contrast */
+  --chart-1: 30 80% 55%;
+  /* Enhanced contrast */
+  --chart-2: 180 70% 50%;
+  /* Enhanced contrast */
+  --chart-3: 220 70% 50%;
+  /* Enhanced contrast */
+  --chart-4: 50 90% 60%;
+  /* Enhanced contrast */
+  --chart-5: 10 80% 55%;
+  /* Enhanced contrast */
+  --sidebar: 0 0% 98.5%;
+  --sidebar-foreground: 0 0% 12.5%;
+  /* Enhanced contrast */
+  --sidebar-primary: 0 0% 18%;
+  /* Enhanced contrast */
+  --sidebar-primary-foreground: 0 0% 98.5%;
+  --sidebar-accent: 0 0% 95%;
+  /* Enhanced contrast */
+  --sidebar-accent-foreground: 0 0% 18%;
+  /* Enhanced contrast */
+  --sidebar-border: 0 0% 85%;
+  /* Enhanced contrast */
+  --sidebar-ring: 0 0% 50%;
+  /* Enhanced contrast */
+
   /* New accessibility-focused color tokens */
-  --success: oklch(0.45 0.15 140); /* Green with proper contrast */
-  --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.55 0.18 45); /* Amber with proper contrast */
-  --warning-foreground: oklch(0.1 0 0);
-  --info: oklch(0.45 0.12 240); /* Blue with proper contrast */
-  --info-foreground: oklch(0.98 0 0);
+  --success: 140 60% 45%;
+  /* Green with proper contrast */
+  --success-foreground: 0 0% 98%;
+  --warning: 45 80% 55%;
+  /* Amber with proper contrast */
+  --warning-foreground: 0 0% 10%;
+  --info: 240 60% 45%;
+  /* Blue with proper contrast */
+  --info-foreground: 0 0% 98%;
 }
 
 .dark {
-  --background: oklch(0.125 0 0); /* Enhanced contrast: was 0.145, now 0.125 */
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0 0); /* Enhanced contrast: was 0.205, now 0.18 */
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0 0); /* Enhanced contrast */
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.85 0 0); /* Enhanced contrast: was 0.922, now 0.85 for better readability */
-  --primary-foreground: oklch(0.12 0 0); /* Enhanced contrast: was 0.205, now 0.12 */
-  --secondary: oklch(0.25 0 0); /* Enhanced contrast: was 0.269, now 0.25 */
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.25 0 0); /* Enhanced contrast */
-  --muted-foreground: oklch(0.65 0 0); /* Enhanced contrast: was 0.75, now 0.65 for better readability */
-  --accent: oklch(0.25 0 0); /* Enhanced contrast */
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.65 0.191 22.216); /* Enhanced contrast: was 0.704, now 0.65 */
-  --destructive-foreground: oklch(0.98 0 0); /* Added for consistency */
-  --border: oklch(1 0 0 / 20%); /* Enhanced contrast: was 10%, now 20% */
-  --input: oklch(1 0 0 / 25%); /* Enhanced contrast: was 15%, now 25% */
-  --ring: oklch(0.45 0 0); /* Enhanced contrast: was 0.556, now 0.45 for better focus visibility */
-  --chart-1: oklch(0.55 0.243 264.376); /* Enhanced contrast */
-  --chart-2: oklch(0.75 0.17 162.48); /* Enhanced contrast */
-  --chart-3: oklch(0.8 0.188 70.08); /* Enhanced contrast */
-  --chart-4: oklch(0.7 0.265 303.9); /* Enhanced contrast */
-  --chart-5: oklch(0.7 0.246 16.439); /* Enhanced contrast */
-  --sidebar: oklch(0.18 0 0); /* Enhanced contrast */
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.55 0.243 264.376); /* Enhanced contrast */
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0 0); /* Enhanced contrast */
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 20%); /* Enhanced contrast */
-  --sidebar-ring: oklch(0.45 0 0); /* Enhanced contrast */
-  
+  --background: 0 0% 12.5%;
+  /* Enhanced contrast */
+  --foreground: 0 0% 98.5%;
+  --card: 0 0% 18%;
+  /* Enhanced contrast */
+  --card-foreground: 0 0% 98.5%;
+  --popover: 0 0% 18%;
+  /* Enhanced contrast */
+  --popover-foreground: 0 0% 98.5%;
+  --primary: 0 0% 85%;
+  /* Enhanced contrast */
+  --primary-foreground: 0 0% 12%;
+  /* Enhanced contrast */
+  --secondary: 0 0% 25%;
+  /* Enhanced contrast */
+  --secondary-foreground: 0 0% 98.5%;
+  --muted: 0 0% 25%;
+  /* Enhanced contrast */
+  --muted-foreground: 0 0% 65%;
+  /* Enhanced contrast */
+  --accent: 0 0% 25%;
+  /* Enhanced contrast */
+  --accent-foreground: 0 0% 98.5%;
+  --destructive: 10 60% 65%;
+  /* Enhanced contrast */
+  --destructive-foreground: 0 0% 98%;
+  /* Added for consistency */
+  --border: 0 0% 100% / 0.2;
+  /* Enhanced contrast */
+  --input: 0 0% 100% / 0.25;
+  /* Enhanced contrast */
+  --ring: 0 0% 45%;
+  /* Enhanced contrast */
+  --chart-1: 260 60% 55%;
+  /* Enhanced contrast */
+  --chart-2: 160 60% 75%;
+  /* Enhanced contrast */
+  --chart-3: 70 60% 80%;
+  /* Enhanced contrast */
+  --chart-4: 300 60% 70%;
+  /* Enhanced contrast */
+  --chart-5: 16 60% 70%;
+  /* Enhanced contrast */
+  --sidebar: 0 0% 18%;
+  /* Enhanced contrast */
+  --sidebar-foreground: 0 0% 98.5%;
+  --sidebar-primary: 260 60% 55%;
+  /* Enhanced contrast */
+  --sidebar-primary-foreground: 0 0% 98.5%;
+  --sidebar-accent: 0 0% 25%;
+  /* Enhanced contrast */
+  --sidebar-accent-foreground: 0 0% 98.5%;
+  --sidebar-border: 0 0% 100% / 0.2;
+  /* Enhanced contrast */
+  --sidebar-ring: 0 0% 45%;
+  /* Enhanced contrast */
+
   /* Dark mode accessibility colors */
-  --success: oklch(0.6 0.15 140); /* Green with proper dark mode contrast */
-  --success-foreground: oklch(0.1 0 0);
-  --warning: oklch(0.7 0.18 45); /* Amber with proper dark mode contrast */
-  --warning-foreground: oklch(0.1 0 0);
-  --info: oklch(0.65 0.12 240); /* Blue with proper dark mode contrast */
-  --info-foreground: oklch(0.1 0 0);
+  --success: 140 50% 60%;
+  /* Green with proper dark mode contrast */
+  --success-foreground: 0 0% 10%;
+  --warning: 45 60% 70%;
+  /* Amber with proper dark mode contrast */
+  --warning-foreground: 0 0% 10%;
+  --info: 240 50% 65%;
+  /* Blue with proper dark mode contrast */
+  --info-foreground: 0 0% 10%;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  
+
   /* Screen reader only utility */
   .sr-only {
     position: absolute !important;
@@ -151,7 +211,7 @@
     white-space: nowrap !important;
     border: 0 !important;
   }
-  
+
   /* Focus visible improvements */
   .focus\:not-sr-only:focus {
     position: static !important;
@@ -163,9 +223,10 @@
     clip: auto !important;
     white-space: normal !important;
   }
-  
+
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -175,22 +236,23 @@
       scroll-behavior: auto !important;
     }
   }
-  
+
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     :root {
-      --border: oklch(0.5 0 0);
-      --ring: oklch(0.3 0 0);
+      --border: 0 0% 50%;
+      --ring: 0 0% 30%;
     }
-    
+
     .dark {
-      --border: oklch(0.7 0 0);
-      --ring: oklch(0.8 0 0);
+      --border: 0 0% 70%;
+      --ring: 0 0% 80%;
     }
   }
-  
+
   /* Better touch targets for mobile */
   @media (pointer: coarse) {
+
     [role="button"],
     button,
     input,
@@ -200,14 +262,14 @@
       min-width: 44px;
     }
   }
-  
+
   /* Enhanced focus management and accessibility */
   *:focus-visible {
     outline: 3px solid var(--ring);
     outline-offset: 2px;
     border-radius: 4px;
   }
-  
+
   /* Skip navigation link */
   .skip-nav {
     position: absolute;
@@ -222,11 +284,11 @@
     z-index: 9999;
     transition: top 0.3s ease;
   }
-  
+
   .skip-nav:focus {
     top: 6px;
   }
-  
+
   /* Aria-live regions for screen reader announcements */
   .sr-announcer {
     position: absolute !important;
@@ -239,14 +301,14 @@
     white-space: nowrap !important;
     border: 0 !important;
   }
-  
+
   /* Enhanced loading states for screen readers */
   .loading-indicator {
     display: inline-flex;
     align-items: center;
     gap: 8px;
   }
-  
+
   .loading-indicator::before {
     content: "";
     width: 16px;
@@ -256,20 +318,27 @@
     border-top-color: transparent;
     animation: spin 1s linear infinite;
   }
-  
+
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
-  
+
   @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
   }
-  
+
   .animate-shimmer {
     animation: shimmer 2s infinite;
   }
-  
+
   /* Error state improvements */
   .error-state {
     border: 2px solid var(--destructive);
@@ -278,12 +347,12 @@
     border-radius: 6px;
     padding: 12px;
   }
-  
+
   .error-state .error-icon {
     color: var(--destructive-foreground);
     margin-right: 8px;
   }
-  
+
   /* Success state improvements */
   .success-state {
     border: 2px solid var(--success);
@@ -292,7 +361,7 @@
     border-radius: 6px;
     padding: 12px;
   }
-  
+
   /* Warning state improvements */
   .warning-state {
     border: 2px solid var(--warning);
@@ -301,7 +370,7 @@
     border-radius: 6px;
     padding: 12px;
   }
-  
+
   /* Info state improvements */
   .info-state {
     border: 2px solid var(--info);
@@ -310,7 +379,7 @@
     border-radius: 6px;
     padding: 12px;
   }
-  
+
   /* Enhanced keyboard navigation for interactive elements */
   button:focus-visible,
   [role="button"]:focus-visible,
@@ -322,20 +391,20 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
-  
+
   /* Improved visible focus for complex components */
   [data-state="open"]:focus-visible,
   [data-state="active"]:focus-visible {
     outline: 3px solid var(--ring);
     outline-offset: 2px;
   }
-  
+
   /* Enhanced text selection for better accessibility */
   ::selection {
     background: var(--primary);
     color: var(--primary-foreground);
   }
-  
+
   ::-moz-selection {
     background: var(--primary);
     color: var(--primary-foreground);

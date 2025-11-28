@@ -1,0 +1,146 @@
+openapi: 3.1.0
+info:
+  title: Dashboard State API
+  description: API for verifying dashboard production state (no debugging messages)
+  version: 1.3.1
+  contact:
+    name: ApexFit AI Development Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/dashboard/state:
+    get:
+      summary: Get dashboard production state
+      description: |
+        Verifies dashboard is in production-ready state with:
+        1. No debugging messages visible to users (FR-007, FR-027 criterion #8)
+        2. Dashboard component enabled and functional (FR-008)
+        3. All features enabled for production use
+
+        This endpoint implements Constitution Article III: Frontend Stability requirement
+        for production-ready frontend deployment.
+      operationId: getDashboardState
+      tags:
+        - Dashboard State
+      responses:
+        '200':
+          description: Dashboard state retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStateResponse'
+              examples:
+                production_state:
+                  summary: Dashboard in production mode (correct)
+                  value:
+                    mode: "production"
+                    debugging_messages_present: false
+                    dashboard_enabled: true
+                    last_verified: "2025-10-05T18:30:00Z"
+                    features:
+                      all_enabled: true
+                      disabled_features: []
+                debug_state:
+                  summary: Dashboard in debug mode (incorrect - needs fixing)
+                  value:
+                    mode: "debug"
+                    debugging_messages_present: true
+                    dashboard_enabled: false
+                    last_verified: null
+                    features:
+                      all_enabled: false
+                      disabled_features: ["Dashboard"]
+                    debug_details:
+                      message_location: "src/app/page.tsx:8"
+                      message_text: "The dashboard is temporarily disabled for debugging"
+                      dashboard_commented_out: true
+                      dashboard_location: "src/app/page.tsx:11"
+        '500':
+          description: Error checking dashboard state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    DashboardStateResponse:
+      type: object
+      required:
+        - mode
+        - debugging_messages_present
+        - dashboard_enabled
+      properties:
+        mode:
+          type: string
+          enum: [production, debug]
+          description: Current dashboard mode (MUST be 'production' for deployment)
+        debugging_messages_present:
+          type: boolean
+          description: True if any debugging messages exist in rendered output (MUST be false for production)
+        dashboard_enabled:
+          type: boolean
+          description: True if Dashboard component is active (MUST be true for production)
+        last_verified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last production state verification
+        features:
+          $ref: '#/components/schemas/FeatureState'
+        debug_details:
+          $ref: '#/components/schemas/DebugDetails'
+          nullable: true
+          description: Present only if mode is 'debug' - details for debugging
+
+    FeatureState:
+      type: object
+      properties:
+        all_enabled:
+          type: boolean
+          description: True if all features are enabled for production
+        disabled_features:
+          type: array
+          items:
+            type: string
+          description: List of feature names that are currently disabled
+          example: []
+
+    DebugDetails:
+      type: object
+      description: Debug state details (only present when mode='debug')
+      properties:
+        message_location:
+          type: string
+          description: File path and line number of debugging message
+          example: "src/app/page.tsx:8"
+        message_text:
+          type: string
+          description: Content of the debugging message
+          example: "The dashboard is temporarily disabled for debugging"
+        dashboard_commented_out:
+          type: boolean
+          description: True if Dashboard component is commented out in code
+        dashboard_location:
+          type: string
+          description: File path and line number of commented Dashboard component
+          example: "src/app/page.tsx:11"
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context

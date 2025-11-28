@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
-const PYTHON_TIMEOUT_MS = 12000
+const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+const PYTHON_TIMEOUT_MS = 60000
 
 // CORS headers
 const corsHeaders = {
@@ -20,12 +20,12 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userData: UserData = await request.json()
-    
+
     // Calculate timeline weeks from dates
     const startDate = new Date(userData.start_date || Date.now())
     const endDate = new Date(userData.end_date || Date.now() + 16 * 7 * 24 * 60 * 60 * 1000)
     const timelineWeeks = Math.round((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    
+
     // Ensure all required fields are present for Python API
     const apiData = {
       ...userData,
@@ -52,11 +52,14 @@ export async function POST(request: NextRequest) {
       workout_type: userData.workout_type || "General Fitness",
       diet_type: userData.diet_type || "balanced",
       exercise_type: userData.exercise_type || "resistance",
-      sleep_quality: userData.sleep_quality || "good"
+      sleep_quality: userData.sleep_quality || "good",
+      eating_pattern: userData.eating_pattern || 'standard',
+      eating_window_hours: userData.eating_window_hours ?? 12,
     }
-    
+
+
     console.log('Sending to Python API:', JSON.stringify(apiData, null, 2))
-    
+
     // Call the Python PRIME calculation engine
     try {
       const response = await fetchWithTimeout(
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
       }
 
       const result: CalculationResult = await response.json()
-      
+
       return NextResponse.json({
         success: true,
         data: result,

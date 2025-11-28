@@ -24,6 +24,7 @@ import {
 import { CalculationError } from '@/lib/calculations'
 import { useMountedRef } from '@/hooks/use-mounted-ref'
 import { useAnnouncements } from '@/hooks/use-announcements'
+import { getEatingWindowHours } from '@/lib/eating-patterns'
 
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes to match backend SLA
 const REPORT_GENERATION_TIMEOUT_BUFFER_MS = REPORT_GENERATION_TIMEOUT_MS + 5000 // Allow small buffer for client coordination
@@ -42,12 +43,28 @@ interface AppContextType {
   clearAllData: () => void
   refreshWidgets: () => void
   subscribeToDataChanges: (callback: () => void) => () => void
+  createNewProgram: () => string | null // Creates a new program and returns the program ID
+  refreshKey: number // Exposed for widgets to track global refresh state
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined)
+export const AppContext = createContext<AppContextType | undefined>(undefined)
+
+const ensureEatingPattern = (userData: UserData | null): UserData | null => {
+  if (!userData) {
+    return userData
+  }
+  const eatingPattern = userData.eating_pattern || 'standard'
+  const eating_window_hours = userData.eating_window_hours ?? getEatingWindowHours(eatingPattern)
+  return {
+    ...userData,
+    eating_pattern: eatingPattern,
+    eating_window_hours,
+  }
+}
 
 const initialState: AppState = {
   current_user: null,
+  program_reference: null,
   entries: [],
   reports: [],
   current_calculation: null,
@@ -65,7 +82,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         current_user: action.payload,
         error: null,
       }
-    
+
     case 'SET_ENTRIES':
       return {
         ...state,
@@ -81,28 +98,28 @@ function appReducer(state: AppState, action: AppAction): AppState {
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
         error: null,
       }
-    
+
     case 'UPDATE_ENTRY':
       return {
         ...state,
         entries: state.entries.map(e => e.id === action.payload.id ? action.payload : e),
         error: null,
       }
-    
+
     case 'DELETE_ENTRY':
       return {
         ...state,
         entries: state.entries.filter(e => e.id !== action.payload),
         error: null,
       }
-    
+
     case 'SET_CALCULATION_RESULT':
       return {
         ...state,
         current_calculation: action.payload,
         error: null,
       }
-    
+
     case 'SET_REPORTS':
       return {
         ...state,
@@ -118,7 +135,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime()),
         error: null,
       }
-    
+
     case 'SET_REPORT_GENERATION_STATUS':
       return {
         ...state,
@@ -131,26 +148,37 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         loading: action.payload,
       }
-    
+
     case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
         loading: false,
       }
-    
+
     case 'DELETE_REPORT':
       return {
         ...state,
         reports: state.reports.filter(report => report.id !== action.payload)
       }
-    
+
     case 'CLEAR_ERROR':
       return {
         ...state,
         error: null,
       }
-    
+
+    case 'SET_PROGRAM_REFERENCE':
+      return {
+        ...state,
+        program_reference: action.payload,
+        // Also update current_user with the program reference
+        current_user: state.current_user
+          ? { ...state.current_user, program_reference: action.payload }
+          : null,
+        error: null,
+      }
+
     default:
       return state
   }
@@ -158,6 +186,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const [refreshKey, setRefreshKey] = React.useState(0)
   const refreshCallbacksRef = React.useRef<(() => void)[]>([])
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
   const refreshWidgets = React.useCallback(() => {
@@ -166,6 +195,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     refreshTimeoutRef.current = setTimeout(() => {
+      // Increment global refresh key for widgets that use it
+      setRefreshKey(prev => prev + 1)
       refreshCallbacksRef.current.forEach(callback => {
         try {
           callback()
@@ -190,17 +221,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Load initial data from storage
   useEffect(() => {
     let isMounted = true // Guard against updates after unmount
-    
+
     const loadData = async () => {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       try {
         // Try to migrate from localStorage first
         const migrated = await migrateFromLocalStorage()
         if (migrated) {
           console.log('Data migrated from localStorage to server')
         }
-        
+
         const [
           userResult,
           entriesResult,
@@ -220,7 +251,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         let didUpdate = false
 
         if (userResult.status === 'fulfilled' && userResult.value) {
-          dispatch({ type: 'SET_USER_DATA', payload: userResult.value })
+          dispatch({ type: 'SET_USER_DATA', payload: ensureEatingPattern(userResult.value)! })
           didUpdate = true
         } else if (userResult.status === 'rejected') {
           console.warn('Failed to load user profile:', userResult.reason)
@@ -270,15 +301,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-    
+
     loadData()
-    
+
     // Cleanup function
     return () => {
       isMounted = false
     }
   }, [])
-  
+
   // Cleanup refresh timeout on unmount
   React.useEffect(() => {
     return () => {
@@ -289,8 +320,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setUserData = (userData: UserData) => {
-    void saveUserData(userData)
-    dispatch({ type: 'SET_USER_DATA', payload: userData })
+    const normalized = ensureEatingPattern(userData)!
+    void saveUserData(normalized)
+    dispatch({ type: 'SET_USER_DATA', payload: normalized })
   }
 
   const addEntry = async (entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
@@ -304,6 +336,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...entryData,
       id: generateId(),
       user_id: state.current_user.name, // Use name as user_id for simplicity
+      program_id: state.current_user.current_program_id, // Link entry to current program
       created_at: now,
       updated_at: now,
     }
@@ -398,7 +431,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'CLEAR_ERROR' })
 
-      const result = await fetchCalculation(userToCalculate)
+      const normalizedUser = ensureEatingPattern(userToCalculate)!
+      const result = await fetchCalculation(normalizedUser)
 
       if (!mountedRef.current) return
       saveCalculationResult(result)
@@ -419,6 +453,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const generateNewReport = async (userData?: UserData) => {
     console.log('[AppContext] generateNewReport invoked')
+
+    // Early mounted check to prevent operations on unmounted components
+    if (!mountedRef.current) {
+      console.warn('[AppContext] Component unmounted, aborting report generation')
+      return
+    }
+
     const userToReport = userData || state.current_user
     if (!userToReport) {
       console.warn('[AppContext] No user data available, aborting report generation')
@@ -451,9 +492,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'CLEAR_ERROR' })
       console.log('[AppContext] Report generation started; latest entry date:', entryDateForStatus)
       announceInfo('Generating report. This may take up to 5 minutes.')
-      
+
       // Add a timeout for the entire report generation process
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error('Report generation timed out. Please ensure the Python API is running.')),
           REPORT_GENERATION_TIMEOUT_BUFFER_MS
@@ -479,6 +520,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           updatedUserData.current_bf = latestEntry.body_fat_percentage
         }
       }
+      updatedUserData = ensureEatingPattern(updatedUserData)!
       console.log('[AppContext] Using updated user data for report:', updatedUserData)
 
       // Always recalculate with the latest data for reports
@@ -494,6 +536,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         console.log('[AppContext] Calling fetchCalculation for report...')
         const result = await fetchCalculation(updatedUserData)
+
+        // Check mounted state after async operation
+        if (!mountedRef.current) {
+          console.warn('[AppContext] Component unmounted during calculation, aborting')
+          return
+        }
+
         console.log('[AppContext] Calculation received for report generation')
         saveCalculationResult(result)
         dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
@@ -565,11 +614,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         workout_days: updatedUserData.workout_days ?? 3,
         job_activity: updatedUserData.job_activity ?? 2,
         leisure_activity: updatedUserData.leisure_activity ?? 2,
-        experience_level: updatedUserData.experience_level || 'intermediate',
-        volume_score: updatedUserData.volume_score ?? 5,
-        intensity_score: updatedUserData.intensity_score ?? 5,
-        frequency_score: updatedUserData.frequency_score ?? 5,
-        is_bodybuilder: updatedUserData.is_bodybuilder ?? false,
         protein_intake: updatedUserData.protein_intake ?? Math.round(updatedUserData.current_weight * 0.8),
         diet_type: updatedUserData.diet_type || 'balanced',
         ped_use: updatedUserData.ped_use ?? false,
@@ -577,7 +621,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         sleep_quality: updatedUserData.sleep_quality || 'good',
         timeline_weeks: typeof updatedUserData.timeline_weeks === 'string' ? parseInt(updatedUserData.timeline_weeks) : updatedUserData.timeline_weeks || 16
       }
-      
+
       console.log('[AppContext] Requesting Python-generated report...')
       const generatedReportData = await Promise.race([
         fetchGeneratedReport(completeUserData),
@@ -589,6 +633,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         html_path?: string;
         file_base?: string;
       }
+
+      // Check mounted state after async report generation
+      if (!mountedRef.current) {
+        console.warn('[AppContext] Component unmounted during report generation, aborting')
+        return
+      }
+
       console.log('[AppContext] Report data received from Python service')
 
 
@@ -616,6 +667,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       report.html_path = generatedReportData.html_path
 
       const persistedReport = await saveReport(report)
+
+      // Check mounted state after async save operation
+      if (!mountedRef.current) {
+        console.warn('[AppContext] Component unmounted after save, skipping state update')
+        return
+      }
+
       console.log('[AppContext] Report saved successfully with id:', persistedReport.id)
       dispatch({ type: 'ADD_REPORT', payload: persistedReport })
       announceSuccess('Report generated successfully.')
@@ -658,6 +716,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.error('Error deleting report:', error)
     }
   }
+
+  /**
+   * Creates a new program with a fresh program reference snapshot.
+   * This resets the dashboard delta calculations by creating a new
+   * baseline from the current state.
+   * @returns The new program ID, or null if no user data exists
+   */
+  const createNewProgram = React.useCallback((): string | null => {
+    if (!state.current_user) {
+      console.warn('[AppContext] Cannot create new program: no user data')
+      return null
+    }
+
+    // Generate new program ID with timestamp
+    const programId = `program-${Date.now()}`
+    const now = new Date()
+
+    // Get current weight/bf from latest entry or user data
+    const latestEntry = state.entries[0]
+    const currentWeight = latestEntry?.weight ?? state.current_user.current_weight
+    const currentBF = latestEntry?.body_fat_percentage ?? state.current_user.current_bf
+
+    // Create program reference snapshot
+    const programReference = {
+      start_date: now.toISOString().split('T')[0],
+      initial_weight: currentWeight,
+      initial_bf: currentBF,
+    }
+
+    // Dispatch to update state
+    dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: programReference })
+
+    // Update user data with new program ID
+    const updatedUser = {
+      ...state.current_user,
+      current_program_id: programId,
+      program_reference: programReference,
+    }
+    void saveUserData(updatedUser)
+    dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
+
+    // Trigger refresh
+    refreshWidgets()
+
+    console.log('[AppContext] New program created:', programId, programReference)
+    return programId
+  }, [state.current_user, state.entries, refreshWidgets])
+
   const contextValue: AppContextType = {
     state,
     dispatch,
@@ -671,6 +777,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     clearAllData,
     refreshWidgets,
     subscribeToDataChanges,
+    createNewProgram,
+    refreshKey,
   }
 
   return (
@@ -691,7 +799,7 @@ export function useApp() {
 // Helper function to generate HTML report content
 function generateReportHTML(calculation: CalculationResult): string {
   const { progression, confidence_score, ai_analysis } = calculation
-  
+
   return `
     <div class="report-container">
       <h1>Body Fat Progress Report</h1>

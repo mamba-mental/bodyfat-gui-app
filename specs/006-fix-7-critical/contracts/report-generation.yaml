@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: PRIME Report Generation API
+  version: 1.3.1
+  description: |
+    API contract for PRIME report generation endpoints supporting FR-001 through FR-004.
+    
+    Constitutional Requirements:
+    - Article I: MUST use PRIME_Report_Generator_v3_Fast.py
+    - Article V: Output MUST match terminal reference numerically (0.0001 tolerance) and visually
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server (Next.js)
+  - url: http://localhost:5000/api
+    description: Python API microservice (FastAPI)
+
+paths:
+  /reports/generate:
+    post:
+      summary: Generate PRIME body composition report
+      description: |
+        Generates comprehensive PRIME report using PRIME_Report_Generator_v3_Fast.py.
+        
+        Functional Requirements Addressed:
+        - FR-001: Integrate PRIME modules from new_prime_python_code/
+        - FR-002: Use PRIME_Report_Generator_v3_Fast.py
+        - FR-003: Match terminal reference numerically and visually
+        - FR-004: Load templates from bodyfat-gui-app/templates/
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+            example:
+              userId: "550e8400-e29b-41d4-a716-446655440000"
+              entryIds: ["7c9e6679-7425-40de-944b-e07fc1f90ae7"]
+              templateVersion: "14-section-format"
+              outputFormat: "pdf"
+      
+      responses:
+        '200':
+          description: Report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+              example:
+                reportId: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                status: "completed"
+                pdfPath: "/results/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d.pdf"
+                htmlPath: "/results/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d.html"
+                generatedAt: "2025-10-07T12:30:00Z"
+                calculationEngine: "PRIME_Report_Generator_v3_Fast"
+                numericalAccuracy: 0.00001
+                
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+        '500':
+          description: Report generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reports/{reportId}:
+    get:
+      summary: Retrieve generated report
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report metadata retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '404':
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ReportRequest:
+      type: object
+      required:
+        - userId
+        - entryIds
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: User ID for report generation
+        entryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Entry IDs to include in report calculations
+          minItems: 1
+        templateVersion:
+          type: string
+          enum: ["14-section-format"]
+          default: "14-section-format"
+          description: Report template version (must match templates/ directory)
+        outputFormat:
+          type: string
+          enum: ["pdf", "html", "both"]
+          default: "pdf"
+          description: Desired output format(s)
+    
+    ReportResponse:
+      type: object
+      required:
+        - reportId
+        - status
+        - generatedAt
+        - calculationEngine
+      properties:
+        reportId:
+          type: string
+          format: uuid
+          description: Unique report identifier
+        status:
+          type: string
+          enum: ["requested", "generating", "completed", "failed"]
+          description: Report generation status
+        pdfPath:
+          type: string
+          nullable: true
+          description: File system path to PDF output
+        htmlPath:
+          type: string
+          nullable: true
+          description: File system path to HTML output
+        generatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of report generation completion
+        calculationEngine:
+          type: string
+          description: PRIME module used for calculations
+          example: "PRIME_Report_Generator_v3_Fast"
+        numericalAccuracy:
+          type: number
+          format: float
+          description: Maximum numerical deviation from reference (should be < 0.0001)
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error details if status is "failed"
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context
+          additionalProperties: true
+

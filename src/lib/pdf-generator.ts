@@ -36,7 +36,7 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
                   for (let k = 0; k < rule.style.length; k++) {
                     const prop = rule.style[k]
                     const value = rule.style.getPropertyValue(prop)
-                    if (value && value.includes('lab(')) {
+                    if (value && (value.includes('lab(') || value.includes('oklch('))) {
                       // Replace with a safe fallback color
                       rule.style.setProperty(prop, '#000000', 'important')
                     }
@@ -49,7 +49,7 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
             continue
           }
         }
-        
+
         // Also update inline styles
         const allElements = clonedDoc.querySelectorAll('*')
         allElements.forEach((el: Element) => {
@@ -57,7 +57,7 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
             for (let i = 0; i < el.style.length; i++) {
               const prop = el.style[i]
               const value = el.style.getPropertyValue(prop)
-              if (value && value.includes('lab(')) {
+              if (value && (value.includes('lab(') || value.includes('oklch('))) {
                 el.style.setProperty(prop, '#000000', 'important')
               }
             }
@@ -287,11 +287,11 @@ export async function generateStyledPDF(report: Report): Promise<void> {
   const userData = report.calculation_result.user_data
   pdf.setFillColor(...lightGray)
   pdf.roundedRect(margin, y, contentWidth, 30, 3, 3, 'F')
-  
+
   pdf.setFontSize(14)
   pdf.setFont('helvetica', 'bold')
   pdf.text(`${userData.name}`, margin + 5, y + 10)
-  
+
   pdf.setFontSize(10)
   pdf.setFont('helvetica', 'normal')
   pdf.text(`${userData.age} years | ${userData.height_feet}'${userData.height_inches}" | ${userData.gender === 'm' ? 'Male' : 'Female'}`, margin + 5, y + 20)
@@ -314,18 +314,18 @@ export async function generateStyledPDF(report: Report): Promise<void> {
     // Card background
     pdf.setFillColor(...lightGray)
     pdf.roundedRect(xPos, y, cardWidth, 25, 2, 2, 'F')
-    
+
     // Metric label
     pdf.setFontSize(8)
     pdf.setTextColor(100, 100, 100)
     pdf.text(metric.label, xPos + cardWidth / 2, y + 8, { align: 'center' })
-    
+
     // Metric value
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'bold')
     pdf.setTextColor(...metric.color)
     pdf.text(metric.value, xPos + cardWidth / 2, y + 18, { align: 'center' })
-    
+
     xPos += cardWidth + 5
   })
 

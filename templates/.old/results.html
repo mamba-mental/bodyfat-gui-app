@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weight Loss Journey Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='web_style.css') }}">
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h1>Weight Loss Journey Report</h1>
+        <div class="download-buttons">
+            <a href="{{ url_for('download_report', format='md') }}" class="button">Download as Markdown</a>
+            <a href="{{ url_for('download_report', format='pdf') }}" class="button">Download as PDF</a>
+        </div>
+        <!-- Basic Information -->
+        <section>
+            <h2>Basic Information</h2>
+            <table>
+                <tr>
+                    <td>Start Date:</td>
+                    <td>{{ report.start_date if report.start_date is string else report.start_date.strftime('%m/%d/%Y') }}</td>
+                    <td>End Date:</td>
+                    <td>{{ report.end_date if report.end_date is string else report.end_date.strftime('%m/%d/%Y') }}</td>
+                </tr>
+                <tr>
+                    <td>Age:</td>
+                    <td>{{ report.age }} years</td>
+                    <td>Gender:</td>
+                    <td>{{ report.gender }}</td>
+                </tr>
+                <tr>
+                    <td>Height:</td>
+                    <td>{{ report.height }}</td>
+                    <td>Initial Weight:</td>
+                    <td>{{ "%.1f"|format(report.initial_weight) }} lbs</td>
+                </tr>
+                <tr>
+                    <td>Goal Weight:</td>
+                    <td>{{ "%.1f"|format(report.goal_weight) }} lbs</td>
+                    <td>Initial Body Fat:</td>
+                    <td>{{ "%.1f"|format(report.initial_body_fat) }}%</td>
+                </tr>
+                <tr>
+                    <td>Goal Body Fat:</td>
+                    <td>{{ "%.1f"|format(report.goal_body_fat) }}%</td>
+                    <td>Activity Level:</td>
+                    <td>{{ report.activity_level }}</td>
+                </tr>
+                <tr>
+                    <td>Experience Level:</td>
+                    <td colspan="3">{{ report.experience_level }}</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Energy Expenditure -->
+        <section>
+            <h2>Energy Expenditure</h2>
+            <p>These calculations provide insight into your body's energy requirements and how they change over time.</p>
+            <table>
+                <tr>
+                    <td>Initial RMR:</td>
+                    <td>{{ "%.0f"|format(report.initial_rmr) }} cal/day</td>
+                    <td>Initial TDEE:</td>
+                    <td>{{ "%.0f"|format(report.initial_tdee) }} cal/day</td>
+                </tr>
+                <tr>
+                    <td>TEF:</td>
+                    <td>{{ "%.0f"|format(report.tef) }} cal/day</td>
+                    <td>NEAT:</td>
+                    <td>{{ "%.0f"|format(report.neat) }} cal/day</td>
+                </tr>
+                <tr>
+                    <td>Initial Daily Calorie Intake:</td>
+                    <td colspan="3">{{ "%.0f"|format(report.initial_daily_calorie_intake) }} cal/day</td>
+                </tr>
+            </table>
+            <p><strong>RMR:</strong> Resting Metabolic Rate - calories burned at rest</p>
+            <p><strong>TDEE:</strong> Total Daily Energy Expenditure - total calories burned per day</p>
+            <p><strong>TEF:</strong> Thermic Effect of Food - calories burned digesting food</p>
+            <p><strong>NEAT:</strong> Non-Exercise Activity Thermogenesis - calories burned through daily activities</p>
+        </section>
+
+        <!-- Workout Analysis -->
+        <section>
+            <h2>Workout Analysis</h2>
+            <p>This analysis provides insight into your workout routine and its effectiveness.</p>
+            <table>
+                <tr>
+                    <td>Type:</td>
+                    <td>{{ report.workout_type }}</td>
+                    <td>Frequency:</td>
+                    <td>{{ report.workout_frequency }} days/week</td>
+                </tr>
+                <tr>
+                    <td>Volume Score:</td>
+                    <td>{{ report.volume_score }} - {{ get_score_description(report.volume_score) }}</td>
+                    <td>Intensity Score:</td>
+                    <td>{{ report.intensity_score }} - {{ get_score_description(report.intensity_score) }}</td>
+                </tr>
+                <tr>
+                    <td>Frequency Score:</td>
+                    <td>{{ report.frequency_score }} - {{ get_score_description(report.frequency_score) }}</td>
+                    <td>Resistance Training:</td>
+                    <td>{{ report.resistance_training }}</td>
+                </tr>
+                <tr>
+                    <td>Athlete Status:</td>
+                    <td colspan="3">{{ report.athlete_status }}</td>
+                </tr>
+            </table>
+            <p><strong>Volume Score:</strong> Measures the total amount of work done in your workouts</p>
+            <p><strong>Intensity Score:</strong> Indicates how hard you're working during your workouts</p>
+            <p><strong>Frequency Score:</strong> Reflects how often you're training each muscle group</p>
+        </section>
+
+        <!-- Body Composition -->
+        <section>
+            <h2>Body Composition</h2>
+            <p>This section shows how your body composition changed throughout your journey.</p>
+            <table>
+                <tr>
+                    <td>Initial Lean Mass:</td>
+                    <td>{{ "%.1f"|format(report.initial_lean_mass) }} lbs</td>
+                    <td>Initial Fat Mass:</td>
+                    <td>{{ "%.1f"|format(report.initial_fat_mass) }} lbs</td>
+                </tr>
+                <tr>
+                    <td>Est. Weekly Muscle Gain:</td>
+                    <td colspan="3">{{ "%.2f"|format(report.weekly_muscle_gain) }} lbs</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Weekly Progression -->
+        <section>
+            <h2>Weekly Progression</h2>
+            <p>This chart and table show your projected weight loss and body composition changes week by week.</p>
+            <img src="data:image/png;base64,{{ report.weight_progress_chart }}" alt="Weight Progress Chart">
+            <table class="small-table">
+                <tr>
+                    <th>Date</th>
+                    <th>Weight (lbs)</th>
+                    <th>Body Fat %</th>
+                    <th>Daily Cal Intake</th>
+                    <th>TDEE</th>
+                    <th>Weekly Cal Output</th>
+                    <th>Total Weight Lost (lbs)</th>
+                    <th>Lean Mass (lbs)</th>
+                    <th>Fat Mass (lbs)</th>
+                    <th>Muscle Gain (lbs)</th>
+                    <th>RMR</th>
+                </tr>
+                {% for week in report.weekly_progress %}
+                <tr>
+                    <td>{{ week.date if week.date is string else week.date.strftime('%m/%d/%Y') }}</td>
+                    <td>{{ "%.1f"|format(week.weight) }}</td>
+                    <td>{{ "%.1f"|format(week.body_fat_percentage) }}</td>
+                    <td>{{ "%.0f"|format(week.daily_calorie_intake) }}</td>
+                    <td>{{ "%.0f"|format(week.tdee) }}</td>
+                    <td>{{ "%.0f"|format(week.weekly_caloric_output) }}</td>
+                    <td>{{ "%.1f"|format(week.total_weight_lost) }}</td>
+                    <td>{{ "%.1f"|format(week.lean_mass) }}</td>
+                    <td>{{ "%.1f"|format(week.fat_mass) }}</td>
+                    <td>{{ "%.1f"|format(week.muscle_gain) }}</td>
+                    <td>{{ "%.0f"|format(week.rmr) }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </section>
+
+        <!-- Body Fat Changes -->
+        <section>
+            <h2>Body Fat Changes</h2>
+            <p>This chart and table illustrate how your body fat percentage changed throughout your journey.</p>
+            <img src="data:image/png;base64,{{ report.body_composition_chart }}" alt="Body Composition Chart">
+            <table>
+                <tr>
+                    <th>Body Fat Category</th>
+                    <th>Body Fat %</th>
+                    <th>Date Reached</th>
+                    <th>Description</th>
+                    <th>Est. Time to Six-Pack</th>
+                </tr>
+                {% for change in report.body_composition_changes %}
+                <tr>
+                    <td>{{ change.category }}</td>
+                    <td>{{ "%.1f"|format(change.body_fat_percentage) }}%</td>
+                    <td>{{ change.date_reached if change.date_reached is string else change.date_reached.strftime('%m/%d/%Y') }}</td>
+                    <td>{{ change.description }}</td>
+                    <td>{{ change.time_to_six_pack }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </section>
+
+        <!-- Metabolic Adaptation -->
+        <section>
+            <h2>Metabolic Adaptation</h2>
+            <p>This shows how your metabolism adjusted throughout your weight loss journey.</p>
+            <table>
+                <tr>
+                    <td>Week 1 Metabolic Adaptation:</td>
+                    <td>{{ "%.2f"|format(report.week_1_adaptation) }}</td>
+                </tr>
+                <tr>
+                    <td>Final Week Metabolic Adaptation:</td>
+                    <td>{{ "%.2f"|format(report.final_week_adaptation) }}</td>
+                </tr>
+            </table>
+            <p>A value of 1.00 indicates no adaptation, while lower values indicate metabolic slowdown.</p>
+        </section>
+
+        <!-- Overall Progress -->
+        <section>
+            <h2>Overall Progress</h2>
+            <p>This summary shows your overall progress and achievements.</p>
+            <table>
+                <tr>
+                    <td>Duration:</td>
+                    <td>{{ report.total_weeks }} weeks</td>
+                    <td>Total Weight Loss:</td>
+                    <td>{{ "%.1f"|format(report.total_weight_loss) }} lbs</td>
+                </tr>
+                <tr>
+                    <td>Total Body Fat Reduction:</td>
+                    <td>{{ "%.1f"|format(report.total_bf_loss) }}%</td>
+                    <td>Final Weight:</td>
+                    <td>{{ "%.1f"|format(report.final_weight) }} lbs</td>
+                </tr>
+                <tr>
+                    <td>Final Body Fat:</td>
+                    <td>{{ "%.1f"|format(report.final_body_fat) }}%</td>
+                    <td>Average Weekly Weight Loss:</td>
+                    <td>{{ "%.1f"|format(report.avg_weekly_loss) }} lbs</td>
+                </tr>
+                <tr>
+                    <td>Total Muscle Gain:</td>
+                    <td>{{ "%.1f"|format(report.total_muscle_gain) }} lbs</td>
+                    <td>Final Daily Calorie Intake:</td>
+                    <td>{{ "%.0f"|format(report.final_daily_calorie_intake) }} calories</td>
+                </tr>
+                <tr>
+                    <td>Final TDEE:</td>
+                    <td>{{ "%.0f"|format(report.final_tdee) }} calories</td>
+                    <td>Final Weekly Caloric Output:</td>
+                    <td>{{ "%.0f"|format(report.final_weekly_caloric_output) }} calories</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Body Fat Category Changes -->
+        <section>
+            <h2>Body Fat Category Changes</h2>
+            <p>This shows how your body fat category changed from the beginning to the end of your journey.</p>
+            <table>
+                <tr>
+                    <th>Stage</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Est. Time to Six-Pack</th>
+                </tr>
+                <tr>
+                    <td>Initial</td>
+                    <td>{{ report.initial_body_fat_category }}</td>
+                    <td>{{ report.initial_body_fat_description }}</td>
+                    <td>{{ report.initial_time_to_six_pack }}</td>
+                </tr>
+                <tr>
+                    <td>Final</td>
+                    <td>{{ report.final_body_fat_category }}</td>
+                    <td>{{ report.final_body_fat_description }}</td>
+                    <td>{{ report.final_time_to_six_pack }}</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Recommendations -->
+        <section>
+            <h2>Recommendations</h2>
+            <p>This section is reserved for future personalized recommendations and long-term strategy planning.</p>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

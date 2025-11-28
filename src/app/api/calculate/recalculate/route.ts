@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
-const PYTHON_TIMEOUT_MS = 12000
+const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+const PYTHON_TIMEOUT_MS = 60000
 
 // CORS headers
 const corsHeaders = {
@@ -20,19 +20,22 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userData, newEntry } = await request.json()
-    
+
     console.log('Recalculate Request - User:', userData.name)
     console.log('New Entry:', newEntry)
-    
+
     // Update user data with new entry values
     const updatedUserData = {
       ...userData,
       current_weight: newEntry.weight,
-      current_bf: newEntry.body_fat_percentage || userData.current_bf
+      current_bf: newEntry.body_fat_percentage || userData.current_bf,
+      eating_pattern: userData.eating_pattern || 'standard',
+      eating_window_hours: userData.eating_window_hours ?? (userData.eating_pattern === 'intermittent_fasting' ? 8 : userData.eating_pattern === 'omad' ? 1 : 12),
     }
-    
+ 
     // Call the Python API to recalculate
     try {
+
       const response = await fetchWithTimeout(
         `${PYTHON_API_URL}/recalculate`,
         {
@@ -41,9 +44,10 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user_data: userData,
+            user_data: updatedUserData,
             entry: newEntry
           }),
+
         },
         PYTHON_TIMEOUT_MS,
       )
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
       }
 
       const result: CalculationResult = await response.json()
-      
+
       return NextResponse.json(result, { headers: corsHeaders })
     } catch (pythonApiError) {
       throw pythonApiError

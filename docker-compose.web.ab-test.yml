@@ -1,0 +1,45 @@
+version: "3.8"
+
+# Compose file for web-only rebuild with diagnostics + env-guards enabled
+# Requires ARG/ENV in Dockerfile.prod to forward NEXT_* flags before `npm run build`
+# See files: next.config.ts and src/app/layout.tsx for guards and diagnostics.
+
+services:
+  web:
+    container_name: bodyfat-web
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_DISABLE_OPTIMIZED_IMPORTS: "1"
+        NEXT_DISABLE_SPLIT_CHUNKS: "1"
+    environment:
+      NODE_ENV: "production"
+      PORT: "3000"
+      # Optional: visible at runtime for troubleshooting; build-time args above control the build behavior
+      NEXT_DISABLE_OPTIMIZED_IMPORTS: "1"
+      NEXT_DISABLE_SPLIT_CHUNKS: "1"
+      # App runtime envs (adjust as needed)
+      NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-http://backend:8000}"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # If you use Traefik/NGINX, uncomment and adjust labels/networks below.
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.bodyfat.rule=Host(`your.domain`)"
+    #   - "traefik.http.routers.bodyfat.entrypoints=websecure"
+    #   - "traefik.http.routers.bodyfat.tls=true"
+    #   - "traefik.http.services.bodyfat.loadbalancer.server.port=3000"
+    # networks:
+    #   - proxy
+
+# Optional: attach to existing external networks if used by your reverse proxy
+# networks:
+#   proxy:
+#     external: true

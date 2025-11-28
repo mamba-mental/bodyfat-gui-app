@@ -1,0 +1,190 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/
+e2e/
+tests/
+**/*.test.*
+**/*.spec.*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production build outputs
+*.next/
+.vercel/
+.turbo/
+
+# Environment variables
+.env*
+!.env.example
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+nextjs-server.log
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE*
+CHANGELOG*
+
+# Python (for multi-stage builds)
+python-api/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Database and data files
+*.db
+*.sqlite
+*.sqlite3
+data/
+database/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+cache/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Media files (if not needed)
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+
+# Backup files
+*.backup
+*.bak
+*.old
+*~
+
+# Claude/Task Master specific
+.claude/
+.taskmaster/
+.checkpoints/
+.mcp.json
+CLAUDE.md
+MCP_*
+*.mcp
+
+# Large generated files
+webpack-stats.json
+bundle-stats.json
+
+# Development scripts
+*.sh
+*.ps1
+*.bat
+scripts/
+bin/
+
+# Docker files (don't need docker files inside the container)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# NAS volumes (local bind mounts)
+nas-data/
+nas-uploads/
+nas-exports/
+
+# Windows specific
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Build artifacts
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Package manager files (except package.json)
+.npm/
+.yarn/
+.pnpm-store/
+
+# CI/CD
+.github/
+.gitlab/
+.circleci/
+.travis.yml
+azure-pipelines.yml
+
+# Storybook
+.storybook/
+storybook-static/
+
+# Config files not needed in container
+.prettierrc*
+.eslintrc*
+.stylelintrc*
+jest.config.*
+vitest.config.*
+playwright.config.*
+tailwind.config.*
+postcss.config.*
+tsconfig.json
+jsconfig.json
+next.config.js.bak
+
+# Analysis and reports
+.lighthouseci/
+.webpack/
+analyze/
+reports/

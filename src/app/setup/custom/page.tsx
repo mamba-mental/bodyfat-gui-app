@@ -23,12 +23,14 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useApp } from "@/contexts/app-context"
+import { getEatingPatternOptions, getEatingWindowHours } from "@/lib/eating-patterns"
+
 
 export default function CustomSetupPage() {
   const router = useRouter()
   const { setUserData, state } = useApp()
   const { current_user } = state
-  
+
   const normalizeDateInput = (value?: string | null) => {
     if (!value) return ""
     if (value.includes('-')) {
@@ -66,14 +68,14 @@ export default function CustomSetupPage() {
     height_feet: current_user?.height_feet?.toString() || "",
     height_inches: current_user?.height_inches?.toString() || "",
     height_cm: current_user?.height_cm?.toString() || "",
-    
+
     current_weight: current_user?.current_weight?.toString() || "",
     current_bf: current_user?.current_bf?.toString() || "",
-    
+
     goal_weight: current_user?.goal_weight?.toString() || "",
     goal_bf: current_user?.goal_bf?.toString() || "",
     timeline_weeks: current_user?.timeline_weeks || "16",
-    
+
     activity_level: current_user?.activity_level?.toString() || "1",
     resistance_training: current_user?.resistance_training || false,
     is_athlete: current_user?.is_athlete || false,
@@ -86,18 +88,22 @@ export default function CustomSetupPage() {
     intensity_score: current_user?.intensity_score?.toString() || "5",
     frequency_score: current_user?.frequency_score?.toString() || "3",
     is_bodybuilder: current_user?.is_bodybuilder || false,
-    
+
     protein_intake: current_user?.protein_intake?.toString() || "",
     diet_type: current_user?.diet_type || "balanced",
-    
+    eating_pattern: current_user?.eating_pattern || "standard",
+
+
     ped_use: current_user?.ped_use || false,
     exercise_type: current_user?.exercise_type || "resistance",
     sleep_quality: current_user?.sleep_quality || "good"
   })
 
   const [useMetric, setUseMetric] = useState(false)
-
+  const eatingPatternOptions = React.useMemo(() => getEatingPatternOptions(), [])
+ 
   // Update form data when current_user becomes available
+
   useEffect(() => {
     if (current_user) {
       setFormData({
@@ -108,14 +114,14 @@ export default function CustomSetupPage() {
         height_feet: current_user.height_feet?.toString() || "",
         height_inches: current_user.height_inches?.toString() || "",
         height_cm: current_user.height_cm?.toString() || "",
-        
+
         current_weight: current_user.current_weight?.toString() || "",
         current_bf: current_user.current_bf?.toString() || "",
-        
+
         goal_weight: current_user.goal_weight?.toString() || "",
         goal_bf: current_user.goal_bf?.toString() || "",
         timeline_weeks: current_user.timeline_weeks || "16",
-        
+
         activity_level: current_user.activity_level?.toString() || "1",
         resistance_training: current_user.resistance_training || false,
         is_athlete: current_user.is_athlete || false,
@@ -128,11 +134,13 @@ export default function CustomSetupPage() {
         intensity_score: current_user.intensity_score?.toString() || "5",
         frequency_score: current_user.frequency_score?.toString() || "3",
         is_bodybuilder: current_user.is_bodybuilder || false,
-        
+
         protein_intake: current_user.protein_intake?.toString() || "",
         diet_type: current_user.diet_type || "balanced",
-        
+        eating_pattern: current_user.eating_pattern || "standard",
+
         ped_use: current_user.ped_use || false,
+
         exercise_type: current_user.exercise_type || "resistance",
         sleep_quality: current_user.sleep_quality || "good"
       })
@@ -141,7 +149,7 @@ export default function CustomSetupPage() {
 
   const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    
+
     // Auto-calculate age from DOB
     if (field === 'dob') {
       const dob = new Date(value as string)
@@ -151,7 +159,7 @@ export default function CustomSetupPage() {
       const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) ? age - 1 : age
       setFormData(prev => ({ ...prev, age: finalAge.toString() }))
     }
-    
+
     // Auto-calculate height conversions
     if (field === 'height_feet' || field === 'height_inches') {
       const feet = parseFloat(field === 'height_feet' ? value as string : formData.height_feet) || 0
@@ -160,14 +168,14 @@ export default function CustomSetupPage() {
       const cm = totalInches * 2.54
       setFormData(prev => ({ ...prev, height_cm: cm.toFixed(2) }))
     }
-    
+
     if (field === 'height_cm') {
       const cm = parseFloat(value as string) || 0
       const totalInches = cm / 2.54
       const feet = Math.floor(totalInches / 12)
       const inches = totalInches % 12
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         height_feet: feet.toString(),
         height_inches: inches.toFixed(1)
       }))
@@ -176,7 +184,7 @@ export default function CustomSetupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Convert string numbers to actual numbers
     const normalizedDob = normalizeDateInput(formData.dob) || ""
     const timelineWeeksNumber = parseInt(formData.timeline_weeks?.toString() || '16', 10) || 16
@@ -208,8 +216,11 @@ export default function CustomSetupPage() {
       timeline_weeks: timelineWeeksNumber,
       start_date: startDateIso,
       end_date: endDateIso,
-      dob: normalizedDob || undefined
+      dob: normalizedDob || "",
+      eating_pattern: formData.eating_pattern || "standard",
+      eating_window_hours: getEatingWindowHours(formData.eating_pattern)
     }
+
 
     setUserData(processedData)
     router.push("/")
@@ -244,7 +255,7 @@ export default function CustomSetupPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="dob">Date of Birth</Label>
                 <Input
@@ -255,7 +266,7 @@ export default function CustomSetupPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="age">Age (calculated)</Label>
                 <Input
@@ -266,7 +277,7 @@ export default function CustomSetupPage() {
                   className="bg-muted"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
                 <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
@@ -291,13 +302,13 @@ export default function CustomSetupPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Switch 
-                checked={useMetric} 
+              <Switch
+                checked={useMetric}
                 onCheckedChange={setUseMetric}
               />
               <Label>Use metric (cm)</Label>
             </div>
-            
+
             {useMetric ? (
               <div className="space-y-2">
                 <Label htmlFor="height_cm">Height (cm)</Label>
@@ -361,7 +372,7 @@ export default function CustomSetupPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="current_bf">Current Body Fat (%)</Label>
                 <Input
@@ -398,7 +409,7 @@ export default function CustomSetupPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="goal_bf">Goal Body Fat (%)</Label>
                 <Input
@@ -412,7 +423,7 @@ export default function CustomSetupPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="timeline_weeks">Timeline (weeks)</Label>
                 <Select value={formData.timeline_weeks?.toString()} onValueChange={(value) => handleInputChange('timeline_weeks', value)}>
@@ -455,7 +466,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="job_activity">Job Activity Level</Label>
                 <Select value={formData.job_activity} onValueChange={(value) => handleInputChange('job_activity', value)}>
@@ -471,7 +482,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="leisure_activity">Leisure Activity Level</Label>
                 <Select value={formData.leisure_activity} onValueChange={(value) => handleInputChange('leisure_activity', value)}>
@@ -487,7 +498,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="exercise_type">Primary Exercise Type</Label>
                 <Select value={formData.exercise_type} onValueChange={(value) => handleInputChange('exercise_type', value)}>
@@ -502,7 +513,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="workout_days">Workout Days per Week</Label>
                 <Select value={formData.workout_days} onValueChange={(value) => handleInputChange('workout_days', value)}>
@@ -521,7 +532,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="experience_level">Training Experience</Label>
                 <Select value={formData.experience_level} onValueChange={(value) => handleInputChange('experience_level', value)}>
@@ -537,7 +548,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="workout_type">Primary Workout Type</Label>
                 <Select value={formData.workout_type} onValueChange={(value) => handleInputChange('workout_type', value)}>
@@ -552,7 +563,7 @@ export default function CustomSetupPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="sleep_quality">Sleep Quality</Label>
                 <Select value={formData.sleep_quality} onValueChange={(value) => handleInputChange('sleep_quality', value)}>
@@ -568,35 +579,35 @@ export default function CustomSetupPage() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={formData.resistance_training} 
+                <Switch
+                  checked={formData.resistance_training}
                   onCheckedChange={(checked) => handleInputChange('resistance_training', checked)}
                 />
                 <Label>I do resistance training</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={formData.is_athlete} 
+                <Switch
+                  checked={formData.is_athlete}
                   onCheckedChange={(checked) => handleInputChange('is_athlete', checked)}
                 />
                 <Label>I am a competitive athlete</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={formData.is_bodybuilder} 
+                <Switch
+                  checked={formData.is_bodybuilder}
                   onCheckedChange={(checked) => handleInputChange('is_bodybuilder', checked)}
                 />
                 <Label>I am a bodybuilder</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={formData.ped_use} 
+                <Switch
+                  checked={formData.ped_use}
                   onCheckedChange={(checked) => handleInputChange('ped_use', checked)}
                 />
                 <Label>I use performance enhancing substances</Label>
@@ -628,11 +639,27 @@ export default function CustomSetupPage() {
                     <SelectItem value="vegan">Vegan</SelectItem>
                     <SelectItem value="vegetarian">Vegetarian</SelectItem>
                     <SelectItem value="carnivore">Carnivore</SelectItem>
-                    <SelectItem value="intermittent_fasting">Intermittent Fasting</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
+
+              <div className="space-y-2">
+                <Label htmlFor="eating_pattern">Eating Pattern</Label>
+                <Select value={formData.eating_pattern} onValueChange={(value) => handleInputChange('eating_pattern', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select eating pattern" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eatingPatternOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+
               <div className="space-y-2">
                 <Label htmlFor="protein_intake">Daily Protein Intake (g)</Label>
                 <Input
@@ -649,9 +676,9 @@ export default function CustomSetupPage() {
         </Card>
 
         <div className="flex justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => router.push('/setup')}
           >
             Back

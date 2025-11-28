@@ -1,0 +1,19 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Performance optimization dependencies
+psutil>=5.9.0
+redis>=5.0.0
+aioredis>=2.0.0
+
+# PRIME engine dependencies (inherited from parent project)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+numpy>=1.24.0
+pandas>=2.0.0
+anthropic>=0.7.0
+python-dotenv>=1.0.0
+weasyprint>=60.0
+jinja2>=3.1.0

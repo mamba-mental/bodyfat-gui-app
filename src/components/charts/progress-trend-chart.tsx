@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { BodyFatEntry, WeeklyProgression } from "@/types"
 import { useApp } from "@/contexts/app-context"
 import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
+import { useMountedRef } from "@/hooks/use-mounted-ref"
 import { buildProgressTrendChartData } from "./progress-trend-chart.utils"
 
 interface ProgressTrendChartProps {
@@ -50,10 +51,13 @@ export function ProgressTrendChart({
 }: ProgressTrendChartProps) {
   const { subscribeToDataChanges } = useApp()
   const [refreshKey, setRefreshKey] = React.useState(0)
+  const mountedRef = useMountedRef()
 
-  // Use safe animation callback for data updates
+  // Use safe animation callback for data updates with mounted guard
   const handleDataChange = useSafeAnimationCallback(() => {
-    setRefreshKey(prev => prev + 1)
+    if (mountedRef.current) {
+      setRefreshKey(prev => prev + 1)
+    }
   }, [])
 
   // Subscribe to data changes for automatic refresh

@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: AI Settings API
+  version: 1.3.1
+  description: |
+    API contract for AI configuration endpoints supporting FR-009, FR-010, FR-011.
+    
+    Functional Requirements Addressed:
+    - FR-009: AI Settings page accessible at /settings/ai
+    - FR-010: Next.js routing maps /settings/ai correctly
+    - FR-011: AI settings persist to storage
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server (Next.js)
+
+paths:
+  /settings/ai:
+    get:
+      summary: Retrieve user's AI configuration settings
+      description: |
+        Fetches AI provider settings, API keys, and model assignments.
+        Page must be accessible without 404 errors.
+        
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      
+      responses:
+        '200':
+          description: AI settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AISettings'
+              example:
+                settingsId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                aiProvider: "anthropic"
+                modelAssignment:
+                  reportGeneration: "claude-3-5-sonnet-20241022"
+                  chatAssistant: "claude-3-5-haiku-20241022"
+                defaultModel: "claude-3-5-sonnet-20241022"
+                rateLimitConfig:
+                  requestsPerMinute: 50
+                  tokensPerMinute: 100000
+                createdAt: "2025-10-01T08:00:00Z"
+                updatedAt: "2025-10-07T12:00:00Z"
+                
+        '404':
+          description: AI settings not found for user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update user's AI configuration settings
+      description: |
+        Updates AI provider, API key, or model assignments.
+        Settings must persist to storage.
+        
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AISettingsUpdate'
+            example:
+              aiProvider: "anthropic"
+              apiKey: "sk-ant-api03-..." # Encrypted before storage
+              modelAssignment:
+                reportGeneration: "claude-3-5-sonnet-20241022"
+                chatAssistant: "claude-3-5-haiku-20241022"
+              defaultModel: "claude-3-5-sonnet-20241022"
+      
+      responses:
+        '200':
+          description: AI settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AISettings'
+        '400':
+          description: Invalid settings data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    AISettings:
+      type: object
+      required:
+        - settingsId
+        - userId
+        - aiProvider
+        - createdAt
+        - updatedAt
+      properties:
+        settingsId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        aiProvider:
+          type: string
+          enum: ["openai", "anthropic", "perplexity", "custom"]
+          description: Selected AI provider
+        apiKey:
+          type: string
+          description: Encrypted API key (never returned in GET responses)
+          writeOnly: true
+        modelAssignment:
+          type: object
+          description: Task-to-model mapping
+          additionalProperties:
+            type: string
+          example:
+            reportGeneration: "claude-3-5-sonnet-20241022"
+            chatAssistant: "claude-3-5-haiku-20241022"
+        defaultModel:
+          type: string
+          description: Default model ID for unspecified tasks
+        rateLimitConfig:
+          type: object
+          nullable: true
+          properties:
+            requestsPerMinute:
+              type: integer
+              minimum: 1
+            tokensPerMinute:
+              type: integer
+              minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    AISettingsUpdate:
+      type: object
+      properties:
+        aiProvider:
+          type: string
+          enum: ["openai", "anthropic", "perplexity", "custom"]
+        apiKey:
+          type: string
+          description: API key (will be encrypted before storage)
+        modelAssignment:
+          type: object
+          additionalProperties:
+            type: string
+        defaultModel:
+          type: string
+        rateLimitConfig:
+          type: object
+          nullable: true
+          properties:
+            requestsPerMinute:
+              type: integer
+              minimum: 1
+            tokensPerMinute:
+              type: integer
+              minimum: 1
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+

@@ -14,9 +14,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'standalone',
-  // Reduce parallelization to avoid hanging
+  // Allow more CPUs for faster compilation
   experimental: {
-    cpus: 1,
+    cpus: 4,
   },
 
   // API rewrites for development

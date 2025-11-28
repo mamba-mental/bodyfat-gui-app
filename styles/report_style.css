@@ -1,0 +1,153 @@
+/* styles\report_style.css */
+@page {
+    margin: 2cm;
+    size: letter;
+    @top-center {
+        content: "Body Fat and Weight Loss Calculator Report";
+        font-family: Georgia, serif;
+        font-size: 9pt;
+    }
+    @bottom-center {
+        content: counter(page);
+        font-family: Georgia, serif;
+        font-size: 9pt;
+    }
+}
+
+body {
+    font-family: Georgia, serif;
+    font-size: 10pt;
+    line-height: 1.2;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    counter-reset: page;
+}
+
+.page {
+    page-break-after: always;
+    padding: 15px;
+}
+
+.cover {
+    text-align: center;
+    height: 100%;
+    display: block;
+    margin: auto;
+}
+
+h1 {
+    font-size: 13pt;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+h2 {
+    font-size: 11pt;
+    color: #2980b9;
+    border-bottom: 1px solid #2980b9;
+    padding-bottom: 4px;
+    margin-top: 15px;
+}
+
+h3 {
+    font-size: 10pt;
+    margin: 8px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    font-size: 9pt;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 4px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.small-table {
+    font-size: 7pt;
+    margin-bottom: 8px;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    margin: 8px auto;
+    display: block;
+    page-break-inside: avoid;
+}
+
+ul {
+    padding-left: 15px;
+    font-size: 9pt;
+    margin: 5px 0;
+}
+
+.charts-container {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.chart {
+    width: 85%;
+    margin: 0 auto 15px auto;
+}
+
+.chart img {
+    max-width: 100%;
+    height: auto;
+    margin: 8px auto;
+    display: block;
+}
+
+.supplemental-info {
+    background-color: #f9f9f9;
+    padding: 8px;
+    margin: 6px 0;
+    border-left: 4px solid #007bff;
+    font-size: 8.5pt;
+}
+
+.forecast-section {
+    page-break-inside: avoid;
+}
+
+.combined-sections {
+    page-break-inside: avoid;
+}
+
+/* Section 12 specific styling */
+#terms-and-definitions {
+    font-size: 8pt;
+}
+
+#terms-and-definitions h3 {
+    font-size: 9pt;
+}
+
+@media print {
+    .page {
+        page-break-after: always;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+    
+    table {
+        page-break-inside: avoid;
+    }
+    
+    img {
+        page-break-inside: avoid;
+    }
+}

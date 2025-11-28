@@ -18,7 +18,7 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { user, entries, calculation, aiProvider, aiModel, aiApiKey } = await request.json()
-    
+
     console.log('AI Insights Request:', {
       aiProvider,
       aiModel,
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       hasUser: !!user,
       entriesCount: entries?.length || 0
     })
-    
+
     // Check if AI configuration is provided
     if (aiProvider && aiModel && aiApiKey) {
       // Use configured AI provider
@@ -36,17 +36,17 @@ export async function POST(request: NextRequest) {
         aiApiKey,
         { user, entries, calculation }
       )
-      
+
       console.log('AI Insights Response:', {
         success: aiInsights.success,
         insightsCount: aiInsights.insights?.length || 0
       })
-      
+
       if (aiInsights.success) {
         return NextResponse.json(aiInsights.insights, { headers: corsHeaders })
       }
     }
-    
+
     // Try to get insights from Python API as fallback
     try {
       const response = await fetch(`${PYTHON_API_URL}/ai/insights`, {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(insights, { headers: corsHeaders })
     } catch (pythonApiError) {
       console.warn('Python API insights failed, using fallback:', pythonApiError)
-      
+
       // Fallback insights generation
       const fallbackInsights = generateFallbackInsights(user, entries, calculation)
       return NextResponse.json(fallbackInsights, { headers: corsHeaders })
@@ -85,7 +85,7 @@ function generateFallbackInsights(
   calculation: CalculationResult | null
 ): any[] {
   const insights = []
-  
+
   if (!user) {
     return [{
       id: '1',
@@ -102,7 +102,7 @@ function generateFallbackInsights(
   if (entries.length > 0) {
     const latestEntry = entries[0]
     const weightChange = user.current_weight - latestEntry.weight
-    
+
     if (weightChange > 0) {
       insights.push({
         id: '2',
@@ -114,7 +114,7 @@ function generateFallbackInsights(
         timestamp: new Date().toISOString()
       })
     }
-    
+
     if (latestEntry.body_fat_percentage && latestEntry.body_fat_percentage < user.current_bf) {
       const bfChange = user.current_bf - latestEntry.body_fat_percentage
       insights.push({
@@ -133,7 +133,7 @@ function generateFallbackInsights(
   if (calculation && calculation.progression && Array.isArray(calculation.progression) && calculation.progression.length > 0) {
     const currentWeekIndex = Math.min(entries.length, calculation.progression.length - 1)
     const currentCalories = calculation.progression[currentWeekIndex]?.daily_calorie_intake
-    
+
     if (currentCalories) {
       insights.push({
         id: '4',
@@ -150,7 +150,7 @@ function generateFallbackInsights(
   // Goal insights
   const timeToGoal = parseInt(user.timeline_weeks?.toString() || '16') || 16
   const weeksRemaining = Math.max(0, timeToGoal - entries.length)
-  
+
   insights.push({
     id: '5',
     category: 'goal',
@@ -240,7 +240,7 @@ Focus on:
 Return ONLY a JSON array of insights.`
 
     let response: any
-    
+
     switch (provider) {
       case 'anthropic':
         response = await callAnthropicForInsights(apiKey, model, systemPrompt, context)
@@ -266,12 +266,12 @@ Return ONLY a JSON array of insights.`
       default:
         return { success: false, insights: [] }
     }
-    
+
     if (response.success) {
       try {
         // Parse the AI response as JSON
         let parsedData = response.data
-        
+
         // If it's a string, try to extract JSON from it
         if (typeof response.data === 'string') {
           // Try to find JSON array in the response
@@ -283,10 +283,10 @@ Return ONLY a JSON array of insights.`
             parsedData = JSON.parse(response.data)
           }
         }
-        
+
         // Ensure we have an array of insights
         const insights = Array.isArray(parsedData) ? parsedData : [parsedData]
-        
+
         // Validate and transform insights to ensure they have required fields
         const validInsights = insights.map((insight, index) => ({
           id: insight.id || `ai-${Date.now()}-${index}`,
@@ -297,7 +297,7 @@ Return ONLY a JSON array of insights.`
           icon: insight.icon || '💡',
           timestamp: insight.timestamp || new Date().toISOString()
         }))
-        
+
         return { success: true, insights: validInsights }
       } catch (e) {
         console.error('Failed to parse AI insights:', e)
@@ -305,7 +305,7 @@ Return ONLY a JSON array of insights.`
         return { success: false, insights: [] }
       }
     }
-    
+
     return { success: false, insights: [] }
   } catch (error) {
     console.error('Error generating AI insights:', error)
@@ -326,9 +326,9 @@ async function callAnthropicForInsights(apiKey: string, model: string, systemPro
       body: JSON.stringify({
         model,
         system: systemPrompt,
-        messages: [{ 
-          role: 'user', 
-          content: 'Generate fitness insights based on the user data provided in the system prompt.' 
+        messages: [{
+          role: 'user',
+          content: 'Generate fitness insights based on the user data provided in the system prompt.'
         }],
         max_tokens: 1500,
         temperature: 0.7
@@ -406,9 +406,9 @@ async function callGeminiForInsights(apiKey: string, model: string, systemPrompt
 
     if (response.ok) {
       const data = await response.json()
-      return { 
-        success: true, 
-        data: data.candidates[0].content.parts[0].text 
+      return {
+        success: true,
+        data: data.candidates[0].content.parts[0].text
       }
     }
   } catch (error) {

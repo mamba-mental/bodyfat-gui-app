@@ -90,8 +90,11 @@ export default function SetupPage() {
       
       protein_intake: 265.0,
       diet_type: "keto",
+      eating_pattern: "standard",
+      eating_window_hours: 12,
       
       ped_use: true,
+
       exercise_type: "resistance",
       sleep_quality: "poor"
     }

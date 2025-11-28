@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { WeeklyProgression } from "@/types"
 import { useApp } from "@/contexts/app-context"
 import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
+import { useMountedRef } from "@/hooks/use-mounted-ref"
 
 interface MetabolicInsightsWidgetProps {
   progression?: WeeklyProgression[]
@@ -39,7 +40,7 @@ const chartConfig = {
 
 const COLORS = [
   "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))", 
+  "hsl(var(--chart-2))",
   "hsl(var(--chart-3))",
   "hsl(var(--chart-4))",
 ]
@@ -47,14 +48,13 @@ const COLORS = [
 export function MetabolicInsightsWidget({
   progression,
   title = "Metabolic Insights",
-  description = "Understanding your energy expenditure breakdown"
+  description = "Understanding your energy expenditure"
 }: MetabolicInsightsWidgetProps) {
-  const { subscribeToDataChanges } = useApp()
-  const [refreshKey, setRefreshKey] = React.useState(0)
+  const { subscribeToDataChanges, refreshKey } = useApp()
+  const mountedRef = useMountedRef()
 
-  // Use safe animation callback for data updates
-  const handleDataChange = useSafeAnimationCallback(() => {
-    setRefreshKey(prev => prev + 1)
+  const handleDataChange = React.useCallback(() => {
+    // Data refresh handled by parent or context
   }, [])
 
   // Subscribe to data changes for automatic refresh
@@ -62,13 +62,14 @@ export function MetabolicInsightsWidget({
     const unsubscribe = subscribeToDataChanges(handleDataChange)
     return unsubscribe
   }, [subscribeToDataChanges, handleDataChange])
+
   const currentWeek = progression?.[0]
-  
+
   const metabolicBreakdown = React.useMemo(() => {
     if (!currentWeek) return []
-    
+
     const exercise = currentWeek.tdee - currentWeek.rmr - currentWeek.tef - currentWeek.neat
-    
+
     return [
       {
         name: "RMR (Resting)",
@@ -99,7 +100,7 @@ export function MetabolicInsightsWidget({
 
   const weeklyTrend = React.useMemo(() => {
     if (!progression) return []
-    
+
     return progression.slice(0, 7).reverse().map((week, index) => ({
       week: `W${index + 1}`,
       rmr: week.rmr,
@@ -110,14 +111,16 @@ export function MetabolicInsightsWidget({
 
   const metabolicRate = React.useMemo(() => {
     if (!currentWeek) return "Normal"
-    
+
     // Simple heuristic for metabolic rate assessment
     const rmrPerKg = currentWeek.rmr / (currentWeek.weight * 0.453592) // Convert lbs to kg
-    
+
     if (rmrPerKg < 20) return "Low"
     if (rmrPerKg > 25) return "High"
     return "Normal"
   }, [currentWeek, refreshKey])
+
+  if (!mountedRef.current) return null
 
   if (!progression || !currentWeek) {
     return (
@@ -174,7 +177,7 @@ export function MetabolicInsightsWidget({
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <ChartTooltip 
+                  <ChartTooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload
@@ -202,8 +205,8 @@ export function MetabolicInsightsWidget({
                   <div key={component.name} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: COLORS[index] }}
                         />
                         <span>{component.name}</span>
@@ -263,7 +266,7 @@ export function MetabolicInsightsWidget({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(currentWeek.neat + Math.max(0, currentWeek.tdee - currentWeek.rmr - currentWeek.tef - currentWeek.neat))}
+              {Math.round(currentWeek.neat + (currentWeek.tdee - currentWeek.rmr - currentWeek.tef - currentWeek.neat))}
             </div>
             <p className="text-xs text-muted-foreground">
               NEAT + Exercise
@@ -273,73 +276,20 @@ export function MetabolicInsightsWidget({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Food Effect</CardTitle>
+            <CardTitle className="text-sm font-medium">Weekly Trend</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round(currentWeek.tef)}
+            <div className="h-[40px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyTrend}>
+                  <Bar dataKey="tdee" fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Digestion calories
-            </p>
           </CardContent>
         </Card>
       </div>
-
-      {/* Weekly Trend */}
-      {weeklyTrend.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Weekly Metabolic Trend</CardTitle>
-            <CardDescription>
-              Track changes in your metabolic rate over time
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig}>
-              <BarChart
-                data={weeklyTrend}
-                margin={{
-                  left: 12,
-                  right: 12,
-                  top: 12,
-                  bottom: 12,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="week"
-                  tickLine={false}
-                  axisLine={false}
-                  className="text-xs"
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  className="text-xs"
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar
-                  dataKey="rmr"
-                  fill="var(--color-rmr)"
-                  isAnimationActive={false}
-                  radius={[2, 2, 0, 0]}
-                />
-                <Bar
-                  dataKey="tdee"
-                  fill="var(--color-tef)"
-                  radius={[2, 2, 0, 0]}
-                  isAnimationActive={false}
-                />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

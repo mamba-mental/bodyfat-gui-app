@@ -13,7 +13,13 @@ class Database:
     def __init__(self, db_path: str = None):
         if db_path is None:
             # Use the data directory (DATA_DIR environment variable or fallback)
-            data_dir = Path(os.environ.get('DATA_DIR', '/app/data'))
+            data_dir_env = os.environ.get('DATA_DIR')
+            if data_dir_env:
+                data_dir = Path(data_dir_env)
+            else:
+                # Fallback to relative path for local development
+                data_dir = Path(__file__).parent.parent / "data"
+            
             db_path = data_dir / "bodyfat.db"
 
         self.db_path = db_path
@@ -41,6 +47,7 @@ class Database:
                     weight REAL NOT NULL,
                     body_fat_percentage REAL,
                     notes TEXT,
+                    program_id TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -73,7 +80,13 @@ class Database:
             # Create indexes for better performance
             conn.execute('CREATE INDEX IF NOT EXISTS idx_entries_user_date ON entries(user_id, date DESC)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_user_date ON reports(user_id, date DESC)')
-            
+
+            # Migration: Add program_id column to entries table if it doesn't exist
+            cursor = conn.execute("PRAGMA table_info(entries)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if 'program_id' not in columns:
+                conn.execute('ALTER TABLE entries ADD COLUMN program_id TEXT')
+
             conn.commit()
     
     def get_user(self, user_id: str = "default") -> Optional[Dict[str, Any]]:
@@ -120,27 +133,29 @@ class Database:
                     'weight': row['weight'],
                     'body_fat_percentage': row['body_fat_percentage'],
                     'notes': row['notes'],
+                    'program_id': row['program_id'],
                     'created_at': row['created_at'],
                     'updated_at': row['updated_at']
                 }
                 entries.append(entry)
-            
+
             return entries
     
     def save_entry(self, entry: Dict[str, Any], user_id: str = "default"):
         """Save a new entry"""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
-                INSERT OR REPLACE INTO entries 
-                (id, user_id, date, weight, body_fat_percentage, notes, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR REPLACE INTO entries
+                (id, user_id, date, weight, body_fat_percentage, notes, program_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ''', (
                 entry['id'],
                 user_id,
                 entry['date'],
                 entry['weight'],
                 entry.get('body_fat_percentage'),
-                entry.get('notes')
+                entry.get('notes'),
+                entry.get('program_id')
             ))
             conn.commit()
     

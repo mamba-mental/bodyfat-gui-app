@@ -1,3 +1,4 @@
+
 """
 Fast version of PRIME Report Generator that skips AI analysis for quick report generation.
 This is a standalone implementation that doesn't depend on AI components.
@@ -6,9 +7,9 @@ This is a standalone implementation that doesn't depend on AI components.
 import os
 import glob
 import datetime
-import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Agg')  # Set headless backend
+matplotlib.use('Agg')  # Set headless backend BEFORE importing pyplot
+import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -19,20 +20,26 @@ from jinja2 import Template
 # Import only the non-AI dependent modules
 from .PRIME_Utils import calculate_age, DIET_MULTIPLIERS, EXERCISE_ADJUSTMENTS
 from .PRIME_Calculations import calculate_lean_mass_preservation_scores
+from .PRIME_Date_Utils import parse_date
 
 def create_professional_charts(progression_data, output_dir):
     """
     Create professional charts for the report with proper styling.
-    
+
     Args:
         progression_data (list): Weekly progression data
         output_dir (str): Directory to save charts
-        
+
     Returns:
-        dict: Base64 encoded chart data for embedding in HTML
+        dict: Base64 encoded chart data for embedding in HTML, plus file paths for markdown
     """
     os.makedirs(output_dir, exist_ok=True)
-    chart_data = {}
+    images_dir = os.path.join(output_dir, 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    chart_data = {
+        'weight_progress_path': '',
+        'body_composition_path': ''
+    }
     
     # Set professional style
     plt.style.use('default')
@@ -42,11 +49,12 @@ def create_professional_charts(progression_data, output_dir):
     dates = []
     for d in progression_data:
         try:
-            dates.append(datetime.datetime.strptime(d['date'], "%m%d%y"))
-        except (ValueError, KeyError):
+            # Use centralized date parser that handles MMDDYY, ISO, and other formats
+            dates.append(parse_date(d['date']))
+        except (ValueError, KeyError) as e:
             # Fallback to current date if parsing fails
-            dates.append(datetime.datetime.now())
-            print(f"[WARNING] Could not parse date: {d.get('date', 'missing')}")
+            dates.append(datetime.datetime.now().date())
+            print(f"[WARNING] Could not parse date: {d.get('date', 'missing')} - {e}")
     
     weights = [d['weight'] for d in progression_data]
     body_fat_pcts = [d['body_fat_percentage'] for d in progression_data]
@@ -66,14 +74,21 @@ def create_professional_charts(progression_data, output_dir):
         # Format dates on x-axis
         ax.tick_params(axis='x', rotation=45)
         
-        # Save to base64
+        # Save to file for markdown
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        weight_chart_filename = f"weight_progress_{timestamp}.png"
+        weight_chart_path = os.path.join(images_dir, weight_chart_filename)
+        plt.savefig(weight_chart_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        chart_data['weight_progress_path'] = f"images/{weight_chart_filename}"
+
+        # Save to base64 for HTML
         buffer = BytesIO()
         plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
         buffer.seek(0)
         chart_data['weight_progress_chart'] = base64.b64encode(buffer.getvalue()).decode()
         buffer.close()
         plt.close()
-        
+
     except Exception as e:
         print(f"[WARNING] Weight chart creation failed: {e}")
         chart_data['weight_progress_chart'] = ""
@@ -103,15 +118,22 @@ def create_professional_charts(progression_data, output_dir):
             ax.tick_params(axis='x', rotation=45)
         
         plt.tight_layout()
-        
-        # Save to base64
+
+        # Save to file for markdown
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        body_comp_filename = f"body_composition_{timestamp}.png"
+        body_comp_path = os.path.join(images_dir, body_comp_filename)
+        plt.savefig(body_comp_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        chart_data['body_composition_path'] = f"images/{body_comp_filename}"
+
+        # Save to base64 for HTML
         buffer = BytesIO()
         plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
         buffer.seek(0)
         chart_data['body_composition_chart'] = base64.b64encode(buffer.getvalue()).decode()
         buffer.close()
         plt.close()
-        
+
     except Exception as e:
         print(f"[WARNING] Body composition chart creation failed: {e}")
         chart_data['body_composition_chart'] = ""
@@ -444,29 +466,40 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
         f.write(html_content)
     
     print(f"HTML report saved to: {html_path}")
-    
-    # Also save as markdown for compatibility
-    markdown_path = os.path.join(output_dir, f"{report_filename}.md")
+
+    # Generate markdown content with relative image paths
+    weight_chart_md = f"![Weight Progress]({chart_data.get('weight_progress_path', '')})" if chart_data.get('weight_progress_path') else "*Chart not available*"
+    body_comp_chart_md = f"![Body Composition]({chart_data.get('body_composition_path', '')})" if chart_data.get('body_composition_path') else "*Chart not available*"
     markdown_content = f"""# PRIME Body Composition Report
 
-**Name:** {name}  
+**Name:** {name}
 **Date:** {context['report_date']}
 
 ## Summary
+- Week: {total_weeks}
 - Total Weight Loss: {total_weight_loss:.1f} lbs
 - Total Fat Loss: {total_fat_loss:.1f} lbs
 - Muscle Change: {muscle_change:+.1f} lbs
 - Timeline: {total_weeks} weeks
 
-*Note: AI confidence analysis skipped for faster report generation.*
+## Charts
+
+### Weight Progress
+{weight_chart_md}
+
+### Body Composition
+{body_comp_chart_md}
 
 Full HTML report saved to: {html_path}
 """
-    
+
+    # Save as markdown for compatibility
+    markdown_path = os.path.join(output_dir, f"{report_filename}.md")
+
     with open(markdown_path, 'w', encoding='utf-8') as f:
         f.write(markdown_content)
-    
+
     # PDF generation would go here if needed
     pdf_path = None
-    
+
     return markdown_path, pdf_path

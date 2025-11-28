@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build:
+      context: C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app
+      dockerfile: Dockerfile.nextjs
+    image: apex-fit-nextjs:latest
+    container_name: apex-fit-nextjs
+    ports:
+      - "3000:3000"  # Standard Next.js port
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/app/public/uploads
+      - REDIS_URL=redis://redis:6379
+      - NEXT_PUBLIC_PYTHON_API_URL=http://python-api:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8013  # For client-side calls
+      - COMPOSE_CONVERT_WINDOWS_PATHS=1
+    volumes:
+      - apex-fit-data:/app/data
+      - apex-fit-uploads:/app/public/uploads
+      - apex-fit-exports:/app/exports
+      # For development only - comment out for production
+      - C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app:/app:ro
+      - /app/node_modules
+      - /app/.next
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      python-api:
+        condition: service_healthy
+    networks:
+      - apex-fit-network
+
+  python-api:
+    build:
+      context: C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/python-api
+      dockerfile: Dockerfile.python
+    image: apex-fit-python-api:latest
+    container_name: apex-fit-python-api
+    ports:
+      - "8013:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
+      - EXPORT_DIR=/app/exports
+      - REDIS_URL=redis://redis:6379
+      - COMPOSE_CONVERT_WINDOWS_PATHS=1
+      # CORS settings
+      - CORS_ORIGINS=http://localhost:3000,http://nextjs:3000,http://localhost:7899
+    volumes:
+      - apex-fit-data:/app/data
+      - apex-fit-exports:/app/exports
+      # For development only
+      - C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/python-api:/app:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - apex-fit-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: apex-fit-redis
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-apex2025}
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-apex2025}
+    volumes:
+      - apex-fit-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - apex-fit-network
+
+volumes:
+  apex-fit-data:
+    driver: local
+  apex-fit-uploads:
+    driver: local
+  apex-fit-exports:
+    driver: local
+  apex-fit-redis:
+    driver: local
+
+networks:
+  apex-fit-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

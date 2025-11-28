@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Personalized Weight Loss Journey Report</title>
+</head>
+<body>
+    <h1>Your Personalized Weight Loss Journey Report</h1>
+    
+    <h2>1. Personal Profile</h2>
+    <ul>
+        <li><strong>Name:</strong> {{ name }}</li>
+        <li><strong>Start Date:</strong> {{ start_date }}</li>
+        <li><strong>End Date:</strong> {{ end_date }}</li>
+        <li><strong>Age:</strong> {{ age }} years</li>
+        <li><strong>Gender:</strong> {{ gender }}</li>
+        <li><strong>Height:</strong> {{ height }}</li>
+        <li><strong>Initial Weight:</strong> {{ initial_weight }} lbs</li>
+        <li><strong>Goal Weight:</strong> {{ goal_weight }} lbs</li>
+        <li><strong>Initial Body Fat:</strong> {{ initial_body_fat }}%</li>
+        <li><strong>Goal Body Fat:</strong> {{ goal_body_fat }}%</li>
+        <li><strong>Activity Level:</strong> {{ activity_level }}</li>
+        <li><strong>Experience Level:</strong> {{ experience_level }}</li>
+    </ul>
+
+    <h2>2. Metabolic Calculations</h2>
+    <ul>
+        <li><strong>Initial RMR:</strong> {{ initial_rmr }} calories/day</li>
+        <li><strong>Initial TDEE:</strong> {{ initial_tdee }} calories/day</li>
+        <li><strong>TEF:</strong> {{ tef }} calories/day</li>
+        <li><strong>NEAT:</strong> {{ neat }} calories/day</li>
+        <li><strong>Initial Daily Calorie Intake:</strong> {{ initial_daily_calorie_intake }} calories/day</li>
+    </ul>
+
+    <h2>3. Workout Analysis</h2>
+    <ul>
+        <li><strong>Workout Type:</strong> {{ workout_type }}</li>
+        <li><strong>Workout Frequency:</strong> {{ workout_frequency }} days/week</li>
+        <li><strong>Volume Score:</strong> {{ volume_score }}</li>
+        <li><strong>Intensity Score:</strong> {{ intensity_score }}</li>
+        <li><strong>Frequency Score:</strong> {{ frequency_score }}</li>
+        <li><strong>Resistance Training:</strong> {{ 'Yes' if resistance_training else 'No' }}</li>
+        <li><strong>Athlete Status:</strong> {{ 'Yes' if athlete_status else 'No' }}</li>
+    </ul>
+
+    <h2>4. Weekly Progress</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Weight</th>
+                <th>Body Fat %</th>
+                <th>Daily Calories</th>
+                <th>TDEE</th>
+                <th>Muscle Gain</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in weekly_progress %}
+            <tr>
+                <td>{{ week.date }}</td>
+                <td>{{ "%.1f"|format(week.weight) }}</td>
+                <td>{{ "%.1f"|format(week.body_fat_percentage) }}%</td>
+                <td>{{ "%.0f"|format(week.daily_calorie_intake) }}</td>
+                <td>{{ "%.0f"|format(week.tdee) }}</td>
+                <td>{{ "%.2f"|format(week.muscle_gain) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>5. Body Composition Changes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Body Fat Category</th>
+                <th>Body Fat %</th>
+                <th>Description</th>
+                <th>Est. Time to Six-Pack</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for change in body_composition_changes %}
+            <tr>
+                <td>{{ change.date_reached }}</td>
+                <td>{{ change.category }}</td>
+                <td>{{ "%.1f"|format(change.body_fat_percentage) }}%</td>
+                <td>{{ change.description }}</td>
+                <td>{{ change.time_to_six_pack }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>6. Final Results</h2>
+    <ul>
+        <li><strong>Duration:</strong> {{ total_weeks }} weeks</li>
+        <li><strong>Total Weight Loss:</strong> {{ "%.1f"|format(total_weight_loss) }} lbs</li>
+        <li><strong>Total Body Fat Reduction:</strong> {{ "%.1f"|format(total_bf_loss) }}%</li>
+        <li><strong>Final Weight:</strong> {{ "%.1f"|format(final_weight) }} lbs</li>
+        <li><strong>Final Body Fat:</strong> {{ "%.1f"|format(final_body_fat) }}%</li>
+        <li><strong>Average Weekly Weight Loss:</strong> {{ "%.2f"|format(avg_weekly_loss) }} lbs</li>
+        <li><strong>Total Muscle Gain:</strong> {{ "%.1f"|format(total_muscle_gain) }} lbs</li>
+        <li><strong>Final Daily Calorie Intake:</strong> {{ "%.0f"|format(final_daily_calorie_intake) }} calories</li>
+        <li><strong>Final TDEE:</strong> {{ "%.0f"|format(final_tdee) }} calories</li>
+    </ul>
+
+    <h2>7. Insights and Recommendations</h2>
+    <ul>
+        <li>Your metabolic rate adapted by {{ "%.1f"|format(adaptation_percentage) }}% over the course of your journey.</li>
+        <li>You maintained {{ "%.1f"|format(lean_mass_preserved) }}% of your initial lean mass.</li>
+        <li>Your muscle gain rate averaged {{ "%.3f"|format(avg_muscle_gain) }} lbs per week.</li>
+        <li>Based on your final body fat percentage, you're now in the {{ final_body_fat_category }} category.</li>
+        <li>{{ final_body_fat_description }}</li>
+        <li>To maintain your results, consider a daily calorie intake of {{ "%.0f"|format(final_tdee) }} calories.</li>
+    </ul>
+
+    <p>Remember, this journey is a marathon, not a sprint. Celebrate your progress and stay committed to your health and fitness goals!</p>
+
+    <footer>
+        <p><em>Powered by Advanced AI Analytics</em></p>
+    </footer>
+</body>
+</html>

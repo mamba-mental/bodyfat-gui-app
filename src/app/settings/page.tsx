@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
     return `${feetDisplay} (${cmDisplay})`
   }, [current_user])
-  
+
   const [settings, setSettings] = useState<UserSettings>({
     units: "imperial",
     notifications: {
@@ -90,13 +90,13 @@ export default function SettingsPage() {
       font: "roboto"
     }
   })
-  
+
   const [profileData, setProfileData] = useState({
     name: current_user?.name || "",
     email: "",
     timezone: "America/New_York"
   })
-  
+
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -129,7 +129,7 @@ export default function SettingsPage() {
       settings: settings,
       exportDate: new Date().toISOString()
     }
-    
+
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -156,6 +156,47 @@ export default function SettingsPage() {
     }
   }
 
+  const handleStartNewProgram = async () => {
+    if (!current_user) return
+
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const updatedUser = {
+        ...current_user,
+        start_date: today,
+        program_reference: {
+          start_date: today,
+          initial_weight: current_user.current_weight,
+          initial_bf: current_user.current_bf
+        }
+      }
+
+      setUserData(updatedUser)
+
+      // Force save to localStorage immediately to ensure persistence
+      localStorage.setItem('bodyfat_user_data', JSON.stringify(updatedUser))
+
+      // Also update via API if possible (though setUserData usually handles this via context)
+      try {
+        await fetch('/api/data/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedUser)
+        })
+      } catch (e) {
+        console.warn('Failed to sync new program to API', e)
+      }
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+
+      // Redirect to dashboard to see changes
+      router.push('/')
+    } catch (err) {
+      setError("Failed to start new program")
+    }
+  }
+
   const getDataSize = () => {
     const dataStr = JSON.stringify({ current_user, entries, reports })
     return (new Blob([dataStr]).size / 1024).toFixed(2) + ' KB'
@@ -179,7 +220,7 @@ export default function SettingsPage() {
           display: { ...prev.display, theme, font }
         }))
       }
-      
+
       const savedProfile = localStorage.getItem('profileData')
       if (savedProfile) {
         setProfileData(JSON.parse(savedProfile))
@@ -198,7 +239,7 @@ export default function SettingsPage() {
             Customize your application preferences and account settings
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {saved && (
             <Badge variant="default" className="bg-green-500">
@@ -254,48 +295,45 @@ export default function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Label htmlFor="theme">Theme Preference</Label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setSettings(prev => ({ ...prev, display: { ...prev.display, theme: 'light' } }))}
-                      className={`p-3 border-2 rounded-lg transition-all ${
-                        settings.display.theme === 'light' 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
+                      className={`p-3 border-2 rounded-lg transition-all ${settings.display.theme === 'light'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                        }`}
                     >
                       <div className="space-y-2">
                         <div className="w-full h-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded border"></div>
                         <div className="text-xs font-medium">☀️ Light</div>
                       </div>
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={() => setSettings(prev => ({ ...prev, display: { ...prev.display, theme: 'dark' } }))}
-                      className={`p-3 border-2 rounded-lg transition-all ${
-                        settings.display.theme === 'dark' 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
+                      className={`p-3 border-2 rounded-lg transition-all ${settings.display.theme === 'dark'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                        }`}
                     >
                       <div className="space-y-2">
                         <div className="w-full h-6 bg-gradient-to-r from-slate-800 to-slate-900 rounded border"></div>
                         <div className="text-xs font-medium">🌙 Dark</div>
                       </div>
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={() => setSettings(prev => ({ ...prev, display: { ...prev.display, theme: 'system' } }))}
-                      className={`p-3 border-2 rounded-lg transition-all ${
-                        settings.display.theme === 'system' 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
+                      className={`p-3 border-2 rounded-lg transition-all ${settings.display.theme === 'system'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                        }`}
                     >
                       <div className="space-y-2">
                         <div className="w-full h-6 bg-gradient-to-r from-slate-100 via-slate-400 to-slate-800 rounded border"></div>
@@ -307,19 +345,19 @@ export default function SettingsPage() {
                     Choose your preferred color scheme. System matches your device's settings.
                   </p>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-3">
-                  <FontSelector 
-                    value={settings.display.font} 
-                    onChange={(font) => setSettings(prev => ({ 
-                      ...prev, 
-                      display: { ...prev.display, font } 
+                  <FontSelector
+                    value={settings.display.font}
+                    onChange={(font) => setSettings(prev => ({
+                      ...prev,
+                      display: { ...prev.display, font }
                     }))}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="date-format">Date Format</Label>
                   <Select value={settings.display.dateFormat} onValueChange={(value) => setSettings(prev => ({ ...prev, display: { ...prev.display, dateFormat: value as any } }))}>
@@ -340,7 +378,7 @@ export default function SettingsPage() {
 
         <TabsContent value="profile" className="space-y-4">
           <ProfileHeader className="mb-6" showEditButtons={true} />
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -360,7 +398,7 @@ export default function SettingsPage() {
                     placeholder="Enter your full name"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -371,7 +409,7 @@ export default function SettingsPage() {
                     placeholder="Enter your email"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select value={profileData.timezone} onValueChange={(value) => setProfileData(prev => ({ ...prev, timezone: value }))}>
@@ -390,7 +428,7 @@ export default function SettingsPage() {
                   </Select>
                 </div>
               </div>
-              
+
               {current_user && (
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-3">Current Profile Summary</h4>
@@ -437,7 +475,7 @@ export default function SettingsPage() {
                   <strong>Note:</strong> These are preference settings only. This application currently runs entirely locally in your browser and does not send actual notifications or emails. Enable these settings to indicate your preferences for future features.
                 </AlertDescription>
               </Alert>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -446,7 +484,7 @@ export default function SettingsPage() {
                       Receive weekly summaries of your progress
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings.notifications.weeklyReports}
                     onCheckedChange={(checked) => setSettings(prev => ({
                       ...prev,
@@ -454,7 +492,7 @@ export default function SettingsPage() {
                     }))}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="text-base">Goal Reminders</div>
@@ -462,7 +500,7 @@ export default function SettingsPage() {
                       Get reminded when you're close to achieving goals
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings.notifications.goalReminders}
                     onCheckedChange={(checked) => setSettings(prev => ({
                       ...prev,
@@ -470,7 +508,7 @@ export default function SettingsPage() {
                     }))}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="text-base">Entry Reminders</div>
@@ -478,7 +516,7 @@ export default function SettingsPage() {
                       Daily reminders to log your progress
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings.notifications.entryReminders}
                     onCheckedChange={(checked) => setSettings(prev => ({
                       ...prev,
@@ -507,7 +545,7 @@ export default function SettingsPage() {
                   <strong>Current Status:</strong> This application operates entirely locally in your browser. No data is currently sent to external servers. These settings control your preferences for potential future features that may involve data sharing.
                 </AlertDescription>
               </Alert>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -516,7 +554,7 @@ export default function SettingsPage() {
                       Allow anonymous data sharing for research (all personal info removed)
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings.privacy.dataSharing}
                     onCheckedChange={(checked) => setSettings(prev => ({
                       ...prev,
@@ -524,7 +562,7 @@ export default function SettingsPage() {
                     }))}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="text-base">Analytics Tracking</div>
@@ -532,7 +570,7 @@ export default function SettingsPage() {
                       Help improve the app by sharing usage analytics
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings.privacy.analyticsTracking}
                     onCheckedChange={(checked) => setSettings(prev => ({
                       ...prev,
@@ -541,7 +579,7 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-2">Data Storage</h4>
                 <p className="text-sm text-muted-foreground">
@@ -581,13 +619,38 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Button onClick={handleExportData} className="w-full" variant="outline">
                     <ClientIcon icon={Download} className="mr-2 h-4 w-4" />
                     Export All Data
                   </Button>
-                  
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="default" className="w-full bg-blue-600 hover:bg-blue-700">
+                        <ClientIcon icon={Sparkles} className="mr-2 h-4 w-4" />
+                        Start New Program
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Start New Program</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will reset your program start date and initial stats to today's values.
+                          Your existing entries and reports will be preserved as history.
+                          This allows you to track a new transformation phase without losing your data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleStartNewProgram} className="bg-blue-600 text-white hover:bg-blue-700">
+                          Start New Program
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" className="w-full">
@@ -613,15 +676,6 @@ export default function SettingsPage() {
                   </AlertDialog>
                 </div>
               </div>
-              
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Backup Recommendations</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Export your data regularly to keep backups</li>
-                  <li>• Data is stored locally - clearing browser data will remove everything</li>
-                  <li>• Consider saving exports to cloud storage for extra safety</li>
-                </ul>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -642,12 +696,12 @@ export default function SettingsPage() {
                   Manage your AI providers, API keys, and model assignments for different areas of the application.
                 </AlertDescription>
               </Alert>
-              
+
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Configure AI providers including Anthropic (Claude), OpenAI, Google Gemini, and more. Assign specific models to different areas of the app for optimized performance.
                 </p>
-                
+
                 <Button
                   onClick={() => router.push('/settings/ai')}
                   className="w-full md:w-auto"
@@ -670,7 +724,7 @@ export default function SettingsPage() {
               <CardDescription>Exciting features we're working on for future releases</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              
+
               {/* MyFitnessPal Integration */}
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-3">

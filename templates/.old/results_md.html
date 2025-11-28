@@ -1,0 +1,113 @@
+# Weight Loss Journey Report for {{ report.name }}
+
+Report Date: {{ report.report_date }}
+
+## Basic Information
+
+- Start Date: {{ report.start_date }}
+- End Date: {{ report.end_date }}
+- Age: {{ report.age }} years
+- Gender: {{ report.gender }}
+- Height: {{ report.height }}
+- Initial Weight: {{ "%.1f"|format(report.initial_weight) }} lbs
+- Goal Weight: {{ "%.1f"|format(report.goal_weight) }} lbs
+- Initial Body Fat: {{ "%.1f"|format(report.initial_body_fat) }}%
+- Goal Body Fat: {{ "%.1f"|format(report.goal_body_fat) }}%
+- Activity Level: {{ report.activity_level }}
+- Experience Level: {{ report.experience_level }}
+
+## Energy Expenditure
+
+These calculations provide insight into your body's energy requirements and how they change over time.
+
+- Initial RMR: {{ "%.0f"|format(report.initial_rmr) }} cal/day
+- Initial TDEE: {{ "%.0f"|format(report.initial_tdee) }} cal/day
+- TEF: {{ "%.0f"|format(report.tef) }} cal/day
+- NEAT: {{ "%.0f"|format(report.neat) }} cal/day
+- Initial Daily Calorie Intake: {{ "%.0f"|format(report.initial_daily_calorie_intake) }} cal/day
+
+**RMR:** Resting Metabolic Rate - calories burned at rest
+**TDEE:** Total Daily Energy Expenditure - total calories burned per day
+**TEF:** Thermic Effect of Food - calories burned digesting food
+**NEAT:** Non-Exercise Activity Thermogenesis - calories burned through daily activities
+
+## Workout Analysis
+
+This analysis provides insight into your workout routine and its effectiveness.
+
+- Type: {{ report.workout_type }}
+- Frequency: {{ report.workout_frequency }} days/week
+- Volume Score: {{ report.volume_score }} - {{ get_score_description(report.volume_score) }}
+- Intensity Score: {{ report.intensity_score }} - {{ get_score_description(report.intensity_score) }}
+- Frequency Score: {{ report.frequency_score }} - {{ get_score_description(report.frequency_score) }}
+- Resistance Training: {{ report.resistance_training }}
+- Athlete Status: {{ report.athlete_status }}
+
+**Volume Score:** Measures the total amount of work done in your workouts
+**Intensity Score:** Indicates how hard you're working during your workouts
+**Frequency Score:** Reflects how often you're training each muscle group
+
+## Body Composition
+
+This section shows how your body composition changed throughout your journey.
+
+- Initial Lean Mass: {{ "%.1f"|format(report.initial_lean_mass) }} lbs
+- Initial Fat Mass: {{ "%.1f"|format(report.initial_fat_mass) }} lbs
+- Est. Weekly Muscle Gain: {{ "%.2f"|format(report.weekly_muscle_gain) }} lbs
+
+## Weekly Progression
+
+This chart and table show your projected weight loss and body composition changes week by week.
+
+| Date | Weight (lbs) | Body Fat % | Daily Cal Intake | TDEE | Weekly Cal Output | Total Weight Lost (lbs) | Lean Mass (lbs) | Fat Mass (lbs) | Muscle Gain (lbs) | RMR |
+|------|--------------|------------|-------------------|------|-------------------|-------------------------|-----------------|----------------|-------------------|-----|
+{% for week in report.weekly_progress %}
+| {{ week.date }} | {{ "%.1f"|format(week.weight) }} | {{ "%.1f"|format(week.body_fat_percentage) }} | {{ "%.0f"|format(week.daily_calorie_intake) }} | {{ "%.0f"|format(week.tdee) }} | {{ "%.0f"|format(week.weekly_caloric_output) }} | {{ "%.1f"|format(week.total_weight_lost) }} | {{ "%.1f"|format(week.lean_mass) }} | {{ "%.1f"|format(week.fat_mass) }} | {{ "%.1f"|format(week.muscle_gain) }} | {{ "%.0f"|format(week.rmr) }} |
+{% endfor %}
+
+## Body Fat Changes
+
+This chart and table illustrate how your body fat percentage changed throughout your journey.
+
+| Body Fat Category | Body Fat % | Date Reached | Description | Est. Time to Six-Pack |
+|-------------------|------------|--------------|-------------|------------------------|
+{% for change in report.body_composition_changes %}
+| {{ change.category }} | {{ "%.1f"|format(change.body_fat_percentage) }}% | {{ change.date_reached }} | {{ change.description }} | {{ change.time_to_six_pack }} |
+{% endfor %}
+
+## Metabolic Adaptation
+
+This shows how your metabolism adjusted throughout your weight loss journey.
+
+- Week 1 Metabolic Adaptation: {{ "%.2f"|format(report.week_1_adaptation) }}
+- Final Week Metabolic Adaptation: {{ "%.2f"|format(report.final_week_adaptation) }}
+
+A value of 1.00 indicates no adaptation, while lower values indicate metabolic slowdown.
+
+## Overall Progress
+
+This summary shows your overall progress and achievements.
+
+- Duration: {{ report.total_weeks }} weeks
+- Total Weight Loss: {{ "%.1f"|format(report.total_weight_loss) }} lbs
+- Total Body Fat Reduction: {{ "%.1f"|format(report.total_bf_loss) }}%
+- Final Weight: {{ "%.1f"|format(report.final_weight) }} lbs
+- Final Body Fat: {{ "%.1f"|format(report.final_body_fat) }}%
+- Average Weekly Weight Loss: {{ "%.1f"|format(report.avg_weekly_loss) }} lbs
+- Total Muscle Gain: {{ "%.1f"|format(report.total_muscle_gain) }} lbs
+- Final Daily Calorie Intake: {{ "%.0f"|format(report.final_daily_calorie_intake) }} calories
+- Final TDEE: {{ "%.0f"|format(report.final_tdee) }} calories
+- Final Weekly Caloric Output: {{ "%.0f"|format(report.final_weekly_caloric_output) }} calories
+
+## Body Fat Category Changes
+
+This shows how your body fat category changed from the beginning to the end of your journey.
+
+| Stage | Category | Description | Est. Time to Six-Pack |
+|-------|----------|-------------|------------------------|
+| Initial | {{ report.initial_body_fat_category }} | {{ report.initial_body_fat_description }} | {{ report.initial_time_to_six_pack }} |
+| Final | {{ report.final_body_fat_category }} | {{ report.final_body_fat_description }} | {{ report.final_time_to_six_pack }} |
+
+## Recommendations
+
+This section is reserved for future personalized recommendations and long-term strategy planning.

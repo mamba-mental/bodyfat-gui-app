@@ -320,7 +320,11 @@ export async function verifyReport(
   // Compare calculations
   const calculationComparison = compareCalculations(generatedCalculations, referenceCalculations);
 
-  let visualComparison = {
+  let visualComparison: {
+    match: boolean;
+    details: VisualComparison;
+    discrepancies: Discrepancy[];
+  } = {
     match: true,
     details: {
       layout_match: true,

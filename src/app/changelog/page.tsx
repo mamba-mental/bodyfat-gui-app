@@ -1,15 +1,14 @@
-"use client"
-
+import type { Metadata } from "next"
 import * as React from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, Wrench, Bug, Sparkles, History, Package, Database, Server, GitBranch } from "lucide-react"
+import { History, CheckCircle, Wrench, Bug, Sparkles } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 interface ChangelogEntry {
   version: string
   date: string
-  type: "feature" | "fix" | "improvement" | "breaking" | "deployment"
+  type: "feature" | "fix" | "improvement" | "breaking"
   changes: string[]
 }
 
@@ -19,37 +18,18 @@ const changelog: ChangelogEntry[] = [
     date: "2025-11-16",
     type: "fix",
     changes: [
-      "Fixed report generation flow - removed blocking useMountedRef guards from critical paths",
-      "Added live status tracking for report generation with detailed progress updates",
-      "Implemented Turndown library for proper HTML-to-Markdown conversion in report downloads",
-      "Unified PDF generation to use Python HTML as single source for consistent output quality",
-      "Fixed profile banner display with object-cover CSS for proper image scaling without distortion",
-      "Added profile banner upload tooltip with sizing guidance (recommended 1500x400px, max 5MB)",
-      "Verified and completed Task 19 - lifecycle guards already properly implemented via useSafeAnimationCallback",
-      "Added 'Coming Soon' section in Settings showcasing planned MyFitnessPal integration",
-      "Enhanced download buttons - all formats (HTML, MD, PDF) now produce identical, high-quality output",
-      "Added report diagnostics widget on Reports page showing generation status and entry date",
-      "Updated OpenSpec documentation with comprehensive fix details and flow diagrams",
-      "Created detailed MyFitnessPal integration analysis with implementation roadmap",
-      "Updated project documentation tracking all recent improvements and learnings"
-    ]
-  },
-  {
-    version: "1.4.0",
-    date: "2025-09-08",
-    type: "deployment",
-    changes: [
-      "Fixed Docker container deployment with proper data persistence",
-      "Resolved volume mount conflicts between apex-fit and bodyfat-gui-app containers",
-      "Fixed Python API database integration - now using SQLite instead of broken JSON operations",
-      "Corrected database path resolution to /app/data/bodyfat.db",
-      "Fixed entry history retrieval - now showing all 12 entries and 32 reports",
-      "Changed docker-compose.dev.yml from named volumes to bind mounts for local data access",
-      "Temporarily disabled PRIME module exit in main.py for testing",
-      "Enabled AI Insights and AI Chats pages (previously disabled)",
-      "Converted changelog from popup dialog to dedicated page for better readability",
-      "Created GitHub repository and established feature/ui-updates branch",
-      "Successfully deployed to Docker with Next.js (port 7899), Python API (port 8013), and Redis (port 6380)"
+      "Fixed report generation flow by removing blocking useMountedRef guards",
+      "Added comprehensive status tracking for report generation with live updates",
+      "Implemented Turndown library for proper HTML-to-Markdown conversion in downloads",
+      "Unified PDF generation to use Python HTML source for consistent quality",
+      "Fixed profile banner display with object-cover CSS for proper image fill",
+      "Added profile banner sizing guidance tooltip (recommended 1500x400px)",
+      "Completed Task 19: Verified lifecycle guards already implemented in chart components",
+      "Added 'Coming Soon' section in Settings with MyFitnessPal integration roadmap",
+      "Enhanced download buttons to produce consistent output across HTML, MD, and PDF formats",
+      "Added report diagnostics widget showing generation status and entry date used",
+      "Updated OpenSpec documentation with recent fixes and technical architecture",
+      "Created comprehensive MyFitnessPal integration analysis document"
     ]
   },
   {
@@ -77,121 +57,147 @@ const changelog: ChangelogEntry[] = [
       "Fixed AI settings not being sent with API requests",
       "Fixed Python API connection for report generation",
       "Fixed update profile to show existing user data",
-      "Resolved TypeScript errors in data deletion confirmation dialogs",
-      "Enhanced BodyFatDataDisplay with proper metrics calculations",
-      "Implemented dark mode theme persistence",
-      "Fixed ModeToggle component functionality"
+      "Fixed missing entry history display",
+      "Added changelog visibility in sidebar"
     ]
   },
   {
     version: "1.1.0",
-    date: "2025-07-05",
+    date: "2025-07-06",
     type: "feature",
     changes: [
-      "Added comprehensive AI provider configuration",
-      "Implemented report generation with multiple AI models",
-      "Added body fat calculation methods (Navy, BMI, 3-site, 7-site)",
-      "Created entry history management system",
-      "Implemented progress tracking charts",
-      "Added calorie calculator with metabolic insights"
+      "Added AI provider configuration with 12+ providers",
+      "Implemented AI chat widget with live responses",
+      "Added AI insights panel with personalized recommendations",
+      "Integrated multiple AI models including Claude, GPT-4, Gemini",
+      "Added fallback support for AI features"
     ]
   },
   {
     version: "1.0.0",
-    date: "2025-06-29",
+    date: "2025-07-01",
     type: "feature",
     changes: [
-      "Initial release of Body Fat GUI Application",
-      "Profile management system",
-      "Dashboard with real-time widgets",
-      "Data persistence with SQLite database",
-      "Responsive design with Tailwind CSS",
-      "Dark/Light theme support"
+      "Initial release of Ap³𝘅Fit.ai Alpha",
+      "Body fat tracking and progress monitoring",
+      "PRIME calculation algorithm integration",
+      "Report generation with AI analysis",
+      "Progress charts and visualizations",
+      "Entry management system"
     ]
   }
 ]
 
-const getTypeIcon = (type: ChangelogEntry["type"]) => {
-  switch (type) {
-    case "feature":
-      return <Sparkles className="h-4 w-4" />
-    case "fix":
-      return <Bug className="h-4 w-4" />
-    case "improvement":
-      return <Wrench className="h-4 w-4" />
-    case "deployment":
-      return <Server className="h-4 w-4" />
-    case "breaking":
-      return <Package className="h-4 w-4" />
-    default:
-      return <CheckCircle className="h-4 w-4" />
-  }
-}
-
-const getTypeBadgeVariant = (type: ChangelogEntry["type"]): "default" | "secondary" | "destructive" | "outline" => {
-  switch (type) {
-    case "feature":
-      return "default"
-    case "fix":
-      return "secondary"
-    case "improvement":
-      return "outline"
-    case "deployment":
-      return "default"
-    case "breaking":
-      return "destructive"
-    default:
-      return "outline"
+export const metadata: Metadata = {
+  title: "Changelog | ApexFit AI",
+  description: "Follow every Ap³𝘅Fit.ai release with detailed notes on new features, fixes, and improvements.",
+  openGraph: {
+    title: "ApexFit AI Changelog",
+    description: "View the latest features, fixes, and improvements shipped to Ap³𝘅Fit.ai.",
+    url: "https://apexfit.ai/changelog",
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ApexFit AI Changelog",
+    description: "Stay informed about the newest features and improvements in Ap³𝘅Fit.ai."
   }
 }
 
 export default function ChangelogPage() {
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "feature":
+        return <Sparkles className="h-5 w-5" aria-hidden="true" />
+      case "fix":
+        return <Bug className="h-5 w-5" aria-hidden="true" />
+      case "improvement":
+        return <Wrench className="h-5 w-5" aria-hidden="true" />
+      case "breaking":
+        return <History className="h-5 w-5" aria-hidden="true" />
+      default:
+        return <CheckCircle className="h-5 w-5" aria-hidden="true" />
+    }
+  }
+
+  const getTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case "feature":
+        return "default"
+      case "fix":
+        return "destructive"
+      case "improvement":
+        return "secondary"
+      case "breaking":
+        return "outline"
+      default:
+        return "secondary"
+    }
+  }
+
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <History className="h-8 w-8" />
+    <main
+      className="container max-w-4xl mx-auto space-y-8 p-6"
+      role="main"
+      aria-labelledby="changelog-heading"
+      aria-describedby="changelog-description"
+    >
+      <div className="space-y-2">
+        <h1 id="changelog-heading" className="text-3xl font-bold flex items-center gap-2">
+          <History className="h-8 w-8" aria-hidden="true" />
           Changelog
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Track all updates, improvements, and fixes to the Body Fat Estimator application
+        <p id="changelog-description" className="text-muted-foreground text-lg">
+          Track updates, improvements, and fixes to Ap³𝘅Fit.ai
         </p>
+        <Separator className="max-w-xl" aria-hidden="true" />
       </div>
 
-      <div className="space-y-6">
-        {changelog.map((entry, index) => (
-          <Card key={entry.version} className="overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-xl">Version {entry.version}</CardTitle>
-                  <Badge variant={getTypeBadgeVariant(entry.type)} className="flex items-center gap-1">
-                    {getTypeIcon(entry.type)}
-                    {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
+      <section role="feed" aria-labelledby="changelog-heading" aria-live="polite">
+        {changelog.map((entry) => (
+          <article
+            key={entry.version}
+            role="article"
+            aria-labelledby={`changelog-${entry.version}`}
+            className="mb-6"
+          >
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-muted/30 pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-background rounded-full shadow-sm" aria-hidden="true">
+                      {getTypeIcon(entry.type)}
+                    </div>
+                    <div>
+                      <CardTitle id={`changelog-${entry.version}`} className="text-xl">
+                        Version {entry.version}
+                      </CardTitle>
+                      <CardDescription>Released on {entry.date}</CardDescription>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={getTypeBadgeVariant(entry.type) as any}
+                    className="text-sm px-3 py-1 capitalize"
+                    aria-label={`Change type: ${entry.type}`}
+                  >
+                    {entry.type}
                   </Badge>
                 </div>
-                <span className="text-sm text-muted-foreground">{entry.date}</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {entry.changes.map((change, changeIndex) => (
-                  <li key={changeIndex} className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{change}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            {index < changelog.length - 1 && <Separator className="mt-4" />}
-          </Card>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <ul className="space-y-3" aria-label={`Changes included in version ${entry.version}`}>
+                  {entry.changes.map((change, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+                      <span className="leading-relaxed">{change}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </article>
         ))}
-      </div>
-
-      <div className="mt-8 text-center text-sm text-muted-foreground">
-        <p>Body Fat Estimator &copy; 2025</p>
-        <p>Continuously improving your fitness tracking experience</p>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

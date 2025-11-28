@@ -1,0 +1,22 @@
+# Development Dockerfile with hot-reload
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache libc6-compat
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/exports /app/public/uploads/profiles /app/public/uploads/banners
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV DATA_DIR=/app/data
+ENV UPLOAD_DIR=/app/public/uploads
+ENV REDIS_URL=redis://redis:6379
+
+# Expose the development port
+EXPOSE 3000
+
+# Start the development server
+CMD ["npm", "run", "dev"]

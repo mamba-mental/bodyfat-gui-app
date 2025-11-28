@@ -49,14 +49,17 @@ try:
     )
 
     print("[import] OK PRIME_Diet_Calculations_v2")
+
     from new_prime_python_code.PRIME_Report_Generator_v3_Fast import (
         generate_prime_report_terminal_fast,
     )
 
     print("[import] OK PRIME_Report_Generator_v3_Fast")
+
     from new_prime_python_code.PRIME_AI_Confidence_Analyzer import AIConfidenceAnalyzer
 
     print("[import] OK PRIME_AI_Confidence_Analyzer")
+
     print("[import] All PRIME modules loaded successfully")
 except ImportError as e:
     print(f"[import] ERROR importing PRIME modules: {e}")
@@ -82,10 +85,12 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:3005",
         "http://localhost:4000",
         "http://localhost:5000",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "http://127.0.0.1:3005",
         "http://127.0.0.1:4000",
         "http://127.0.0.1:5000",
         "*",  # Allow all origins in development
@@ -133,9 +138,12 @@ class UserData(BaseModel):
     # Nutrition
     protein_intake: float  # grams
     diet_type: str  # "keto", "high_protein", "balanced", "high_carb"
+    eating_pattern: str = "standard"  # "standard", "intermittent_fasting", "omad"
+    eating_window_hours: float = 12.0
 
     # Advanced Options
     ped_use: bool
+
     exercise_type: str  # "resistance", "cardio", "hiit"
     sleep_quality: str  # "good", "poor"
 
@@ -278,6 +286,8 @@ def convert_user_data_to_prime_format(user_data: UserData) -> Dict[str, Any]:
         "is_bodybuilder": user_data.is_bodybuilder,
         "ped_use": user_data.ped_use,
         "diet_type": user_data.diet_type,
+        "eating_pattern": user_data.eating_pattern,
+        "eating_window_hours": user_data.eating_window_hours,
         "exercise_type": user_data.exercise_type,
         "sleep_quality": user_data.sleep_quality,
     }
@@ -320,6 +330,10 @@ async def calculate_progression(user_data: UserData):
             diet_type=user_data.diet_type,
             exercise_type=user_data.exercise_type,
             sleep_quality=user_data.sleep_quality,
+            workout_days=user_data.workout_days,
+            volume_score=user_data.volume_score,
+            intensity_score=user_data.intensity_score,
+            eating_window_hours=user_data.eating_window_hours,
         )
 
         # Convert progression to API format
@@ -356,9 +370,25 @@ async def calculate_progression(user_data: UserData):
         ai_analysis = None
         try:
             ai_analyzer = AIConfidenceAnalyzer()
-            confidence_result = ai_analyzer.analyze_confidence(prime_data, progression)
-            confidence_score = confidence_result.get("confidence_score")
-            ai_analysis = confidence_result.get("analysis", "")
+
+            # Prepare calculation results for AI
+            calc_results = {
+                "tdee": progression[0]["tdee"] if progression else 0,
+                "daily_calorie_intake": progression[0]["daily_calorie_intake"]
+                if progression
+                else 0,
+                "weekly_weight_loss_target": progression[0]["weekly_caloric_output"]
+                / 3500
+                if progression
+                else 0,
+                "progression": progression,
+            }
+
+            confidence_result = await ai_analyzer.generate_ai_confidence_analysis(
+                prime_data, calc_results
+            )
+            confidence_score = confidence_result.overall_score
+            ai_analysis = confidence_result.detailed_analysis
         except Exception as ai_error:
             print(f"AI analysis failed: {ai_error}")
             # Continue without AI analysis
@@ -743,4 +773,4 @@ async def startup_event():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True, log_level="info")
+    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True, log_level="info")

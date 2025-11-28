@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes to match PRIME workload expectations
 
 // CORS headers
@@ -20,16 +20,16 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userData: UserData = await request.json()
-    
+
     // Log incoming request data
     console.log('=== Generate Report Request ===')
     console.log('Raw user data:', JSON.stringify(userData, null, 2))
-    
+
     // Calculate timeline weeks from dates
     const startDate = new Date(userData.start_date || Date.now())
     const endDate = new Date(userData.end_date || Date.now() + 16 * 7 * 24 * 60 * 60 * 1000)
     const timelineWeeks = Math.round((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    
+
     // Ensure all required fields are present for Python API
     const apiData = {
       ...userData,
@@ -58,19 +58,19 @@ export async function POST(request: NextRequest) {
       exercise_type: userData.exercise_type || "resistance",
       sleep_quality: userData.sleep_quality || "good"
     }
-    
+
     console.log('Processed API data:', JSON.stringify(apiData, null, 2))
     console.log('Python API URL:', PYTHON_API_URL)
-    
+
     // First check if Python API is accessible - skip health check and go directly to report
     // The health check endpoint doesn't exist in the Python API
     let pythonApiAvailable = true
-    
+
     // Call the Python API to generate the report
     try {
       console.log('Calling Python API at:', `${PYTHON_API_URL}/generate-report`)
       console.log('Request body:', JSON.stringify(apiData, null, 2))
-      
+
       const response = await fetchWithTimeout(
         `${PYTHON_API_URL}/generate-report`,
         {
@@ -90,20 +90,20 @@ export async function POST(request: NextRequest) {
           statusText: response.statusText,
           responseBody: errorText
         })
-        
+
         let errorData = {}
         try {
           errorData = JSON.parse(errorText)
         } catch (e) {
           console.error('Failed to parse error response as JSON:', errorText)
         }
-        
+
         throw new Error((errorData as any)?.detail || (errorData as any)?.message || `Python API returned status ${response.status}: ${errorText.substring(0, 200)}`)
       }
 
       const result = await response.json()
       console.log('Python API success response:', result)
-      
+
       return NextResponse.json(result, { headers: corsHeaders })
     } catch (pythonApiError) {
       console.error('Python API report generation failed:', pythonApiError)
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         message: pythonApiError instanceof Error ? pythonApiError.message : String(pythonApiError),
         stack: pythonApiError instanceof Error ? pythonApiError.stack : 'No stack trace'
       })
-      
+
       throw pythonApiError
     }
   } catch (error) {
