@@ -299,7 +299,7 @@ async def save_user_data(user: UserProfile):
 @router.get("/api/data/entries")
 async def get_entries():
     """Get all body fat entries"""
-    entries = db.get_entries("default")
+    entries = db.get_entries("1")  # Use user_id "1" to match existing database entries
     return entries
 
 
@@ -314,7 +314,7 @@ async def save_entry(entry: Entry):
         entry_dict["created_at"] = datetime.now().isoformat()
         entry_dict["updated_at"] = datetime.now().isoformat()
 
-    db.save_entry(entry_dict, "default")
+    db.save_entry(entry_dict, "1")  # Use user_id "1" to match existing database entries
     return {"success": True, "message": "Entry saved", "entry": entry_dict}
 
 
@@ -328,7 +328,7 @@ async def delete_entry(entry_id: str):
 @router.get("/api/data/reports")
 async def get_reports():
     """Get all generated reports"""
-    reports = db.get_reports("default")
+    reports = db.get_reports("1")  # Use user_id "1" to match existing database entries
     return reports
 
 
