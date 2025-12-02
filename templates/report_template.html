@@ -1,10 +1,218 @@
 <!DOCTYPE html>
-<!-- saved from url=(0116)file:///C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/templates/report_template.html -->
-<html lang="en" data-darkreader-proxy-injected="true"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Body Fat and Weight Loss Calculator Report - {{ name }}</title>
-    <link rel="stylesheet" href="file:///C:/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/templates/styles/report_style.css">
+    <style>
+        /* Professional Report Styles - Embedded for PDF generation */
+        @page {
+            margin: 2cm;
+            size: letter;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        .page-break {
+            page-break-after: always;
+            padding: 15px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2c3e50;
+        }
+
+        h1 {
+            font-size: 16pt;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 13pt;
+            color: #2980b9;
+            border-bottom: 2px solid #2980b9;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 11pt;
+            color: #34495e;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }
+
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #ecf0f1;
+        }
+
+        .small-table {
+            font-size: 7pt;
+            margin-bottom: 8px;
+        }
+
+        .small-table th, .small-table td {
+            padding: 4px 6px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        ul {
+            padding-left: 25px;
+            margin: 10px 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .charts-container {
+            width: 100%;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .chart {
+            width: 90%;
+            margin: 0 auto 20px auto;
+            page-break-inside: avoid;
+        }
+
+        .chart img {
+            max-width: 100%;
+            height: auto;
+            margin: 10px auto;
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .supplemental-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 0 4px 4px 0;
+            page-break-inside: avoid;
+        }
+
+        .supplemental-info h3 {
+            color: #2980b9;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .combined-sections {
+            page-break-inside: avoid;
+        }
+
+        .data-container {
+            margin-top: 15px;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .data-section h3 {
+            background-color: #34495e;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 0;
+        }
+
+        .data-section table {
+            margin-top: 0;
+            border-top: none;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-style: italic;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            img {
+                page-break-inside: avoid;
+            }
+
+            section {
+                page-break-inside: avoid;
+            }
+
+            .supplemental-info {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Page 1 -->

@@ -344,6 +344,7 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
         'avg_weekly_fat_loss': avg_weekly_fat_loss,
         
         'timeline_weeks': total_weeks,
+        'total_weeks': total_weeks,  # Template expects total_weeks
         'start_date': start_date,
         'end_date': end_date,
         
