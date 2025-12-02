@@ -2,7 +2,7 @@
 
 import { UserData, CalculationResult, WeeklyProgression } from '@/types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
 
 export class CalculationError extends Error {
   constructor(message: string, public statusCode?: number) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, BodyFatEntry, CalculationResult } from '@/types'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001'
 
 // CORS headers
 const corsHeaders = {

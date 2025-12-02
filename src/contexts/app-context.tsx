@@ -454,11 +454,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const generateNewReport = async (userData?: UserData) => {
     console.log('[AppContext] generateNewReport invoked')
 
-    // Early mounted check to prevent operations on unmounted components
-    if (!mountedRef.current) {
-      console.warn('[AppContext] Component unmounted, aborting report generation')
-      return
-    }
+    // Note: Removed mountedRef check here as it was blocking report generation.
+    // The report generation is a user-initiated action that should complete
+    // regardless of component mount state. See SESSION_SUMMARY_2025-11-16.md
 
     const userToReport = userData || state.current_user
     if (!userToReport) {

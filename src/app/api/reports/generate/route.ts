@@ -90,7 +90,8 @@ interface ReportRecord {
 
 const REPORTS_FILE = path.join(DATA_DIR, 'reports.json');
 const ENTRIES_FILE = path.join(DATA_DIR, 'entries-history.json');
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001';
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
 
 // Activity level multipliers for TDEE calculation
 const ACTIVITY_MULTIPLIERS: { [key: string]: number } = {

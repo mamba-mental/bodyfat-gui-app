@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
 const PYTHON_TIMEOUT_MS = 60000
 
 // CORS headers
@@ -27,8 +28,19 @@ export async function POST(request: NextRequest) {
     const timelineWeeks = Math.round((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
 
     // Ensure all required fields are present for Python API
+    // Calculate default dob from age if not provided
+    const defaultAge = userData.age || 30
+    const defaultDob = userData.dob || (() => {
+      const today = new Date()
+      const birthYear = today.getFullYear() - defaultAge
+      return `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${birthYear.toString().slice(-2)}`
+    })()
+
     const apiData = {
       ...userData,
+      // Required fields: age and dob
+      age: defaultAge,
+      dob: defaultDob,
       // Ensure dates are in the correct format (MM/DD/YY)
       start_date: userData.start_date || new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
       end_date: userData.end_date || new Date(Date.now() + 16 * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
@@ -58,12 +70,14 @@ export async function POST(request: NextRequest) {
     }
 
 
+    const targetUrl = `${PYTHON_API_URL}/calculate`
+    console.log('Python API URL:', targetUrl)
     console.log('Sending to Python API:', JSON.stringify(apiData, null, 2))
 
     // Call the Python PRIME calculation engine
     try {
       const response = await fetchWithTimeout(
-        `${PYTHON_API_URL}/calculate`,
+        targetUrl,
         {
           method: 'POST',
           headers: {

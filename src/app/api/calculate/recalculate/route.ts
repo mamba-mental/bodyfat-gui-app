@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
 const PYTHON_TIMEOUT_MS = 60000
 
 // CORS headers

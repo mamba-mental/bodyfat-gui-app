@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserData } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
 
-const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes to match PRIME workload expectations
 
 // CORS headers
@@ -30,16 +31,27 @@ export async function POST(request: NextRequest) {
     const endDate = new Date(userData.end_date || Date.now() + 16 * 7 * 24 * 60 * 60 * 1000)
     const timelineWeeks = Math.round((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
 
+    // Calculate age and dob defaults (required by Python API)
+    const defaultAge = userData.age || 30
+    const defaultDob = userData.dob || (() => {
+      const today = new Date()
+      const birthYear = today.getFullYear() - defaultAge
+      return `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${birthYear.toString().slice(-2)}`
+    })()
+
     // Ensure all required fields are present for Python API
     const apiData = {
       ...userData,
+      // Age and DOB (required by Python API)
+      age: defaultAge,
+      dob: defaultDob,
       // Ensure dates are in the correct format (MM/DD/YY)
       start_date: userData.start_date || new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
       end_date: userData.end_date || new Date(Date.now() + 16 * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
       // Add timeline_weeks
       timeline_weeks: timelineWeeks || 16,
       // Ensure all numeric fields have defaults
-      height_cm: userData.height_cm || (userData.height_feet * 30.48 + userData.height_inches * 2.54),
+      height_cm: userData.height_cm || ((userData.height_feet || 5) * 30.48 + (userData.height_inches || 10) * 2.54),
       volume_score: userData.volume_score || 7.0,
       intensity_score: userData.intensity_score || 7.0,
       frequency_score: userData.frequency_score || 7.0,
@@ -56,7 +68,13 @@ export async function POST(request: NextRequest) {
       workout_type: userData.workout_type || "General Fitness",
       diet_type: userData.diet_type || "balanced",
       exercise_type: userData.exercise_type || "resistance",
-      sleep_quality: userData.sleep_quality || "good"
+      sleep_quality: userData.sleep_quality || "good",
+      // Additional required fields for Python API
+      activity_level: userData.activity_level || 3,  // 1-5 scale (1=sedentary, 5=very active)
+      resistance_training: userData.resistance_training ?? true,
+      is_athlete: userData.is_athlete ?? false,
+      is_bodybuilder: userData.is_bodybuilder ?? false,
+      ped_use: userData.ped_use ?? false
     }
 
     console.log('Processed API data:', JSON.stringify(apiData, null, 2))
