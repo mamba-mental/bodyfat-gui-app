@@ -3,9 +3,10 @@ import { UserData, BodyFatEntry, Report, CalculationResult } from '@/types'
 const API_BASE_URL = '/api' // Next.js API routes
 
 // Helper function for API calls
+// Timeout increased to 120s to accommodate PRIME calculation time
 async function callApi<T>(endpoint: string, method: string = 'GET', data?: any): Promise<T> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000)
+  const timeout = setTimeout(() => controller.abort(), 120000)
 
   try {
     const options: RequestInit = {

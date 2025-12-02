@@ -67,6 +67,12 @@ export async function POST(request: NextRequest) {
       sleep_quality: userData.sleep_quality || "good",
       eating_pattern: userData.eating_pattern || 'standard',
       eating_window_hours: userData.eating_window_hours ?? 12,
+      // Additional required fields for Python API
+      activity_level: userData.activity_level || 3,  // 1-5 scale (1=sedentary, 5=very active)
+      resistance_training: userData.resistance_training ?? true,
+      is_athlete: userData.is_athlete ?? false,
+      is_bodybuilder: userData.is_bodybuilder ?? false,
+      ped_use: userData.ped_use ?? false,
     }
 
 
