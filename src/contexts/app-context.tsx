@@ -535,11 +535,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         console.log('[AppContext] Calling fetchCalculation for report...')
         const result = await fetchCalculation(updatedUserData)
 
-        // Check mounted state after async operation
-        if (!mountedRef.current) {
-          console.warn('[AppContext] Component unmounted during calculation, aborting')
-          return
-        }
+        // Note: Removed mountedRef check here - report generation is user-initiated
+        // and should complete regardless of component re-renders. The check was
+        // causing reports to abort silently after calculation succeeded.
+        // See SESSION_SUMMARY for rationale.
 
         console.log('[AppContext] Calculation received for report generation')
         saveCalculationResult(result)
@@ -632,11 +631,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         file_base?: string;
       }
 
-      // Check mounted state after async report generation
-      if (!mountedRef.current) {
-        console.warn('[AppContext] Component unmounted during report generation, aborting')
-        return
-      }
+      // Note: mountedRef check removed - user-initiated report generation should
+      // complete regardless of component re-renders. The check was causing reports
+      // to abort silently after fetchGeneratedReport succeeded.
 
       console.log('[AppContext] Report data received from Python service')
 
@@ -666,11 +663,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const persistedReport = await saveReport(report)
 
-      // Check mounted state after async save operation
-      if (!mountedRef.current) {
-        console.warn('[AppContext] Component unmounted after save, skipping state update')
-        return
-      }
+      // Note: mountedRef check removed - user wants to see the report regardless of
+      // React re-renders. The save already succeeded, so UI should update.
 
       console.log('[AppContext] Report saved successfully with id:', persistedReport.id)
       dispatch({ type: 'ADD_REPORT', payload: persistedReport })
@@ -684,7 +678,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
 
     } catch (error) {
-      if (!mountedRef.current) return
+      // Note: mountedRef check removed - user should see error messages
       const errorMessage = error instanceof Error
         ? error.message
         : 'Failed to generate report'
