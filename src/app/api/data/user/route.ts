@@ -10,7 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const PYTHON_API_URL = (process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001').replace('localhost', '127.0.0.1');
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
 const PYTHON_TIMEOUT_MS = 8000;
 const USER_ID = 1;
 

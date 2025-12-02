@@ -4,7 +4,8 @@
  */
 
 export const env = {
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8001',
+  // Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+  API_BASE_URL: 'http://127.0.0.1:8001',
   NODE_ENV: process.env.NODE_ENV || 'development',
   BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '',
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
