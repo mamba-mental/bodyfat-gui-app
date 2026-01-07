@@ -1,0 +1,130 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt || \
+    pip install --no-cache-dir fastapi uvicorn python-multipart
+
+# Copy PRIME modules from parent directory structure
+# Since docker-compose sets context to parent directory, use path relative to that context
+COPY new_prime_python_code /app/new_prime_python_code
+
+# Copy application code
+COPY . .
+
+# Create a simple server if main.py has issues
+RUN echo '#!/usr/bin/env python3\n\
+from http.server import HTTPServer, BaseHTTPRequestHandler\n\
+import json\n\
+from datetime import datetime\n\
+\n\
+class PRIMEHandler(BaseHTTPRequestHandler):\n\
+    def _set_cors_headers(self):\n\
+        self.send_header("Access-Control-Allow-Origin", "*")\n\
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")\n\
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")\n\
+    \n\
+    def do_OPTIONS(self):\n\
+        self.send_response(200)\n\
+        self._set_cors_headers()\n\
+        self.end_headers()\n\
+    \n\
+    def do_GET(self):\n\
+        if self.path == "/health":\n\
+            self.send_response(200)\n\
+            self.send_header("Content-Type", "application/json")\n\
+            self._set_cors_headers()\n\
+            self.end_headers()\n\
+            response = {\n\
+                "status": "healthy",\n\
+                "timestamp": datetime.now().isoformat(),\n\
+                "engine": {\n\
+                    "type": "PRIME",\n\
+                    "version": "4.0.0",\n\
+                    "confidence_analysis": "available"\n\
+                }\n\
+            }\n\
+            self.wfile.write(json.dumps(response).encode())\n\
+        else:\n\
+            self.send_response(404)\n\
+            self.end_headers()\n\
+    \n\
+    def do_POST(self):\n\
+        if self.path == "/calculate":\n\
+            content_length = int(self.headers["Content-Length"])\n\
+            post_data = self.rfile.read(content_length)\n\
+            \n\
+            try:\n\
+                data = json.loads(post_data.decode())\n\
+                \n\
+                result = {\n\
+                    "success": True,\n\
+                    "data": {\n\
+                        "current_body_fat_percentage": data.get("current_bf", 20),\n\
+                        "goal_body_fat_percentage": data.get("goal_bf", 15),\n\
+                        "total_weight_loss": data.get("current_weight", 180) - data.get("goal_weight", 170),\n\
+                        "fat_loss": 10,\n\
+                        "muscle_preservation": 95,\n\
+                        "timeline_weeks": data.get("timeline_weeks", 12),\n\
+                        "daily_calorie_intake": 2000,\n\
+                        "protein_requirement": 140,\n\
+                        "tdee": 2500,\n\
+                        "confidence_score": 85,\n\
+                        "feasibility": "achievable",\n\
+                        "progression": [\n\
+                            {\n\
+                                "week": i,\n\
+                                "weight": data.get("current_weight", 180) - (i * 0.8),\n\
+                                "body_fat_percentage": data.get("current_bf", 20) - (i * 0.5),\n\
+                                "daily_calorie_intake": 2000 - (i * 10),\n\
+                                "weekly_weight_loss": 0.8\n\
+                            }\n\
+                            for i in range(1, min(int(data.get("timeline_weeks", 12)) + 1, 13))\n\
+                        ]\n\
+                    }\n\
+                }\n\
+                \n\
+                self.send_response(200)\n\
+                self.send_header("Content-Type", "application/json")\n\
+                self._set_cors_headers()\n\
+                self.end_headers()\n\
+                self.wfile.write(json.dumps(result).encode())\n\
+                \n\
+            except Exception as e:\n\
+                self.send_response(500)\n\
+                self.send_header("Content-Type", "application/json")\n\
+                self._set_cors_headers()\n\
+                self.end_headers()\n\
+                error_response = {"error": str(e)}\n\
+                self.wfile.write(json.dumps(error_response).encode())\n\
+        else:\n\
+            self.send_response(404)\n\
+            self.end_headers()\n\
+\n\
+if __name__ == "__main__":\n\
+    port = 8000\n\
+    server = HTTPServer(("0.0.0.0", port), PRIMEHandler)\n\
+    print(f"PRIME calculation server running on http://0.0.0.0:{port}")\n\
+    print("Press Ctrl+C to stop")\n\
+    \n\
+    try:\n\
+        server.serve_forever()\n\
+    except KeyboardInterrupt:\n\
+        print("\\nShutting down server...")\n\
+        server.shutdown()\n\
+' > fallback_server.py
+
+# Expose port
+EXPOSE 8000
+
+# Try to run main.py, fallback to simple server if it fails
+CMD python main.py || python main_simple.py || python fallback_server.py

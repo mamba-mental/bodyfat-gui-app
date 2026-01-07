@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  dbGetUser, dbSaveUser, dbGetEntries, dbSaveEntry, dbDeleteEntry,
-  dbGetReports, dbSaveReport, dbDeleteReport, dbGetLastCalculation,
-  dbSaveCalculation, dbClearAllData
-} from '@/lib/server-storage';
+import {
+  getUserData,
+  saveUserData,
+  getUserEntries,
+  saveEntry,
+  deleteEntry,
+  getUserReports,
+  saveReport,
+  deleteReport,
+  getLastCalculation,
+  saveLastCalculation,
+  clearAllUserData,
+} from '@/lib/redis';
 import { UserData, BodyFatEntry, Report, CalculationResult } from '@/types';
 
 // CORS headers
@@ -22,11 +30,12 @@ export async function OPTIONS(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const userId = 1; // For MVP, using single user. Add auth later.
-    
-    const userData = await dbGetUser(userId);
-    const entries = await dbGetEntries(userId);
-    const reports = await dbGetReports(userId);
-    const lastCalculation = await dbGetLastCalculation(userId);
+    const userKey = String(userId);
+
+    const userData = await getUserData(userKey);
+    const entries = await getUserEntries(userKey);
+    const reports = await getUserReports(userKey);
+    const lastCalculation = await getLastCalculation(userKey);
     
     return NextResponse.json({
       userData,
@@ -48,22 +57,23 @@ export async function POST(request: NextRequest) {
   try {
     const { type, data } = await request.json();
     const userId = 1; // For MVP
-    
+    const userKey = String(userId);
+
     switch (type) {
       case 'user':
-        await dbSaveUser(data as UserData, userId);
+        await saveUserData(userKey, data as UserData);
         break;
-        
+
       case 'entry':
-        await dbSaveEntry(data as BodyFatEntry, userId);
+        await saveEntry(userKey, data as BodyFatEntry);
         break;
-        
+
       case 'report':
-        await dbSaveReport(data as Report, userId);
+        await saveReport(userKey, data as Report);
         break;
-        
+
       case 'calculation':
-        await dbSaveCalculation(data as CalculationResult, userId);
+        await saveLastCalculation(userKey, data as CalculationResult);
         break;
         
       default:
@@ -90,15 +100,15 @@ export async function DELETE(request: NextRequest) {
     
     switch (type) {
       case 'entry':
-        await dbDeleteEntry(id);
+        await deleteEntry('1', id);
         break;
-        
+
       case 'report':
-        await dbDeleteReport(id);
+        await deleteReport('1', id);
         break;
-        
+
       case 'all':
-        await dbClearAllData(1);
+        await clearAllUserData('1');
         break;
         
       default:

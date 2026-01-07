@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dbGetEntries, dbSaveEntry, dbDeleteEntry } from '@/lib/server-storage';
+import { saveEntry, deleteEntry, getUserEntries } from '@/lib/redis';
+import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout';
+import type { BodyFatEntry } from '@/types';
+import { normaliseEntry, reconcileEntries } from '@/lib/data-reconciliation';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,73 +10,118 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
+const PYTHON_API_URL = 'http://127.0.0.1:8001';
+const PYTHON_TIMEOUT_MS = 8000;
+const USER_ID = 1;
+
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
 export async function GET() {
+  let pythonError: string | null = null;
+  let remoteEntries: BodyFatEntry[] | null = null;
+
   try {
-    // Proxy to Python API
-    const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001';
-    const response = await fetch(`${pythonApiUrl}/api/data/entries`);
-    
-    if (!response.ok) {
-      throw new Error(`Python API returned ${response.status}`);
+    const response = await fetchWithTimeout(
+      `${PYTHON_API_URL}/api/data/entries`,
+      {
+        cache: 'no-store',
+      },
+      PYTHON_TIMEOUT_MS,
+    );
+
+    if (response.ok) {
+      const rawEntries = await response.json();
+      if (Array.isArray(rawEntries)) {
+        remoteEntries = rawEntries
+          .map(normaliseEntry)
+          .filter((entry): entry is BodyFatEntry => entry !== null)
+          .map((entry) => ({ ...entry, user_id: '1' }));
+      }
+    } else {
+      pythonError = `Python API returned ${response.status}`;
     }
-    
-    const entries = await response.json();
-    return NextResponse.json(entries, { headers: corsHeaders });
   } catch (error) {
-    console.error('Error fetching entries from Python API:', error);
-    // Fallback to local storage if Python API fails
-    try {
-      const userId = 1;
-      const entries = await dbGetEntries(userId);
-      return NextResponse.json(entries, { headers: corsHeaders });
-    } catch (fallbackError) {
-      console.error('Error fetching from local storage:', fallbackError);
-      return NextResponse.json([], { headers: corsHeaders });
+    pythonError = error instanceof Error ? error.message : 'Failed to reach Python API';
+  }
+
+  const localEntries = (await getUserEntries(String(USER_ID))).filter((e): e is BodyFatEntry => e !== null);
+  let entries = localEntries;
+
+  if (remoteEntries && remoteEntries.length > 0) {
+    const { merged, toPersist } = reconcileEntries(localEntries, remoteEntries);
+    entries = merged;
+
+    for (const entry of toPersist) {
+      try {
+        await saveEntry(String(USER_ID), entry);
+      } catch (error) {
+        console.warn('Failed to persist entry locally:', error);
+      }
     }
   }
+
+  const headers: Record<string, string> = { ...corsHeaders };
+  if (pythonError) {
+    headers['x-python-warning'] = pythonError;
+    console.warn('Python API entries warning:', pythonError);
+  }
+
+  return NextResponse.json(entries ?? [], { headers });
 }
 
 export async function POST(request: NextRequest) {
   try {
     const entry = await request.json();
-    
-    // Try to save to Python API first
-    try {
-      const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001';
-      const response = await fetch(`${pythonApiUrl}/api/data/entries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(entry),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Python API returned ${response.status}`);
+    let savedFromPython: BodyFatEntry | null = null;
+    let pythonError: string | null = null;
+
+    if (PYTHON_API_URL) {
+      try {
+        const response = await fetchWithTimeout(
+          `${PYTHON_API_URL}/api/data/entries`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(entry),
+          },
+          PYTHON_TIMEOUT_MS,
+        );
+
+        if (response.ok) {
+          savedFromPython = await response.json();
+        } else {
+          pythonError = `Python API returned ${response.status}`;
+          console.warn('Error saving entry in Python API:', pythonError);
+        }
+      } catch (error) {
+        pythonError =
+          error instanceof Error ? error.message : 'Failed to reach Python API';
+        console.warn('Python API entries warning:', pythonError);
       }
-      
-      const savedEntry = await response.json();
-      
-      // Also save to local storage for backup
-      const userId = 1;
-      await dbSaveEntry(entry, userId);
-      
-      return NextResponse.json(savedEntry, { headers: corsHeaders });
-    } catch (apiError) {
-      console.error('Error saving to Python API:', apiError);
-      // Fallback to local storage only
-      const userId = 1;
-      await dbSaveEntry(entry, userId);
-      return NextResponse.json(entry, { headers: corsHeaders });
     }
+
+    const base = savedFromPython ?? entry;
+    const normalised = normaliseEntry(base);
+    const entryToPersist = normalised ? { ...normalised, user_id: '1' } : base;
+
+    await saveEntry(String(USER_ID), entryToPersist);
+
+    const headers: Record<string, string> = { ...corsHeaders };
+    if (pythonError) {
+      headers['x-python-warning'] = pythonError;
+    }
+
+    return NextResponse.json(entryToPersist, { headers });
   } catch (error) {
-    console.error('Error saving entry:', error);
+    const message = error instanceof Error ? error.message : 'Failed to save entry';
+    console.error('Error saving entry:', message);
     return NextResponse.json(
-      { error: 'Failed to save entry' },
+      { error: message },
       { status: 500, headers: corsHeaders }
     );
   }
@@ -82,7 +130,20 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { id } = await request.json();
-    await dbDeleteEntry(id);
+
+    try {
+      await fetchWithTimeout(
+        `${PYTHON_API_URL}/api/data/entries/${id}`,
+        {
+          method: 'DELETE',
+        },
+        PYTHON_TIMEOUT_MS,
+      );
+    } catch (error) {
+      console.warn('Failed to delete entry in Python API:', error);
+    }
+
+    await deleteEntry(String(USER_ID), id);
     return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error deleting entry:', error);

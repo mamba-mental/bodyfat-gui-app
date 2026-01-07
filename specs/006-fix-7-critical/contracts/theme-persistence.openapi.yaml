@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+  title: Theme Persistence API
+  description: API for managing user theme preferences with cross-device sync
+  version: 1.3.1
+  contact:
+    name: ApexFit AI Development Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/theme:
+    get:
+      summary: Get user theme preference
+      description: |
+        Retrieves theme preference from hybrid storage (localStorage + cookie + database).
+        Ensures 100% theme persistence reliability (FR-027 criterion #4) across browser sessions (FR-016).
+
+        This endpoint implements Constitution Article III: Frontend Stability requirement
+        for hybrid theme persistence pattern.
+      operationId: getThemePreference
+      tags:
+        - Theme Persistence
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: User ID (optional for unauthenticated users)
+      responses:
+        '200':
+          description: Theme preference retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeResponse'
+              examples:
+                dark_theme:
+                  summary: User has dark theme selected
+                  value:
+                    theme: "dark"
+                    updated_at: "2025-10-05T18:30:00Z"
+                    source: "database"
+                    sync_status:
+                      localStorage: true
+                      cookie: true
+                      database: true
+                    cross_device_sync_enabled: true
+        '500':
+          description: Error retrieving theme preference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update theme preference
+      description: |
+        Updates theme preference across all storage layers (localStorage + cookie + database).
+        Verifies persistence across browser refresh and application restart (FR-014, FR-015).
+      operationId: updateThemePreference
+      tags:
+        - Theme Persistence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeUpdateRequest'
+            examples:
+              set_dark:
+                summary: Set theme to dark
+                value:
+                  theme: "dark"
+                  user_id: "user-123-456-789"
+              set_system:
+                summary: Set theme to system preference
+                value:
+                  theme: "system"
+                  user_id: "user-123-456-789"
+      responses:
+        '200':
+          description: Theme preference updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeUpdateResponse'
+              examples:
+                update_success:
+                  summary: Theme updated across all storage layers
+                  value:
+                    theme: "dark"
+                    updated_at: "2025-10-05T18:35:00Z"
+                    storage_updates:
+                      localStorage: true
+                      cookie: true
+                      database: true
+                    sync_broadcast: true
+        '400':
+          description: Invalid theme value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error updating theme preference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ThemeResponse:
+      type: object
+      required:
+        - theme
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: Current theme selection
+        updated_at:
+          type: string
+          format: date-time
+          description: Last theme change timestamp
+        source:
+          type: string
+          enum: [localStorage, cookie, database, default]
+          description: Storage layer from which theme was retrieved
+        sync_status:
+          $ref: '#/components/schemas/SyncStatus'
+        cross_device_sync_enabled:
+          type: boolean
+          description: True if theme syncs across devices (authenticated users only)
+
+    ThemeUpdateRequest:
+      type: object
+      required:
+        - theme
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: New theme selection
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID (required for authenticated users, null for anonymous)
+
+    ThemeUpdateResponse:
+      type: object
+      required:
+        - theme
+        - updated_at
+        - storage_updates
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: Updated theme value
+        updated_at:
+          type: string
+          format: date-time
+          description: Update timestamp
+        storage_updates:
+          $ref: '#/components/schemas/StorageUpdates'
+        sync_broadcast:
+          type: boolean
+          description: True if update was broadcast to other browser tabs (BroadcastChannel API)
+
+    SyncStatus:
+      type: object
+      description: Theme synchronization status across storage layers
+      properties:
+        localStorage:
+          type: boolean
+          description: True if theme stored in localStorage
+        cookie:
+          type: boolean
+          description: True if theme stored in cookie (SSR compatibility)
+        database:
+          type: boolean
+          description: True if theme stored in database (cross-device sync)
+
+    StorageUpdates:
+      type: object
+      description: Storage update success status
+      properties:
+        localStorage:
+          type: boolean
+          description: True if localStorage updated successfully
+        cookie:
+          type: boolean
+          description: True if cookie set successfully
+        database:
+          type: boolean
+          description: True if database updated successfully (authenticated users only)
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context

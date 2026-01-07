@@ -1,0 +1,48 @@
+version: "3.8"
+
+# Development mode compose file for Portainer deployment
+# Uses pre-built image with volume mounts for live reload
+# Healthcheck adjusted for development mode responsiveness
+
+services:
+  web:
+    container_name: bodyfat-web-dev
+    image: bodyfat-web:latest  # Replace with your actual image name or use build context if needed
+    environment:
+      NODE_ENV: "development"
+      PORT: "3000"
+      # Development-specific environment variables
+      NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}"
+      # Enable Next.js development features
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for live reload (adjust paths as needed)
+      - ./:/app
+      - /app/node_modules  # Keep node_modules isolated
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+# Optional: if you need a backend service for development
+# backend:
+#   image: your-backend-image:latest
+#   environment:
+#     - NODE_ENV=development
+#   ports:
+#     - "8000:8000"
+#   volumes:
+#     - ./backend:/app
+#   restart: unless-stopped
+
+# Networks if needed for multi-service communication
+networks:
+  app-network:
+    driver: bridge

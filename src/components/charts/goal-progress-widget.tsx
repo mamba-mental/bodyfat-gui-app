@@ -8,6 +8,9 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { UserData, BodyFatEntry, WeeklyProgression } from "@/types"
 import { useApp } from "@/contexts/app-context"
+import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
+import { useMountedRef } from "@/hooks/use-mounted-ref"
+import { parseDateToLocal } from "@/lib/date-utils"
 
 interface GoalProgressWidgetProps {
   user?: UserData
@@ -17,33 +20,29 @@ interface GoalProgressWidgetProps {
   description?: string
 }
 
-export function GoalProgressWidget({ 
-  user, 
-  entries, 
+export function GoalProgressWidget({
+  user,
+  entries,
   progression,
   title = "Goal Progress Tracking",
   description = "Monitor your journey towards target goals"
 }: GoalProgressWidgetProps) {
   const { subscribeToDataChanges } = useApp()
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const isUpdatingRef = React.useRef(false)
+  const mountedRef = useMountedRef()
+
+  // Use safe animation callback for data updates with mounted guard
+  const handleDataChange = useSafeAnimationCallback(() => {
+    if (mountedRef.current) {
+      setRefreshKey(prev => prev + 1)
+    }
+  }, [])
 
   // Subscribe to data changes for automatic refresh
   React.useEffect(() => {
-    const unsubscribe = subscribeToDataChanges(() => {
-      // Prevent multiple rapid updates
-      if (!isUpdatingRef.current) {
-        isUpdatingRef.current = true
-        setRefreshKey(prev => prev + 1)
-        // Reset the flag after a short delay
-        setTimeout(() => {
-          isUpdatingRef.current = false
-        }, 100)
-      }
-    })
-    
+    const unsubscribe = subscribeToDataChanges(handleDataChange)
     return unsubscribe
-  }, [subscribeToDataChanges])
+  }, [subscribeToDataChanges, handleDataChange])
   const latestEntry = entries[0] // entries are sorted by date desc
   const currentWeight = latestEntry?.weight || user?.current_weight || 0
   const currentBF = latestEntry?.body_fat_percentage || user?.current_bf || 0
@@ -80,8 +79,8 @@ export function GoalProgressWidget({
     
     // If user has start_date and end_date, use those for more accurate calculation
     if (user.start_date && user.end_date) {
-      const startDate = new Date(user.start_date)
-      const endDate = new Date(user.end_date)
+      const startDate = parseDateToLocal(user.start_date) || new Date(user.start_date)
+      const endDate = parseDateToLocal(user.end_date) || new Date(user.end_date)
       const currentDate = new Date()
       
       // Calculate total program duration
@@ -91,7 +90,12 @@ export function GoalProgressWidget({
       // Calculate progress based on latest entry or current date
       let referenceDate = currentDate
       if (latestEntry && latestEntry.date) {
-        referenceDate = new Date(latestEntry.date)
+        const parsedDate = parseDateToLocal(latestEntry.date)
+        if (parsedDate) {
+          referenceDate = parsedDate
+        } else {
+          referenceDate = new Date(latestEntry.date)
+        }
       }
       
       // Calculate weeks elapsed since start
@@ -133,11 +137,19 @@ export function GoalProgressWidget({
   const velocity = React.useMemo(() => {
     if (entries.length < 2) return { weight: 0, bodyFat: 0 }
     
-    const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const sortedEntries = [...entries].sort((a, b) => {
+      const dateA = parseDateToLocal(a.date) || new Date(a.date)
+      const dateB = parseDateToLocal(b.date) || new Date(b.date)
+      return dateA.getTime() - dateB.getTime()
+    })
+    
     const firstEntry = sortedEntries[0]
     const lastEntry = sortedEntries[sortedEntries.length - 1]
     
-    const daysDiff = (new Date(lastEntry.date).getTime() - new Date(firstEntry.date).getTime()) / (1000 * 60 * 60 * 24)
+    const dateFirst = parseDateToLocal(firstEntry.date) || new Date(firstEntry.date)
+    const dateLast = parseDateToLocal(lastEntry.date) || new Date(lastEntry.date)
+    
+    const daysDiff = (dateLast.getTime() - dateFirst.getTime()) / (1000 * 60 * 60 * 24)
     const weeksDiff = daysDiff / 7
     
     if (weeksDiff === 0) return { weight: 0, bodyFat: 0 }

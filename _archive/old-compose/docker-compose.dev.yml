@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  apex-fit-dev:
+    image: node:18-alpine
+    container_name: apex-fit-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "7899:3000"  # Non-standard port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/app/public/uploads
+      - REDIS_URL=redis://redis-dev:6379
+      - NEXT_PUBLIC_PYTHON_API_URL=http://python-api-dev:8000
+    volumes:
+      # Mount source code for hot-reload - adjust path for your environment
+      - ./:/app
+      # Exclude node_modules from host
+      - /app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - redis-dev
+      - python-api-dev
+    networks:
+      - apex-fit-dev-network
+
+  python-api-dev:
+    image: python:3.11-slim
+    container_name: apex-fit-python-api-dev
+    working_dir: /app
+    command: sh -c "apt-get update && apt-get install -y gcc curl && pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8013:8000"  # Non-standard port
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
+      - EXPORT_DIR=/app/exports
+      - REDIS_URL=redis://redis-dev:6379
+    volumes:
+      # Mount source code for hot-reload
+      - ./python-api:/app
+      # Mount PRIME code for calculations
+      - ./new_prime_python_code:/app/new_prime_python_code
+      # Mount templates for report generation
+      - ./templates:/app/templates
+      # Mount shared data directories directly from host
+      - ./data:/app/data
+      - ./exports:/app/exports
+    restart: unless-stopped
+    depends_on:
+      - redis-dev
+    networks:
+      - apex-fit-dev-network
+
+  redis-dev:
+    image: redis:7-alpine
+    container_name: apex-fit-redis-dev
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6380:6379"  # Non-standard port
+    volumes:
+      - apex-fit-dev-redis:/data
+    restart: unless-stopped
+    networks:
+      - apex-fit-dev-network
+
+volumes:
+  apex-fit-dev-redis:
+    driver: local
+
+networks:
+  apex-fit-dev-network:
+    driver: bridge

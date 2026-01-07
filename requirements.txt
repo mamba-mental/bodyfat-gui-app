@@ -1,0 +1,7 @@
+jinja2
+matplotlib
+numpy
+pandas
+pytest
+pytest-cov
+requests

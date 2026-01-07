@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (since we're building)
+RUN npm install
+
+# Copy application files
+COPY . .
+
+# Set environment variables BEFORE build
+ENV NEXT_PUBLIC_PYTHON_API_URL=http://localhost:8013
+ENV NEXT_PUBLIC_API_URL=http://localhost:8013
+ENV NODE_ENV=production
+
+# Build Next.js application
+RUN npm run build
+
+EXPOSE 3000
+
+# Start production server
+CMD ["npm", "start"]

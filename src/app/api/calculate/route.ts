@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
+import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
+import { pythonApiConfig } from '@/lib/config'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
+const PYTHON_TIMEOUT_MS = pythonApiConfig.calculationTimeout;
 
 // CORS headers
 const corsHeaders = {
@@ -18,15 +22,26 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userData: UserData = await request.json()
-    
+
     // Calculate timeline weeks from dates
     const startDate = new Date(userData.start_date || Date.now())
     const endDate = new Date(userData.end_date || Date.now() + 16 * 7 * 24 * 60 * 60 * 1000)
     const timelineWeeks = Math.round((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    
+
     // Ensure all required fields are present for Python API
+    // Calculate default dob from age if not provided
+    const defaultAge = userData.age || 30
+    const defaultDob = userData.dob || (() => {
+      const today = new Date()
+      const birthYear = today.getFullYear() - defaultAge
+      return `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${birthYear.toString().slice(-2)}`
+    })()
+
     const apiData = {
       ...userData,
+      // Required fields: age and dob
+      age: defaultAge,
+      dob: defaultDob,
       // Ensure dates are in the correct format (MM/DD/YY)
       start_date: userData.start_date || new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
       end_date: userData.end_date || new Date(Date.now() + 16 * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
@@ -50,20 +65,35 @@ export async function POST(request: NextRequest) {
       workout_type: userData.workout_type || "General Fitness",
       diet_type: userData.diet_type || "balanced",
       exercise_type: userData.exercise_type || "resistance",
-      sleep_quality: userData.sleep_quality || "good"
+      sleep_quality: userData.sleep_quality || "good",
+      eating_pattern: userData.eating_pattern || 'standard',
+      eating_window_hours: userData.eating_window_hours ?? 12,
+      // Additional required fields for Python API
+      activity_level: userData.activity_level || 3,  // 1-5 scale (1=sedentary, 5=very active)
+      resistance_training: userData.resistance_training ?? true,
+      is_athlete: userData.is_athlete ?? false,
+      is_bodybuilder: userData.is_bodybuilder ?? false,
+      ped_use: userData.ped_use ?? false,
     }
-    
+
+
+    const targetUrl = `${PYTHON_API_URL}/calculate`
+    console.log('Python API URL:', targetUrl)
     console.log('Sending to Python API:', JSON.stringify(apiData, null, 2))
-    
+
     // Call the Python PRIME calculation engine
     try {
-      const response = await fetch(`${PYTHON_API_URL}/calculate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        targetUrl,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(apiData),
         },
-        body: JSON.stringify(apiData),
-      })
+        PYTHON_TIMEOUT_MS,
+      )
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -71,32 +101,13 @@ export async function POST(request: NextRequest) {
       }
 
       const result: CalculationResult = await response.json()
-      
+
       return NextResponse.json({
         success: true,
         data: result,
       }, { headers: corsHeaders })
     } catch (pythonApiError) {
-      console.warn('Python API unavailable, falling back to mock data:', pythonApiError)
-      
-      // Fallback to mock data if Python API is unavailable
-      const mockResult: CalculationResult = {
-        user_data: userData,
-        progression: generateMockProgression(userData),
-        summary: {
-          total_weight_loss: userData.current_weight - userData.goal_weight,
-          body_fat_reduction: userData.current_bf - userData.goal_bf,
-          muscle_gain: 25.0,
-          timeline_weeks: 16,
-        },
-        confidence_score: 75.0,
-        ai_analysis: "Based on your profile, this appears to be an achievable goal with consistent adherence to the calculated calorie targets and training regimen. (Note: Using fallback calculation - start Python API for full PRIME engine)",
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: mockResult,
-      }, { headers: corsHeaders })
+      throw pythonApiError
     }
   } catch (error) {
     console.error('Calculation error:', error)
@@ -108,32 +119,4 @@ export async function POST(request: NextRequest) {
       { status: 500, headers: corsHeaders }
     )
   }
-}
-
-function generateMockProgression(userData: UserData) {
-  const weeks = 16
-  const totalWeightLoss = userData.current_weight - userData.goal_weight
-  const totalBfReduction = userData.current_bf - userData.goal_bf
-  const weeklyWeightLoss = totalWeightLoss / weeks
-  const weeklyBfReduction = totalBfReduction / weeks
-  
-  return Array.from({ length: weeks }, (_, i) => ({
-    date: new Date(Date.now() + i * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: '2-digit'
-    }),
-    weight: userData.current_weight - (weeklyWeightLoss * (i + 1)),
-    body_fat_percentage: userData.current_bf - (weeklyBfReduction * (i + 1)),
-    daily_calorie_intake: 2250 - (i * 10), // Gradual reduction
-    tdee: 2800,
-    weekly_caloric_output: 3850,
-    total_weight_lost: weeklyWeightLoss * (i + 1),
-    lean_mass: 180 + (i * 0.5), // Gradual muscle gain
-    fat_mass: userData.current_weight * (userData.current_bf / 100) - (weeklyWeightLoss * (i + 1) * 0.9),
-    muscle_gain: 0.5, // weekly
-    rmr: 1900,
-    tef: 225,
-    neat: 675,
-  }))
 }

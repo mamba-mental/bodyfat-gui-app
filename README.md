@@ -13,6 +13,7 @@ A modern web-based GUI application for advanced body fat estimation and weight l
 - **AI Chat Interface** with personalized fitness coaching and real-time responses
 - **Enhanced Theme System** with persistence across sessions (Light/Dark/System)
 - **Professional UI Components** built with shadcn/ui and responsive sidebar navigation
+- **Dedicated Changelog Page** reachable via the sidebar or direct `/changelog` route for shareable release notes
 - **Python PRIME Engine Integration** via FastAPI with improved error handling
 - **Local Data Storage** for privacy with dual localStorage/server persistence
 

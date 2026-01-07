@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { WeeklyProgression, UserData } from "@/types"
 import { useApp } from "@/contexts/app-context"
+import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
+import { useMountedRef } from "@/hooks/use-mounted-ref"
 
 interface CalorieManagementWidgetProps {
   progression?: WeeklyProgression[]
@@ -34,36 +36,29 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function CalorieManagementWidget({ 
-  progression, 
-  currentCalories = 0,
+export function CalorieManagementWidget({
+  progression,
+  currentCalories,
   title = "Calorie Management",
-  description = "Track your caloric intake vs expenditure",
+  description = "Track your daily intake vs target",
   user
 }: CalorieManagementWidgetProps) {
-  const { subscribeToDataChanges } = useApp()
-  const [refreshKey, setRefreshKey] = React.useState(0)
-  const isUpdatingRef = React.useRef(false)
+  const { subscribeToDataChanges, refreshKey } = useApp()
+  const mountedRef = useMountedRef()
+
+  const handleDataChange = React.useCallback(() => {
+    // Data refresh handled by parent or context
+  }, [])
 
   // Subscribe to data changes for automatic refresh
   React.useEffect(() => {
-    const unsubscribe = subscribeToDataChanges(() => {
-      // Prevent multiple rapid updates
-      if (!isUpdatingRef.current) {
-        isUpdatingRef.current = true
-        setRefreshKey(prev => prev + 1)
-        // Reset the flag after a short delay
-        setTimeout(() => {
-          isUpdatingRef.current = false
-        }, 100)
-      }
-    })
-    
+    const unsubscribe = subscribeToDataChanges(handleDataChange)
     return unsubscribe
-  }, [subscribeToDataChanges])
+  }, [subscribeToDataChanges, handleDataChange])
+
   const chartData = React.useMemo(() => {
     if (!progression) return []
-    
+
     return progression.slice(0, 7).map((week, index) => ({
       week: `Week ${index + 1}`,
       intake: Math.round(week.daily_calorie_intake),
@@ -84,28 +79,28 @@ export function CalorieManagementWidget({
   // Calculate macronutrient recommendations based on user data
   const macros = React.useMemo(() => {
     if (!user || !currentCalories) return null
-    
+
     const proteinCaloriesPerGram = 4
     const carbCaloriesPerGram = 4
     const fatCaloriesPerGram = 9
-    
+
     // Base protein on user's protein intake if available, otherwise calculate
     const proteinGrams = user.protein_intake || Math.max(user.current_weight * 1.0, 140)
     const proteinCalories = proteinGrams * proteinCaloriesPerGram
-    
+
     // Fat recommendations based on diet type
     let fatPercentage = 0.25 // Default 25%
     if (user.diet_type === 'keto') fatPercentage = 0.70
     else if (user.diet_type === 'high_protein') fatPercentage = 0.20
     else if (user.diet_type === 'balanced') fatPercentage = 0.30
-    
+
     const fatCalories = currentCalories * fatPercentage
     const fatGrams = fatCalories / fatCaloriesPerGram
-    
+
     // Remaining calories for carbs
     const carbCalories = Math.max(0, currentCalories - proteinCalories - fatCalories)
     const carbGrams = carbCalories / carbCaloriesPerGram
-    
+
     return {
       protein: { grams: Math.round(proteinGrams), calories: Math.round(proteinCalories), percentage: Math.round((proteinCalories / currentCalories) * 100) },
       carbs: { grams: Math.round(carbGrams), calories: Math.round(carbCalories), percentage: Math.round((carbCalories / currentCalories) * 100) },
@@ -116,9 +111,9 @@ export function CalorieManagementWidget({
   // Nutrition recommendations based on workout type and goals
   const nutritionTips = React.useMemo(() => {
     if (!user) return []
-    
+
     const tips = []
-    
+
     if (user.workout_type === 'Bodybuilding') {
       tips.push({
         icon: '💪',
@@ -131,7 +126,7 @@ export function CalorieManagementWidget({
         tip: 'Consider consuming 25-30g protein within 2 hours post-workout for optimal recovery.'
       })
     }
-    
+
     if (user.workout_type === 'CrossFit') {
       tips.push({
         icon: '🔥',
@@ -139,7 +134,7 @@ export function CalorieManagementWidget({
         tip: 'Time carb intake around high-intensity sessions to maintain WOD performance.'
       })
     }
-    
+
     if (user.diet_type === 'keto') {
       tips.push({
         icon: '🥑',
@@ -147,7 +142,7 @@ export function CalorieManagementWidget({
         tip: 'Maintain <25g net carbs daily and prioritize MCT oils for sustained energy.'
       })
     }
-    
+
     if (avgDeficit > 1000) {
       tips.push({
         icon: '⚠️',
@@ -155,9 +150,11 @@ export function CalorieManagementWidget({
         tip: 'Your deficit is quite large. Consider periodic refeed days to support hormonal health.'
       })
     }
-    
+
     return tips
   }, [user, avgDeficit, refreshKey])
+
+  if (!mountedRef.current) return null
 
   if (!progression || chartData.length === 0) {
     return (
@@ -303,8 +300,8 @@ export function CalorieManagementWidget({
                 <span>Calorie Deficit</span>
                 <span>{currentWeek.deficit} cal/day</span>
               </div>
-              <Progress 
-                value={Math.min(100, (currentWeek.deficit / 750) * 100)} 
+              <Progress
+                value={Math.min(100, (currentWeek.deficit / 750) * 100)}
                 className="h-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -374,25 +371,21 @@ export function CalorieManagementWidget({
         </Card>
       )}
 
-      {/* Personalized Nutrition Tips */}
+      {/* Nutrition Tips */}
       {nutritionTips.length > 0 && (
-        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              💡 Personalized Nutrition Tips
-            </CardTitle>
-            <CardDescription>
-              Recommendations tailored to your {user?.workout_type} training and {user?.diet_type} diet
-            </CardDescription>
+            <CardTitle className="text-lg">Nutrition Recommendations</CardTitle>
+            <CardDescription>Personalized tips for your goals</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="grid gap-4 md:grid-cols-2">
               {nutritionTips.map((tip, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-white/50 border border-purple-100">
-                  <div className="text-2xl">{tip.icon}</div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-purple-800">{tip.title}</h4>
-                    <p className="text-sm text-purple-700 mt-1">{tip.tip}</p>
+                <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
+                  <span className="text-2xl">{tip.icon}</span>
+                  <div>
+                    <p className="font-medium text-sm">{tip.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{tip.tip}</p>
                   </div>
                 </div>
               ))}

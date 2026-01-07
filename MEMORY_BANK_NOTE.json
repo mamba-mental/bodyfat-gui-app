@@ -1,0 +1,52 @@
+{
+  "session_date": "2025-07-03",
+  "project": "BodyFat GUI App WSL Debug",
+  "location": "/mnt/c/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app",
+  "issues_resolved": {
+    "cors_configuration": {
+      "problem": "App couldn't access local URLs due to CORS restrictions",
+      "solution": "Updated CORS in Python API and Next.js, created middleware.ts",
+      "files_modified": [
+        "python-api/main.py",
+        "src/app/api/data/route.ts",
+        "src/app/api/calculate/route.ts",
+        "middleware.ts",
+        "next.config.ts"
+      ]
+    },
+    "nextjs_rendering_error": {
+      "problem": "Bail out to client-side rendering: next/dynamic",
+      "solution": "Fixed client-icon.tsx, disabled Turbopack",
+      "status": "RESOLVED"
+    }
+  },
+  "current_status": {
+    "python_api": {
+      "port": 8000,
+      "status": "RUNNING",
+      "command": "./venv/bin/uvicorn main:app --reload --host 127.0.0.1 --port 8000"
+    },
+    "nextjs_app": {
+      "port": 3005,
+      "status": "RUNNING",
+      "command": "HOSTNAME=0.0.0.0 PORT=3005 npm run dev"
+    },
+    "wsl_ip": "172.23.89.12"
+  },
+  "unresolved_issue": {
+    "problem": "Windows cannot access localhost:3005",
+    "error": "ERR_CONNECTION_RESET",
+    "workaround": "Access directly via http://172.23.89.12:3005",
+    "attempted_fixes": [
+      "fix-port-3005.bat",
+      "fix-wsl-ports.ps1",
+      "fix-wsl-simple.bat"
+    ]
+  },
+  "retrieval_instructions": {
+    "1": "Look for DEBUG_SESSION_SUMMARY.md in project root",
+    "2": "Check MEMORY_BANK_NOTE.json for structured data",
+    "3": "Key phrase for Claude: 'BodyFat GUI WSL networking issue on port 3005'",
+    "4": "Direct access URL: http://172.23.89.12:3005"
+  }
+}

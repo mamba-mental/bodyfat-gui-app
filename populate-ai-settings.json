@@ -1,0 +1,136 @@
+{
+  "providers": {
+    "anthropic": {
+      "provider": "anthropic",
+      "apiKey": "sk-ant-YOUR-KEY-HERE",
+      "enabled": true,
+      "models": [
+        { "id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "available": true },
+        { "id": "claude-3-sonnet-20240229", "name": "Claude 3 Sonnet", "available": true },
+        { "id": "claude-3-haiku-20240307", "name": "Claude 3 Haiku", "available": true },
+        { "id": "claude-2.1", "name": "Claude 2.1", "available": true },
+        { "id": "claude-2.0", "name": "Claude 2.0", "available": true }
+      ]
+    },
+    "openai": {
+      "provider": "openai",
+      "apiKey": "",
+      "enabled": false,
+      "models": [
+        { "id": "gpt-4", "name": "GPT-4", "available": true },
+        { "id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "available": true }
+      ]
+    },
+    "chutes": {
+      "provider": "chutes",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "openrouter": {
+      "provider": "openrouter",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "gemini": {
+      "provider": "gemini",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "minimax": {
+      "provider": "minimax",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "mercury": {
+      "provider": "mercury",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "perplexity": {
+      "provider": "perplexity",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "mistral": {
+      "provider": "mistral",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "xai": {
+      "provider": "xai",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "groq": {
+      "provider": "groq",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    },
+    "fireworks": {
+      "provider": "fireworks",
+      "apiKey": "",
+      "enabled": false,
+      "models": []
+    }
+  },
+  "areas": [
+    {
+      "id": "confidence_analysis",
+      "name": "Confidence Analysis",
+      "description": "Analyzes calculation confidence and feasibility",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-sonnet-20240229"
+    },
+    {
+      "id": "progress_insights",
+      "name": "Progress Insights",
+      "description": "Generates personalized progress insights",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-sonnet-20240229"
+    },
+    {
+      "id": "chat_assistant",
+      "name": "Chat Assistant",
+      "description": "Interactive AI coach for Q&A",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-opus-20240229"
+    },
+    {
+      "id": "report_generation",
+      "name": "Report Generation",
+      "description": "AI-enhanced report content and analysis",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-sonnet-20240229"
+    },
+    {
+      "id": "meal_suggestions",
+      "name": "Meal Suggestions",
+      "description": "Personalized nutrition recommendations",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-haiku-20240307"
+    },
+    {
+      "id": "workout_planning",
+      "name": "Workout Planning",
+      "description": "AI-powered exercise recommendations",
+      "fallbackEnabled": true,
+      "currentProvider": "anthropic",
+      "currentModel": "claude-3-haiku-20240307"
+    }
+  ],
+  "globalFallbackEnabled": true
+}

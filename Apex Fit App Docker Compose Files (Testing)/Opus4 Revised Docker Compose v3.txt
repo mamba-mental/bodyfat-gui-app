@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  nextjs:
+    image: apex-fit-nextjs:latest
+    container_name: apex-fit-nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/app/public/uploads
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - apex-fit-data:/app/data
+      - apex-fit-uploads:/app/public/uploads
+      - apex-fit-exports:/app/exports
+    restart: unless-stopped
+    depends_on:
+      - python-api
+      - redis
+    networks:
+      - apex-fit-network
+
+  python-api:
+    image: apex-fit-python-api:latest
+    container_name: apex-fit-python-api
+    ports:
+      - "8013:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
+      - EXPORT_DIR=/app/exports
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - apex-fit-data:/app/data
+      - apex-fit-exports:/app/exports
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - apex-fit-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: apex-fit-redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6380:6379"
+    volumes:
+      - apex-fit-redis:/data
+    restart: unless-stopped
+    networks:
+      - apex-fit-network
+
+volumes:
+  apex-fit-data:
+    driver: local
+  apex-fit-uploads:
+    driver: local
+  apex-fit-exports:
+    driver: local
+  apex-fit-redis:
+    driver: local
+
+networks:
+  apex-fit-network:
+    driver: bridge

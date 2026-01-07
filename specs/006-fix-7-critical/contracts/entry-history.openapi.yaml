@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: Entry History API
+  description: API for retrieving all-time entry history without data loss
+  version: 1.3.1
+  contact:
+    name: ApexFit AI Development Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/entries/history:
+    get:
+      summary: Retrieve all-time entry history
+      description: |
+        Fetches all historical body composition entries for a user across all time periods.
+        Ensures 100% entry history retrieval accuracy (FR-027 criterion #3) and zero data loss (FR-005).
+
+        This endpoint implements Constitution Article II: Database Consistency requirement
+        that entry history MUST be preserved during schema updates.
+      operationId: getEntryHistory
+      tags:
+        - Entry History
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID to retrieve entry history for
+          example: "user-123-456-789"
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Optional start date for filtering (inclusive)
+          example: "2025-01-01"
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Optional end date for filtering (inclusive)
+          example: "2025-12-31"
+        - name: include_metadata
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include metadata like created_at, updated_at timestamps
+      responses:
+        '200':
+          description: All historical entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryHistoryResponse'
+              examples:
+                full_history:
+                  summary: All-time entry history (12 entries)
+                  value:
+                    entries:
+                      - id: "entry-001"
+                        user_id: "user-123-456-789"
+                        date: "2025-07-01"
+                        weight: 185.2
+                        body_fat_percentage: 18.5
+                        measurements:
+                          neck: 15.5
+                          waist: 34.0
+                          hip: 39.0
+                      - id: "entry-002"
+                        user_id: "user-123-456-789"
+                        date: "2025-07-15"
+                        weight: 183.8
+                        body_fat_percentage: 17.9
+                        measurements:
+                          neck: 15.5
+                          waist: 33.5
+                          hip: 38.5
+                    total_count: 12
+                    data_loss_detected: false
+                    date_range:
+                      earliest: "2025-07-01"
+                      latest: "2025-09-30"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found or has no entry history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Database error or data integrity issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    EntryHistoryResponse:
+      type: object
+      required:
+        - entries
+        - total_count
+        - data_loss_detected
+      properties:
+        entries:
+          type: array
+          description: Array of historical body composition entries
+          items:
+            $ref: '#/components/schemas/Entry'
+        total_count:
+          type: integer
+          description: Total number of entries for the user (should match expected count)
+          example: 12
+        data_loss_detected:
+          type: boolean
+          description: True if any expected entries are missing (data integrity check)
+        date_range:
+          $ref: '#/components/schemas/DateRange'
+        integrity_checks:
+          $ref: '#/components/schemas/IntegrityChecks'
+
+    Entry:
+      type: object
+      required:
+        - id
+        - user_id
+        - date
+        - weight
+        - body_fat_percentage
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Entry unique identifier
+        user_id:
+          type: string
+          format: uuid
+          description: User who owns this entry
+        date:
+          type: string
+          format: date
+          description: Measurement date
+        weight:
+          type: number
+          description: Weight in lbs
+          minimum: 0
+          example: 185.2
+        body_fat_percentage:
+          type: number
+          description: Body fat percentage
+          minimum: 0
+          maximum: 100
+          example: 18.5
+        measurements:
+          $ref: '#/components/schemas/Measurements'
+        created_at:
+          type: string
+          format: date-time
+          description: Entry creation timestamp (included if include_metadata=true)
+        updated_at:
+          type: string
+          format: date-time
+          description: Last modification timestamp (included if include_metadata=true)
+
+    Measurements:
+      type: object
+      description: Detailed body measurements (JSON field)
+      properties:
+        neck:
+          type: number
+          description: Neck circumference in inches
+          example: 15.5
+        waist:
+          type: number
+          description: Waist circumference in inches
+          example: 34.0
+        hip:
+          type: number
+          description: Hip circumference in inches
+          example: 39.0
+        height:
+          type: number
+          description: Height in inches
+          example: 70.0
+        age:
+          type: integer
+          description: Age in years
+          example: 35
+        gender:
+          type: string
+          enum: [M, F]
+          description: Biological sex for calculation purposes
+
+    DateRange:
+      type: object
+      properties:
+        earliest:
+          type: string
+          format: date
+          description: Earliest entry date in history
+        latest:
+          type: string
+          format: date
+          description: Most recent entry date in history
+
+    IntegrityChecks:
+      type: object
+      description: Data integrity validation results
+      properties:
+        no_null_values:
+          type: boolean
+          description: True if all required fields are populated (no nulls)
+        chronological_order:
+          type: boolean
+          description: True if entries are in valid chronological order
+        no_duplicate_dates:
+          type: boolean
+          description: True if no duplicate entries for same date
+        schema_version_match:
+          type: boolean
+          description: True if all entries match current schema version
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context

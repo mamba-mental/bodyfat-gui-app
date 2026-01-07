@@ -1,0 +1,138 @@
+# Prometheus alerting rules for ApexFit AI
+
+groups:
+  - name: apexfit.rules
+    rules:
+      # Service availability alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "{{ $labels.job }} service at {{ $labels.instance }} has been down for more than 1 minute."
+
+      # Frontend application alerts
+      - alert: FrontendHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="apexfit-frontend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frontend response time is high"
+          description: "95th percentile response time for frontend is {{ $value }}s"
+
+      - alert: FrontendHighErrorRate
+        expr: rate(http_requests_total{job="apexfit-frontend",status=~"5.."}[5m]) / rate(http_requests_total{job="apexfit-frontend"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend error rate is high"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      # Backend application alerts
+      - alert: BackendHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="apexfit-backend"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend response time is high"
+          description: "95th percentile response time for backend is {{ $value }}s"
+
+      - alert: BackendHighErrorRate
+        expr: rate(http_requests_total{job="apexfit-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="apexfit-backend"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend error rate is high"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      # Resource usage alerts
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Container {{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "Container {{ $labels.name }} CPU usage is {{ $value | humanizePercentage }}"
+
+      # Redis alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis server is not responding"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # Disk space alerts
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space usage is {{ $value | humanizePercentage }} on {{ $labels.device }}"
+
+      - alert: CriticalDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk space usage is {{ $value | humanizePercentage }} on {{ $labels.device }}"
+
+      # Database alerts
+      - alert: DatabaseConnectionFailure
+        expr: increase(database_connection_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection failures"
+          description: "{{ $value }} database connection failures in the last 5 minutes"
+
+      # Custom application alerts
+      - alert: CalculationServiceUnavailable
+        expr: increase(calculation_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PRIME calculation service having issues"
+          description: "{{ $value }} calculation errors in the last 5 minutes"
+
+      - alert: ReportGenerationFailures
+        expr: increase(report_generation_failures_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Report generation failures"
+          description: "{{ $value }} report generation failures in the last 10 minutes"

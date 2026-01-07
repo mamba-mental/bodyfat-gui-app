@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/contexts/theme-context"
 import { AISettingsService } from "@/lib/ai-settings-service"
+import { useRouter } from "next/navigation"
 
 export default function TestFixesPage() {
   const [results, setResults] = useState<Record<string, any>>({})
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
 
   useEffect(() => {
     // Test 1: Check localStorage
@@ -110,7 +112,7 @@ export default function TestFixesPage() {
     aiService.saveSettings(fullSettings as any)
     
     alert("Full save complete! Check AI Settings page now.")
-    window.location.href = "/settings/ai"
+    router.push("/settings/ai")
   }
 
   return (
@@ -158,13 +160,13 @@ export default function TestFixesPage() {
           <CardTitle>Quick Navigation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button onClick={() => window.location.href = "/settings/ai"} variant="outline">
+          <Button onClick={() => router.push("/settings/ai")} variant="outline">
             Go to AI Settings
           </Button>
-          <Button onClick={() => window.location.href = "/ai/chat"} variant="outline">
+          <Button onClick={() => router.push("/ai/chat")} variant="outline">
             Go to AI Chat
           </Button>
-          <Button onClick={() => window.location.href = "/ai/insights"} variant="outline">
+          <Button onClick={() => router.push("/ai/insights")} variant="outline">
             Go to AI Insights
           </Button>
         </CardContent>

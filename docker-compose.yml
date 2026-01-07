@@ -1,0 +1,86 @@
+services:
+  apex-fit-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    container_name: apex-fit-ai-alpha
+    ports:
+      - "7888:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/app/public/uploads
+      - NEXT_PUBLIC_PYTHON_API_URL=http://python-api:8000
+    volumes:
+      # Persistent data storage
+      - apex-fit-data:/app/data
+      - apex-fit-uploads:/app/public/uploads
+      - apex-fit-exports:/app/exports
+    restart: unless-stopped
+    depends_on:
+      - python-api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.apex-fit.rule=Host(`apexfit.yourdomain.com`)"
+      - "traefik.http.routers.apex-fit.tls=true"
+      - "traefik.http.routers.apex-fit.tls.certresolver=letsencrypt"
+      - "traefik.http.services.apex-fit.loadbalancer.server.port=3000"
+    networks:
+      - apex-fit-network
+
+  python-api:
+    build:
+      context: python-api
+      dockerfile: Dockerfile
+    container_name: apex-fit-python-api
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
+      - EXPORT_DIR=/app/exports
+    volumes:
+      - apex-fit-data:/app/data
+      - apex-fit-exports:/app/exports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - apex-fit-network
+
+# Define named volumes for persistent storage
+volumes:
+  apex-fit-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./nas-data  # This will create a local folder for data persistence
+  apex-fit-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./nas-uploads  # This will create a local folder for uploaded images
+  apex-fit-exports:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./nas-exports  # This will create a local folder for exports
+
+networks:
+  apex-fit-network:
+    driver: bridge

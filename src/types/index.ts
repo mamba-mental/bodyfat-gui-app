@@ -28,32 +28,42 @@ export interface UserData {
   workout_days: number; // per week
   job_activity: number; // 1-4 scale
   leisure_activity: number; // 1-4 scale
-  experience_level: string;
-  volume_score: number;
-  intensity_score: number;
-  frequency_score: number;
-  is_bodybuilder: boolean;
+  program_reference?: ProgramReferenceSnapshot;
+  current_program_id?: string; // ID of the current active program for tracking
 
-  // Nutrition
-  protein_intake: number; // grams
-  diet_type: string; // "keto", "high_protein", "balanced", "high_carb"
 
-  // Advanced Options
-  ped_use: boolean;
-  exercise_type: string; // "resistance", "cardio", "hiit"
-  sleep_quality: string; // "good", "poor"
-  
+  // Advanced Training & Nutrition
+  experience_level?: string;
+  volume_score?: number;
+  intensity_score?: number;
+  frequency_score?: number;
+  is_bodybuilder?: boolean;
+  protein_intake?: number;
+  diet_type?: string;
+  eating_pattern?: string;
+  eating_window_hours?: number;
+
+  ped_use?: boolean;
+
+  exercise_type?: string;
+  sleep_quality?: string;
   // Body Measurements
   waist?: number; // inches
   hip?: number; // inches
   neck?: number; // inches
-  
+
   // Calculated field
   timeline_weeks?: number;
-  
+
   // Profile Images
   profile_picture?: string; // Base64 encoded image or URL
   profile_banner?: string; // Base64 encoded image or URL
+}
+
+export interface ProgramReferenceSnapshot {
+  start_date: string;
+  initial_weight: number;
+  initial_bf: number;
 }
 
 export interface WeeklyProgression {
@@ -74,13 +84,14 @@ export interface WeeklyProgression {
 
 export interface BodyFatEntry {
   id: string;
-  date: Date;
+  date: Date | string;
   weight: number;
   body_fat_percentage?: number;
   notes?: string;
   user_id: string;
-  created_at: Date;
-  updated_at: Date;
+  program_id?: string; // Links entry to a specific program for tracking
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface CalculationResult {
@@ -100,30 +111,42 @@ export interface Report {
   id: string;
   user_id: string;
   title: string;
-  generated_at: Date;
-  calculation_result: CalculationResult;
-  html_content: string;
+  generated_at: Date | string;
+  calculation_result?: CalculationResult;
+  html_content?: string;
   pdf_path?: string;
   markdown_path?: string;
+  html_path?: string;
+  file_path?: string;
+  file_base?: string;
 }
 
 export interface AppState {
   current_user: UserData | null;
+  program_reference: ProgramReferenceSnapshot | null;
   entries: BodyFatEntry[];
+
   reports: Report[];
   current_calculation: CalculationResult | null;
   loading: boolean;
+  report_generation_status: string; // e.g., "Starting", "Calculating", "Calling Python", "Saving", "Complete"
+  report_generation_entry_date: string | null; // Date of the entry used for the report
   error: string | null;
 }
 
 export type AppAction =
   | { type: 'SET_USER_DATA'; payload: UserData }
+  | { type: 'SET_PROGRAM_REFERENCE'; payload: ProgramReferenceSnapshot }
   | { type: 'ADD_ENTRY'; payload: BodyFatEntry }
+
+  | { type: 'SET_ENTRIES'; payload: BodyFatEntry[] }
   | { type: 'UPDATE_ENTRY'; payload: BodyFatEntry }
   | { type: 'DELETE_ENTRY'; payload: string }
   | { type: 'SET_CALCULATION_RESULT'; payload: CalculationResult }
   | { type: 'ADD_REPORT'; payload: Report }
+  | { type: 'SET_REPORTS'; payload: Report[] }
   | { type: 'DELETE_REPORT'; payload: string }
+  | { type: 'SET_REPORT_GENERATION_STATUS'; payload: { status: string; entryDate?: string } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'CLEAR_ERROR' };
@@ -147,7 +170,7 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export interface CalculationApiResponse extends ApiResponse<CalculationResult> {}
+export interface CalculationApiResponse extends ApiResponse<CalculationResult> { }
 
 // Export AI types
 export * from './ai'

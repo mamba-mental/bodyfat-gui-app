@@ -83,24 +83,24 @@ export function useWebVitals() {
     if (typeof window === 'undefined') return
 
     // Import web-vitals dynamically to avoid SSR issues
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS((metric) => {
+    import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+      onCLS((metric: any) => {
         setVitals(prev => ({ ...prev, CLS: metric.value }))
       })
 
-      getFID((metric) => {
+      onINP((metric: any) => {
         setVitals(prev => ({ ...prev, FID: metric.value }))
       })
 
-      getFCP((metric) => {
+      onFCP((metric: any) => {
         setVitals(prev => ({ ...prev, FCP: metric.value }))
       })
 
-      getLCP((metric) => {
+      onLCP((metric: any) => {
         setVitals(prev => ({ ...prev, LCP: metric.value }))
       })
 
-      getTTFB((metric) => {
+      onTTFB((metric: any) => {
         setVitals(prev => ({ ...prev, TTFB: metric.value }))
       })
     }).catch(() => {

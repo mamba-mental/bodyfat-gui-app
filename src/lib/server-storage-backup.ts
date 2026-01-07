@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { DATA_DIR } from './constants';
+import { removeIfExists } from './fs-utils';
 
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const MAX_BACKUPS = 10;
@@ -49,7 +50,7 @@ async function cleanupOldBackups(): Promise<void> {
     
     // Remove old backups beyond MAX_BACKUPS
     for (let i = MAX_BACKUPS; i < backupFiles.length; i++) {
-      await fs.unlink(path.join(BACKUP_DIR, backupFiles[i]));
+      await removeIfExists(path.join(BACKUP_DIR, backupFiles[i]));
     }
   } catch (error) {
     console.error('Failed to cleanup old backups:', error);

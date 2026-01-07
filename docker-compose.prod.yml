@@ -1,0 +1,309 @@
+version: '3.8'
+
+services:
+  # Frontend Service
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        NODE_VERSION: ${NODE_VERSION:-18.19.1}
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME_FRONTEND:-apexfit/frontend}:${TAG:-latest}
+    container_name: apexfit-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      # Application settings
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      
+      # Directory configuration
+      DATA_DIR: /app/data
+      UPLOAD_DIR: /app/public/uploads
+      EXPORT_DIR: /app/exports
+      
+      # API configuration
+      NEXT_PUBLIC_PYTHON_API_URL: http://backend:8000
+      
+      # Security settings
+      NEXT_TELEMETRY_DISABLED: 1
+      
+      # Performance settings
+      NODE_OPTIONS: "--max-old-space-size=2048"
+      
+    volumes:
+      # Persistent data storage with proper mount points
+      - apexfit-data:/app/data:rw
+      - apexfit-uploads:/app/public/uploads:rw
+      - apexfit-exports:/app/exports:rw
+      
+      # Read-only configuration (if needed)
+      - ./config/frontend.env:/app/.env.local:ro
+      
+    networks:
+      - apexfit-network
+      - monitoring-network
+      
+    depends_on:
+      backend:
+        condition: service_healthy
+        
+    healthcheck:
+      test: ["CMD", "node", "scripts/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+          
+    labels:
+      # Traefik configuration for reverse proxy
+      - "traefik.enable=true"
+      - "traefik.http.routers.apexfit.rule=Host(`${DOMAIN:-apexfit.local}`)"
+      - "traefik.http.routers.apexfit.tls=true"
+      - "traefik.http.routers.apexfit.tls.certresolver=letsencrypt"
+      - "traefik.http.services.apexfit.loadbalancer.server.port=3000"
+      
+      # Monitoring labels
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=3000"
+      - "prometheus.io/path=/api/metrics"
+
+  # Backend Service
+  backend:
+    build: 
+      context: ./python-api
+      dockerfile: Dockerfile.prod
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.11.9}
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAME_BACKEND:-apexfit/backend}:${TAG:-latest}
+    container_name: apexfit-backend-prod
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Application settings
+      PYTHONUNBUFFERED: 1
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONPATH: /app
+      
+      # Directory configuration
+      DATA_DIR: /app/data
+      EXPORT_DIR: /app/exports
+      RESULTS_DIR: /app/results
+      
+      # Production server settings
+      WORKERS: ${BACKEND_WORKERS:-4}
+      WORKER_CLASS: uvicorn.workers.UvicornWorker
+      WORKER_CONNECTIONS: 1000
+      MAX_REQUESTS: 1000
+      MAX_REQUESTS_JITTER: 100
+      TIMEOUT: 30
+      KEEPALIVE: 5
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Security settings
+      SECRET_KEY: ${SECRET_KEY}
+      
+      # Database settings
+      DATABASE_URL: sqlite:///app/data/bodyfat.db
+      
+      # AI/API settings (if using external APIs)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      
+      # Performance settings
+      REDIS_URL: redis://redis:6379/0
+      
+    volumes:
+      # Persistent data storage
+      - apexfit-data:/app/data:rw
+      - apexfit-exports:/app/exports:rw
+      - apexfit-results:/app/results:rw
+      
+      # Configuration files
+      - ./config/backend.env:/app/.env:ro
+      
+    networks:
+      - apexfit-network
+      - monitoring-network
+      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+          
+    labels:
+      # Monitoring labels
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=8000"
+      - "prometheus.io/path=/metrics"
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7.2-alpine
+    container_name: apexfit-redis-prod
+    restart: unless-stopped
+    command: >
+      redis-server 
+      --appendonly yes 
+      --appendfsync everysec 
+      --maxmemory 256mb 
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - apexfit-redis:/data:rw
+    networks:
+      - apexfit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: apexfit-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - apexfit-prometheus:/prometheus:rw
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: apexfit-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - apexfit-grafana:/var/lib/grafana:rw
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - monitoring-network
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+# Persistent volumes
+volumes:
+  apexfit-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}
+      
+  apexfit-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${UPLOADS_PATH:-./uploads}
+      
+  apexfit-exports:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${EXPORTS_PATH:-./exports}
+      
+  apexfit-results:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${RESULTS_PATH:-./results}
+      
+  apexfit-redis:
+    driver: local
+    
+  apexfit-prometheus:
+    driver: local
+    
+  apexfit-grafana:
+    driver: local
+
+# Networks
+networks:
+  apexfit-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    
+  monitoring-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

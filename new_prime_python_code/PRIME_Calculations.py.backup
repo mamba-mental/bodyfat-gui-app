@@ -1,0 +1,572 @@
+from .PRIME_Utils import estimate_tef, estimate_neat, DIET_MULTIPLIERS, EXERCISE_ADJUSTMENTS, calculate_tdee, calculate_age
+from .PRIME_RMR_Calculations_v2 import get_rmr_and_tdee
+import datetime
+
+def calculate_lean_mass_preservation_scores(workout_days, workout_type):
+    """
+    Calculate lean mass preservation scores based on workout type and frequency.
+    
+    Args:
+        workout_days (int): Number of workout days per week.
+        workout_type (str): Type of workout (Bodybuilding, Cardio, General Fitness).
+        
+    Returns:
+        tuple: (volume_score, intensity_score, frequency_score)
+    """
+    # Dictionary of workout intensities and volumes for different workout types
+    workout_intensities = {
+        "Bodybuilding": 0.8,  # High intensity for muscle preservation
+        "Cardio": 0.4,  # Lower intensity, focused on fat loss
+        "General Fitness": 0.6  # Moderate intensity for overall fitness
+    }
+    workout_volumes = {
+        "Bodybuilding": 20,  # High volume for muscle building
+        "Cardio": 10,  # Lower volume for endurance training
+        "General Fitness": 15  # Moderate volume for balanced fitness
+    }
+
+    # Validate workout type input, raising an error if invalid
+    if workout_type not in workout_intensities:
+        raise ValueError("Invalid workout type.")
+    
+    # Calculate scores based on workout volume, intensity, and frequency
+    volume_score = min(workout_volumes[workout_type] * workout_days / 7 / 20, 1)  # Normalized volume score
+    intensity_score = workout_intensities[workout_type]  # Intensity score based on workout type
+    frequency_score = min(workout_days / 3, 1)  # Cap frequency score at 1
+
+    return volume_score, intensity_score, frequency_score
+
+def estimate_muscle_gain(current_weight, training_frequency, training_volume, intensity, protein_intake, age, gender, experience_level, is_bodybuilder, ped_use, diet_type, sleep_quality):
+    """
+    Estimate weekly muscle gain with enhanced factors.
+
+    Args:
+        current_weight (float): Weight in lbs.
+        training_frequency (int): Workouts per week.
+        training_volume (float): Volume per workout (e.g., sets * reps * weight).
+        intensity (float): Training intensity (0-1 scale).
+        protein_intake (float): Daily protein in grams.
+        age (int): Age in years.
+        gender (str): 'm' or 'f'.
+        experience_level (str): 'Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'.
+        is_bodybuilder (bool): Bodybuilding mode toggle.
+        ped_use (bool): PED use toggle.
+        diet_type (str): Diet type (e.g., 'keto', 'high_protein').
+        sleep_quality (str): 'good' or 'poor'.
+
+    Returns:
+        float: Weekly muscle gain in lbs.
+
+    Notes:
+        Updated with diet, PED, sleep, and diminishing returns adjustments.
+    """
+    gain_rates = {
+        'Beginner': 0.0125,  # 0.5-1 lb monthly
+        'Novice': 0.0100,    # 0.4-0.8 lb
+        'Intermediate': 0.0075,  # 0.3-0.6 lb
+        'Advanced': 0.0050,  # 0.2-0.4 lb
+        'Elite': 0.0025      # 0.1-0.2 lb
+    }
+
+    base_rate = gain_rates.get(experience_level, 0.0075)
+
+    # Multipliers for various factors
+    age_multiplier = 1.0 if age < 30 else (0.8 if age < 40 else 0.6)  # Age impacts recovery
+    gender_multiplier = 1.0 if gender == 'm' else 0.8  # Males gain slightly more
+    frequency_multiplier = min(training_frequency / 3, 1.25)  # Caps at 25% boost
+    volume_intensity_multiplier = min((training_volume * intensity) / (10 * 0.7), 1.25)  # Training load
+    protein_multiplier = min(protein_intake / (current_weight * 0.8), 1.25)  # 0.8g/lb target
+    sleep_multiplier = 1.0 if sleep_quality == 'good' else 0.8  # Poor sleep reduces gains
+    diet_multiplier = DIET_MULTIPLIERS.get(diet_type, (1.0, 1.0))[1]  # Muscle gain adjustment
+    ped_multiplier = 1.5 if ped_use else 1.0  # PEDs boost gains by 50%
+
+    # Bodybuilding mode boosts gains for experienced users
+    if is_bodybuilder and experience_level in ['Intermediate', 'Advanced', 'Elite']:
+        base_rate *= 1.2
+
+    monthly_gain_percentage = (base_rate * age_multiplier * gender_multiplier * 
+                               frequency_multiplier * volume_intensity_multiplier * 
+                               protein_multiplier * sleep_multiplier * diet_multiplier * 
+                               ped_multiplier)
+
+    # Apply diminishing returns for advanced users
+    if experience_level in ['Advanced', 'Elite']:
+        monthly_gain_percentage *= 0.7
+
+    weekly_muscle_gain = (monthly_gain_percentage * current_weight) / 4
+    return max(weekly_muscle_gain, 0)  # Ensure non-negative
+
+def calculate_initial_daily_calories(tdee, rmr, deficit_level='moderate', is_bodybuilder=False, gender='m', remove_limits=True):
+    """
+    Calculate initial daily calorie intake with configurable deficit.
+
+    Args:
+        tdee (float): Total Daily Energy Expenditure.
+        rmr (float): Resting Metabolic Rate.
+        deficit_level (str): 'conservative', 'moderate', 'aggressive'.
+        is_bodybuilder (bool): Bodybuilding mode toggle.
+        gender (str): 'm' or 'f'.
+        remove_limits (bool): If True, removes all minimum calorie limits.
+
+    Returns:
+        float: Daily calorie intake.
+
+    Notes:
+        Updated to allow removal of all calorie minimums for absolute calculations.
+    """
+    deficit_percentages = {
+        'conservative': 0.15,  # 15% deficit
+        'moderate': 0.25,      # 25% deficit
+        'aggressive': 0.42     # 42% deficit
+    }
+    deficit = deficit_percentages.get(deficit_level, 0.25)
+
+    calories = tdee * (1 - deficit)
+
+    # Apply minimums only if not removing limits
+    if not remove_limits and not is_bodybuilder:
+        min_calories = 1200 if gender == 'f' else 1500
+        calories = max(calories, min_calories)
+
+    return calories
+
+def calculate_required_deficit_for_dual_goals(current_weight, current_bf, goal_weight, goal_bf, 
+                                             remaining_weeks, fat_loss_ratio=0.75):
+    """
+    Calculate the required weekly deficit to achieve both weight and body fat goals.
+    
+    Args:
+        current_weight (float): Current weight in lbs.
+        current_bf (float): Current body fat percentage.
+        goal_weight (float): Target weight in lbs.
+        goal_bf (float): Target body fat percentage.
+        remaining_weeks (int): Weeks remaining to achieve goals.
+        fat_loss_ratio (float): Ratio of weight loss that comes from fat.
+        
+    Returns:
+        tuple: (weekly_deficit_calories, weekly_weight_loss_required, weekly_fat_loss_required)
+    """
+    # Calculate current body composition
+    current_fat_mass = current_weight * (current_bf / 100)
+    current_lean_mass = current_weight - current_fat_mass
+    
+    # Calculate goal body composition
+    goal_fat_mass = goal_weight * (goal_bf / 100)
+    goal_lean_mass = goal_weight - goal_fat_mass
+    
+    # Calculate total fat loss required
+    total_fat_loss_required = current_fat_mass - goal_fat_mass
+    
+    # Calculate total weight loss required
+    total_weight_loss_required = current_weight - goal_weight
+    
+    # If we need to lose more fat than total weight, we need to gain lean mass
+    if total_fat_loss_required > total_weight_loss_required:
+        # This means we need to recompose - lose fat while gaining muscle
+        weekly_fat_loss_required = total_fat_loss_required / remaining_weeks
+        weekly_weight_loss_required = total_weight_loss_required / remaining_weeks
+    else:
+        # Standard cut - lose both fat and some lean mass
+        weekly_weight_loss_required = total_weight_loss_required / remaining_weeks
+        weekly_fat_loss_required = total_fat_loss_required / remaining_weeks
+    
+    # Calculate the deficit needed based on fat loss requirement
+    # 1 lb of fat = 3500 calories
+    weekly_deficit_from_fat = weekly_fat_loss_required * 3500
+    
+    # If we're losing lean mass too, account for it (1 lb lean mass = ~1800 calories)
+    lean_mass_change = (goal_lean_mass - current_lean_mass) / remaining_weeks
+    if lean_mass_change < 0:  # Losing lean mass
+        weekly_deficit_from_lean = abs(lean_mass_change) * 1800
+        total_weekly_deficit = weekly_deficit_from_fat + weekly_deficit_from_lean
+    else:  # Gaining lean mass (recomp)
+        # Need extra calories for muscle gain
+        weekly_surplus_for_muscle = lean_mass_change * 2500  # ~2500 cal per lb muscle
+        total_weekly_deficit = weekly_deficit_from_fat - weekly_surplus_for_muscle
+    
+    return total_weekly_deficit, weekly_weight_loss_required, weekly_fat_loss_required
+
+def predict_weight_loss(current_weight, current_bf, goal_weight, goal_bf, start_date, end_date, dob, gender, activity_level, height_cm, is_athlete, daily_protein_intake, job_activity, leisure_activity, experience_level, is_bodybuilder, ped_use, diet_type, exercise_type, sleep_quality, workout_days=3, volume_score=7, intensity_score=7):
+    """
+    Predict weight loss progression with dynamic adjustments for both weight and body fat goals.
+
+    Args:
+        current_weight (float): Starting weight in lbs.
+        current_bf (float): Starting body fat percentage.
+        goal_weight (float): Target weight in lbs.
+        goal_bf (float): Target body fat percentage.
+        start_date (datetime.date): Start date.
+        end_date (datetime.date): Goal date.
+        dob (datetime.date): Date of birth.
+        gender (str): 'm' or 'f'.
+        activity_level (str): Overall activity level.
+        height_cm (float): Height in cm.
+        is_athlete (bool): Athlete status.
+        daily_protein_intake (float): Daily protein in grams.
+        job_activity (str): Job activity level.
+        leisure_activity (str): Leisure activity level.
+        experience_level (str): Training experience.
+        is_bodybuilder (bool): Bodybuilding mode.
+        ped_use (bool): PED use toggle.
+        diet_type (str): Diet type.
+        exercise_type (str): Exercise type.
+        sleep_quality (str): 'good' or 'poor'.
+
+    Returns:
+        list: Weekly progression data with weight, BF%, calories, etc.
+
+    Notes:
+        Updated to prioritize achieving both weight and body fat goals by the target date.
+    """
+    weeks = (end_date - start_date).days // 7
+    if weeks < 1:
+        raise ValueError("Goal timeframe must be at least one week.")
+
+    progression = []
+    initial_weight = current_weight
+    current_lean_mass = current_weight * (1 - current_bf / 100)
+    current_fat_mass = current_weight * (current_bf / 100)
+
+    # Initial calculations
+    age = calculate_age(dob, start_date)
+    
+    # Use the more robust RMR calculation
+    profile_data = {
+        'current_weight': current_weight,
+        'height_feet': int(height_cm / 30.48),  # Convert cm to feet
+        'height_inches': round(((height_cm / 2.54) % 12)),  # Convert cm to inches
+        'gender': gender,
+        'dob': dob.strftime("%m/%d/%Y") if hasattr(dob, 'strftime') else dob,
+        'activity_factor': activity_level,
+        'is_athlete': is_athlete,
+        'diet_type': diet_type,
+        'exercise_type': exercise_type,
+        'job_activity': job_activity,
+        'leisure_activity': leisure_activity,
+        'is_bodybuilder': is_bodybuilder,
+        'protein_intake': daily_protein_intake
+    }
+    
+    # Get RMR and TDEE using the robust calculation
+    rmr, tdee = get_rmr_and_tdee(profile_data)
+    
+    protein_cal = daily_protein_intake * 4  # Rough estimate, assumes balanced macros
+    carb_cal = protein_cal  # Placeholder for balanced diet
+    fat_cal = protein_cal / 2
+    
+    # Calculate initial deficit based on dual goals
+    remaining_weeks = weeks
+    weekly_deficit, weekly_weight_target, weekly_fat_target = calculate_required_deficit_for_dual_goals(
+        current_weight, current_bf, goal_weight, goal_bf, remaining_weeks
+    )
+    daily_deficit = weekly_deficit / 7
+    daily_calorie_intake = tdee - daily_deficit
+
+    progression.append({
+        'date': start_date.strftime("%m%d%y"),
+        'weight': current_weight,
+        'body_fat_percentage': current_bf,
+        'daily_calorie_intake': daily_calorie_intake,
+        'tdee': tdee,
+        'weekly_caloric_output': 0,
+        'total_weight_lost': 0,
+        'lean_mass': current_lean_mass,
+        'fat_mass': current_fat_mass,
+        'muscle_gain': 0,
+        'rmr': rmr,
+        'tef': protein_cal * 0.25 + carb_cal * 0.075 + fat_cal * 0.015,
+        'neat': estimate_neat(job_activity, leisure_activity, exercise_type)
+    })
+
+    for week in range(1, weeks + 1):
+        # Recalculate metrics weekly
+        age = calculate_age(dob, start_date + datetime.timedelta(weeks=week))
+        
+        # Use the more robust RMR calculation for weekly updates
+        profile_data = {
+            'current_weight': current_weight,
+            'height_feet': int(height_cm / 30.48),  # Convert cm to feet
+            'height_inches': round(((height_cm / 2.54) % 12)),  # Convert cm to inches
+            'gender': gender,
+            'dob': dob.strftime("%m/%d/%Y") if hasattr(dob, 'strftime') else dob,
+            'activity_factor': activity_level,
+            'is_athlete': is_athlete,
+            'diet_type': diet_type,
+            'exercise_type': exercise_type,
+            'job_activity': job_activity,
+            'leisure_activity': leisure_activity,
+            'is_bodybuilder': is_bodybuilder,
+            'protein_intake': daily_protein_intake
+        }
+        
+        # Get updated RMR and TDEE using the robust calculation
+        rmr, tdee = get_rmr_and_tdee(profile_data)
+
+        # Recalculate remaining goals and required deficit
+        remaining_weeks = max(1, weeks - week + 1)
+        
+        # Calculate deficit needed to hit BOTH targets
+        weekly_deficit, weekly_weight_target, weekly_fat_target = calculate_required_deficit_for_dual_goals(
+            current_weight, current_bf, goal_weight, goal_bf, remaining_weeks
+    """
+    deficit_percentages = {
+        'conservative': 0.15,  # 15% deficit
+        'moderate': 0.25,      # 25% deficit
+        'aggressive': 0.42     # 42% deficit
+    }
+    deficit = deficit_percentages.get(deficit_level, 0.25)
+
+    calories = tdee * (1 - deficit)
+
+    # Apply minimums only if not removing limits
+    if not remove_limits and not is_bodybuilder:
+        min_calories = 1200 if gender == 'f' else 1500
+        calories = max(calories, min_calories)
+
+    return calories
+
+def calculate_required_deficit_for_dual_goals(current_weight, current_bf, goal_weight, goal_bf, 
+                                             remaining_weeks, fat_loss_ratio=0.75):
+    """
+    Calculate the required weekly deficit to achieve both weight and body fat goals.
+    
+    Args:
+        current_weight (float): Current weight in lbs.
+        current_bf (float): Current body fat percentage.
+        goal_weight (float): Target weight in lbs.
+        goal_bf (float): Target body fat percentage.
+        remaining_weeks (int): Weeks remaining to achieve goals.
+        fat_loss_ratio (float): Ratio of weight loss that comes from fat.
+        
+    Returns:
+        tuple: (weekly_deficit_calories, weekly_weight_loss_required, weekly_fat_loss_required)
+    """
+    # Calculate current body composition
+    current_fat_mass = current_weight * (current_bf / 100)
+    current_lean_mass = current_weight - current_fat_mass
+    
+    # Calculate goal body composition
+    goal_fat_mass = goal_weight * (goal_bf / 100)
+    goal_lean_mass = goal_weight - goal_fat_mass
+    
+    # Calculate total fat loss required
+    total_fat_loss_required = current_fat_mass - goal_fat_mass
+    
+    # Calculate total weight loss required
+    total_weight_loss_required = current_weight - goal_weight
+    
+    # If we need to lose more fat than total weight, we need to gain lean mass
+    if total_fat_loss_required > total_weight_loss_required:
+        # This means we need to recompose - lose fat while gaining muscle
+        weekly_fat_loss_required = total_fat_loss_required / remaining_weeks
+        weekly_weight_loss_required = total_weight_loss_required / remaining_weeks
+    else:
+        # Standard cut - lose both fat and some lean mass
+        weekly_weight_loss_required = total_weight_loss_required / remaining_weeks
+        weekly_fat_loss_required = total_fat_loss_required / remaining_weeks
+    
+    # Calculate the deficit needed based on fat loss requirement
+    # 1 lb of fat = 3500 calories
+    weekly_deficit_from_fat = weekly_fat_loss_required * 3500
+    
+    # If we're losing lean mass too, account for it (1 lb lean mass = ~1800 calories)
+    lean_mass_change = (goal_lean_mass - current_lean_mass) / remaining_weeks
+    if lean_mass_change < 0:  # Losing lean mass
+        weekly_deficit_from_lean = abs(lean_mass_change) * 1800
+        total_weekly_deficit = weekly_deficit_from_fat + weekly_deficit_from_lean
+    else:  # Gaining lean mass (recomp)
+        # Need extra calories for muscle gain
+        weekly_surplus_for_muscle = lean_mass_change * 2500  # ~2500 cal per lb muscle
+        total_weekly_deficit = weekly_deficit_from_fat - weekly_surplus_for_muscle
+    
+    return total_weekly_deficit, weekly_weight_loss_required, weekly_fat_loss_required
+
+def predict_weight_loss(current_weight, current_bf, goal_weight, goal_bf, start_date, end_date, dob, gender, activity_level, height_cm, is_athlete, daily_protein_intake, job_activity, leisure_activity, experience_level, is_bodybuilder, ped_use, diet_type, exercise_type, sleep_quality, workout_days=3, volume_score=7, intensity_score=7):
+    """
+    Predict weight loss progression with dynamic adjustments for both weight and body fat goals.
+
+    Args:
+        current_weight (float): Starting weight in lbs.
+        current_bf (float): Starting body fat percentage.
+        goal_weight (float): Target weight in lbs.
+        goal_bf (float): Target body fat percentage.
+        start_date (datetime.date): Start date.
+        end_date (datetime.date): Goal date.
+        dob (datetime.date): Date of birth.
+        gender (str): 'm' or 'f'.
+        activity_level (str): Overall activity level.
+        height_cm (float): Height in cm.
+        is_athlete (bool): Athlete status.
+        daily_protein_intake (float): Daily protein in grams.
+        job_activity (str): Job activity level.
+        leisure_activity (str): Leisure activity level.
+        experience_level (str): Training experience.
+        is_bodybuilder (bool): Bodybuilding mode.
+        ped_use (bool): PED use toggle.
+        diet_type (str): Diet type.
+        exercise_type (str): Exercise type.
+        sleep_quality (str): 'good' or 'poor'.
+
+    Returns:
+        list: Weekly progression data with weight, BF%, calories, etc.
+
+    Notes:
+        Updated to prioritize achieving both weight and body fat goals by the target date.
+    """
+    weeks = (end_date - start_date).days // 7
+    if weeks < 1:
+        raise ValueError("Goal timeframe must be at least one week.")
+
+    progression = []
+    initial_weight = current_weight
+    current_lean_mass = current_weight * (1 - current_bf / 100)
+    current_fat_mass = current_weight * (current_bf / 100)
+
+    # Initial calculations
+    age = calculate_age(dob, start_date)
+    
+    # Use the more robust RMR calculation
+    profile_data = {
+        'current_weight': current_weight,
+        'height_feet': int(height_cm / 30.48),  # Convert cm to feet
+        'height_inches': round(((height_cm / 2.54) % 12)),  # Convert cm to inches
+        'gender': gender,
+        'dob': dob.strftime("%m/%d/%Y") if hasattr(dob, 'strftime') else dob,
+        'activity_factor': activity_level,
+        'is_athlete': is_athlete,
+        'diet_type': diet_type,
+        'exercise_type': exercise_type,
+        'job_activity': job_activity,
+        'leisure_activity': leisure_activity,
+        'is_bodybuilder': is_bodybuilder,
+        'protein_intake': daily_protein_intake
+    }
+    
+    # Get RMR and TDEE using the robust calculation
+    rmr, tdee = get_rmr_and_tdee(profile_data)
+    
+    protein_cal = daily_protein_intake * 4  # Rough estimate, assumes balanced macros
+    carb_cal = protein_cal  # Placeholder for balanced diet
+    fat_cal = protein_cal / 2
+    
+    # Calculate initial deficit based on dual goals
+    remaining_weeks = weeks
+    weekly_deficit, weekly_weight_target, weekly_fat_target = calculate_required_deficit_for_dual_goals(
+        current_weight, current_bf, goal_weight, goal_bf, remaining_weeks
+    )
+    daily_deficit = weekly_deficit / 7
+    daily_calorie_intake = tdee - daily_deficit
+
+    progression.append({
+        'date': start_date.strftime("%m%d%y"),
+        'weight': current_weight,
+        'body_fat_percentage': current_bf,
+        'daily_calorie_intake': daily_calorie_intake,
+        'tdee': tdee,
+        'weekly_caloric_output': 0,
+        'total_weight_lost': 0,
+        'lean_mass': current_lean_mass,
+        'fat_mass': current_fat_mass,
+        'muscle_gain': 0,
+        'rmr': rmr,
+        'tef': protein_cal * 0.25 + carb_cal * 0.075 + fat_cal * 0.015,
+        'neat': estimate_neat(job_activity, leisure_activity, exercise_type)
+    })
+
+    for week in range(1, weeks + 1):
+        # Recalculate metrics weekly
+        age = calculate_age(dob, start_date + datetime.timedelta(weeks=week))
+        
+        # Use the more robust RMR calculation for weekly updates
+        profile_data = {
+            'current_weight': current_weight,
+            'height_feet': int(height_cm / 30.48),  # Convert cm to feet
+            'height_inches': round(((height_cm / 2.54) % 12)),  # Convert cm to inches
+            'gender': gender,
+            'dob': dob.strftime("%m/%d/%Y") if hasattr(dob, 'strftime') else dob,
+            'activity_factor': activity_level,
+            'is_athlete': is_athlete,
+            'diet_type': diet_type,
+            'exercise_type': exercise_type,
+            'job_activity': job_activity,
+            'leisure_activity': leisure_activity,
+            'is_bodybuilder': is_bodybuilder,
+            'protein_intake': daily_protein_intake
+        }
+        
+        # Get updated RMR and TDEE using the robust calculation
+        rmr, tdee = get_rmr_and_tdee(profile_data)
+
+        # Recalculate remaining goals and required deficit
+        remaining_weeks = max(1, weeks - week + 1)
+        
+        # Calculate deficit needed to hit BOTH targets
+        weekly_deficit, weekly_weight_target, weekly_fat_target = calculate_required_deficit_for_dual_goals(
+            current_weight, current_bf, goal_weight, goal_bf, remaining_weeks
+        )
+        
+        daily_deficit = weekly_deficit / 7
+        daily_calorie_intake = tdee - daily_deficit
+        
+        # No minimum calorie limits - absolute calculation to hit goals
+        # This allows for very low calories if needed to achieve aggressive goals
+
+        # Calculate weekly outcomes
+        weekly_caloric_output = weekly_deficit
+        
+        # Adjust fat vs. lean loss based on diet, exercise, and PEDs
+        fat_loss_ratio = 0.75
+        fat_loss_boost = DIET_MULTIPLIERS.get(diet_type, (1.0, 1.0))[0] * EXERCISE_ADJUSTMENTS.get(exercise_type, {"fat_loss": 1.0})["fat_loss"]
+        fat_loss_ratio *= fat_loss_boost
+        if ped_use:
+            fat_loss_ratio += 0.2
+        if is_bodybuilder:
+            fat_loss_ratio = min(fat_loss_ratio, 0.95)  # Prioritize muscle retention
+        else:
+            fat_loss_ratio = min(fat_loss_ratio, 0.9)
+
+        # Calculate actual fat and lean mass changes
+        fat_loss = weekly_fat_target
+        
+        # Estimate muscle gain
+        # Convert scores (1-10) to approximate training volume and intensity
+        # Volume: 7 -> ~17.5 sets. Intensity: 7 -> 0.7
+        training_volume = volume_score * 2.5
+        intensity = intensity_score / 10.0
+        muscle_gain = estimate_muscle_gain(current_weight, workout_days, training_volume, intensity, daily_protein_intake, age, gender, experience_level, is_bodybuilder, ped_use, diet_type, sleep_quality)
+        
+        # Update body composition based on goals
+        current_fat_mass = max(0, current_fat_mass - fat_loss)
+        
+        # Calculate lean mass change to achieve weight goal
+        target_weight_this_week = current_weight - weekly_weight_target
+        target_lean_mass = target_weight_this_week - current_fat_mass
+        
+        # Apply muscle gain
+        current_lean_mass = target_lean_mass + muscle_gain
+        
+        # Update totals
+        current_weight = current_fat_mass + current_lean_mass
+        current_bf = (current_fat_mass / current_weight) * 100 if current_weight > 0 else 0
+
+        progression.append({
+            'date': (start_date + datetime.timedelta(weeks=week)).strftime("%m%d%y"),
+            'weight': current_weight,
+            'body_fat_percentage': current_bf,
+            'daily_calorie_intake': daily_calorie_intake,
+            'tdee': tdee,
+            'weekly_caloric_output': weekly_caloric_output,
+            'total_weight_lost': initial_weight - current_weight,
+            'lean_mass': current_lean_mass,
+            'fat_mass': current_fat_mass,
+            'muscle_gain': muscle_gain,
+            'rmr': rmr,
+            'tef': protein_cal * 0.25 + carb_cal * 0.075 + fat_cal * 0.015,
+            'neat': estimate_neat(job_activity, leisure_activity, exercise_type)
+        })
+
+        # Stop if goals are met
+        if abs(current_weight - goal_weight) < 0.5 and abs(current_bf - goal_bf) < 0.5:
+            break
+
+    return progression

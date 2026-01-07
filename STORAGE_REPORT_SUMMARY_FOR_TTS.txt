@@ -1,0 +1,140 @@
+BODYFAT APP - STORAGE INCONSISTENCY INVESTIGATION REPORT
+VERBAL SUMMARY FOR TEXT-TO-SPEECH
+
+========================================
+EXECUTIVE SUMMARY
+========================================
+
+Your hypothesis is CONFIRMED.
+
+The bodyfat app is simultaneously using THREE different storage systems:
+1. Redis (in-memory cache)
+2. SQLite database 
+3. JSON files
+
+This is causing data inconsistency because entries are saved in different locations depending on which code path executes.
+
+========================================
+DETAILED FINDINGS
+========================================
+
+STORAGE SYSTEM 1: REDIS
+- Location: src/lib/redis.ts
+- Status: Fully implemented with dedicated API routes
+- Available: Only in development mode, NOT in production
+- Problem: This is essentially abandoned code that exists but isn't actually used by the main application
+
+STORAGE SYSTEM 2: SQLITE
+- Location: data/bodyfat.db (14.1 megabytes)
+- Used by: Python API running on port 8000
+- Contains: Proper database tables for users, entries, reports, and calculations
+- Status: Active in both development and production
+
+STORAGE SYSTEM 3: JSON FILES
+- Location: data/apexfit-data.json
+- Used by: Next.js application routes
+- Strategy: JSON writes first, then syncs with SQLite as backup
+- Problem: Creates duplicate data and potential conflicts
+
+========================================
+HOW DATA IS CURRENTLY SAVED
+========================================
+
+When you save an entry, here's what happens:
+
+Step 1: The Next.js app writes to the JSON file first (fast, local storage)
+Step 2: Then it attempts to sync with the Python API's SQLite database
+Step 3: If there are conflicts, data reconciliation code tries to merge the differences
+Step 4: Redis exists but is NOT called by the main application routes
+
+This multi-step process explains why your entries are inconsistent.
+
+========================================
+CRITICAL PROBLEMS
+========================================
+
+Problem 1: NO SINGLE SOURCE OF TRUTH
+- Data exists in three places simultaneously
+- No clear hierarchy of which storage is authoritative
+- Merge logic can create unexpected results
+
+Problem 2: DEVELOPMENT VERSUS PRODUCTION MISMATCH
+- Development has Redis available
+- Production does NOT have Redis
+- Code written for Redis in dev will fail in production
+
+Problem 3: RACE CONDITIONS
+- If the Python API fails, data gets saved to JSON but not SQLite
+- This creates permanent inconsistency between the two stores
+
+Problem 4: ABANDONED CODE
+- The Redis implementation at /api/redis is fully functional but never called
+- This is dead code taking up space and causing confusion
+
+========================================
+RECOMMENDED SOLUTION
+========================================
+
+CONSOLIDATE TO SQLITE AS SINGLE SOURCE OF TRUTH
+
+Why SQLite:
+- Already in production and working
+- Proper database schema with relationships
+- Supports atomic transactions
+- Better query performance
+- Production-ready
+
+Implementation Steps:
+
+Phase 1: MIGRATE DATA
+- Create script to read data/apexfit-data.json
+- Insert all data into SQLite database
+- Verify data integrity
+- Create backup of JSON file
+
+Phase 2: REMOVE OLD CODE
+- Delete src/lib/redis.ts
+- Delete src/lib/server-storage.ts (JSON storage)
+- Delete src/app/api/redis folder (all Redis routes)
+- Remove Redis package from package.json
+
+Phase 3: UPDATE ROUTES
+- Modify all Next.js API routes to ONLY call Python API
+- Remove JSON file read/write operations
+- Remove data reconciliation code
+- Add proper error handling for Python API failures
+
+Phase 4: TESTING
+- Verify all CRUD operations work through SQLite
+- Test concurrent writes
+- Verify data persistence across restarts
+- Check production deployment
+
+Phase 5: OPTIONAL ENHANCEMENT
+- Add Redis back as CACHE ONLY (not primary storage)
+- Cache frequently accessed data for performance
+- Set proper cache expiration times
+
+========================================
+BENEFITS OF CONSOLIDATION
+========================================
+
+Benefit 1: Single source of truth - No more data conflicts
+Benefit 2: Simpler codebase - Less code to maintain
+Benefit 3: Better performance - Proper database indexing and queries
+Benefit 4: Data integrity - Atomic transactions prevent partial writes
+Benefit 5: Production ready - Already tested in production environment
+
+========================================
+NEXT STEPS
+========================================
+
+Would you like me to proceed with implementing the SQLite consolidation?
+
+This will involve:
+1. Creating a data migration script
+2. Removing JSON and Redis storage code
+3. Updating all API routes to use SQLite only
+4. Testing the consolidated system
+
+End of report.

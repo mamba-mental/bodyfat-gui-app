@@ -1,0 +1,92 @@
+# Production-optimized multi-stage build for Body Fat Tracker Backend
+# Security: Using specific Python version, security updates, and non-root user
+# Performance: Multi-stage build with optimized dependencies
+
+ARG PYTHON_VERSION=3.11.9
+FROM python:${PYTHON_VERSION}-slim AS base
+
+# Install security updates and system dependencies
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        dumb-init \
+        tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# Security: Create non-root user
+RUN groupadd --gid 1001 appuser && \
+    useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash appuser
+
+# Dependencies stage
+FROM base AS deps
+WORKDIR /app
+
+# Copy requirements for caching
+COPY requirements.txt requirements-report.txt* ./
+
+# Performance: Install dependencies with optimizations
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn[gthread]==21.2.0 && \
+    pip list --format=freeze > installed-packages.txt
+
+# Production stage
+FROM base AS production
+WORKDIR /app
+
+# Copy installed packages from deps stage
+COPY --from=deps /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=deps /usr/local/bin /usr/local/bin
+COPY --from=deps /app/installed-packages.txt ./
+
+# Application directories
+ENV DATA_DIR /app/data
+ENV EXPORT_DIR /app/exports
+ENV RESULTS_DIR /app/results
+
+# Create application directories with proper permissions
+RUN mkdir -p /app/data /app/exports /app/results && \
+    chown -R appuser:appuser /app
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Security: Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Performance and security environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
+ENV WORKERS=4
+ENV WORKER_CLASS=uvicorn.workers.UvicornWorker
+ENV WORKER_CONNECTIONS=1000
+ENV MAX_REQUESTS=1000
+ENV MAX_REQUESTS_JITTER=100
+ENV TIMEOUT=30
+ENV KEEPALIVE=5
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Production server configuration
+COPY --chown=appuser:appuser gunicorn.conf.py ./
+
+# Performance: Use tini for proper signal handling and gunicorn for production
+ENTRYPOINT ["tini", "--"]
+
+# Start with gunicorn for production
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "main:app"]
+
+# Security: Add labels for container scanning
+LABEL org.opencontainers.image.title="ApexFit AI Backend"
+LABEL org.opencontainers.image.description="AI-powered body fat estimation backend API"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="ApexFit"
+LABEL security.contact="security@apexfit.ai"

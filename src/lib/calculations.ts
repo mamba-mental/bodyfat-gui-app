@@ -1,8 +1,10 @@
 // Frontend calculation service that communicates with Python PRIME API
 
 import { UserData, CalculationResult, WeeklyProgression } from '@/types'
+import { pythonApiConfig } from './config'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8000'
+// Use centralized config for Python API settings
+const API_BASE_URL = pythonApiConfig.url;
 
 export class CalculationError extends Error {
   constructor(message: string, public statusCode?: number) {

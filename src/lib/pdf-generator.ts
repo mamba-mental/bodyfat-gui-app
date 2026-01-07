@@ -1,8 +1,43 @@
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { Report, CalculationResult, UserData, WeeklyProgression } from '@/types'
+/**
+ * PDF Generator - Lazy-loaded PDF generation utilities
+ *
+ * Uses dynamic imports to lazy-load jsPDF (~200KB) and html2canvas (~150KB)
+ * These libraries are only loaded when actually needed, reducing initial bundle size
+ */
+
+import { Report } from '@/types'
+
+// Cache for dynamically imported modules
+let jsPDFModule: typeof import('jspdf') | null = null
+let html2canvasModule: typeof import('html2canvas') | null = null
+
+/**
+ * Lazy load jsPDF library
+ */
+async function getJsPDF() {
+  if (!jsPDFModule) {
+    jsPDFModule = await import('jspdf')
+  }
+  return jsPDFModule.default
+}
+
+/**
+ * Lazy load html2canvas library
+ */
+async function getHtml2Canvas() {
+  if (!html2canvasModule) {
+    html2canvasModule = await import('html2canvas')
+  }
+  return html2canvasModule.default
+}
 
 export async function generatePDFFromHTML(htmlContent: string, filename: string): Promise<void> {
+  // Lazy load both libraries in parallel
+  const [jsPDF, html2canvas] = await Promise.all([
+    getJsPDF(),
+    getHtml2Canvas()
+  ])
+
   // Create a temporary container for the HTML
   const container = document.createElement('div')
   container.style.position = 'absolute'
@@ -12,12 +47,54 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
   document.body.appendChild(container)
 
   try {
-    // Convert HTML to canvas
+    // Convert HTML to canvas with options to handle modern CSS
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false,
       windowWidth: 800,
+      ignoreElements: () => false,
+      onclone: (clonedDoc) => {
+        // Replace modern CSS color functions with fallbacks
+        const styleSheets = clonedDoc.styleSheets
+        for (let i = 0; i < styleSheets.length; i++) {
+          try {
+            const sheet = styleSheets[i] as CSSStyleSheet
+            if (sheet.cssRules) {
+              for (let j = 0; j < sheet.cssRules.length; j++) {
+                const rule = sheet.cssRules[j] as CSSStyleRule
+                if (rule.style) {
+                  // Convert lab() colors to rgb() fallbacks
+                  for (let k = 0; k < rule.style.length; k++) {
+                    const prop = rule.style[k]
+                    const value = rule.style.getPropertyValue(prop)
+                    if (value && (value.includes('lab(') || value.includes('oklch('))) {
+                      rule.style.setProperty(prop, '#000000', 'important')
+                    }
+                  }
+                }
+              }
+            }
+          } catch {
+            // Skip stylesheets we can't access (CORS)
+            continue
+          }
+        }
+
+        // Also update inline styles
+        const allElements = clonedDoc.querySelectorAll('*')
+        allElements.forEach((el: Element) => {
+          if (el instanceof HTMLElement && el.style) {
+            for (let i = 0; i < el.style.length; i++) {
+              const prop = el.style[i]
+              const value = el.style.getPropertyValue(prop)
+              if (value && (value.includes('lab(') || value.includes('oklch('))) {
+                el.style.setProperty(prop, '#000000', 'important')
+              }
+            }
+          }
+        })
+      }
     })
 
     // Calculate PDF dimensions
@@ -63,13 +140,22 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
   }
 }
 
-export function generatePDFFromReport(report: Report): void {
+export async function generatePDFFromReport(report: Report): Promise<void> {
+  const jsPDF = await getJsPDF()
+
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
   const margin = 20
   const contentWidth = pageWidth - 2 * margin
   let yPosition = margin
+
+  // Early return if no calculation result
+  if (!report.calculation_result) {
+    pdf.text('Report data unavailable', margin, yPosition)
+    pdf.save(`report-${report.id}.pdf`)
+    return
+  }
 
   // Helper function to add text with word wrap
   const addText = (text: string, fontSize = 12, fontStyle: 'normal' | 'bold' = 'normal') => {
@@ -192,11 +278,20 @@ export function generatePDFFromReport(report: Report): void {
 
 // Generate styled PDF with better formatting
 export async function generateStyledPDF(report: Report): Promise<void> {
+  const jsPDF = await getJsPDF()
+
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.getWidth()
   const margin = 15
   const contentWidth = pageWidth - 2 * margin
   let y = margin
+
+  // Early return if no calculation result
+  if (!report.calculation_result) {
+    pdf.text('Report data unavailable', margin, y)
+    pdf.save(`report-${report.id}.pdf`)
+    return
+  }
 
   // Colors
   const primaryColor: [number, number, number] = [52, 152, 219] // Blue
@@ -227,11 +322,11 @@ export async function generateStyledPDF(report: Report): Promise<void> {
   const userData = report.calculation_result.user_data
   pdf.setFillColor(...lightGray)
   pdf.roundedRect(margin, y, contentWidth, 30, 3, 3, 'F')
-  
+
   pdf.setFontSize(14)
   pdf.setFont('helvetica', 'bold')
   pdf.text(`${userData.name}`, margin + 5, y + 10)
-  
+
   pdf.setFontSize(10)
   pdf.setFont('helvetica', 'normal')
   pdf.text(`${userData.age} years | ${userData.height_feet}'${userData.height_inches}" | ${userData.gender === 'm' ? 'Male' : 'Female'}`, margin + 5, y + 20)
@@ -254,26 +349,23 @@ export async function generateStyledPDF(report: Report): Promise<void> {
     // Card background
     pdf.setFillColor(...lightGray)
     pdf.roundedRect(xPos, y, cardWidth, 25, 2, 2, 'F')
-    
+
     // Metric label
     pdf.setFontSize(8)
     pdf.setTextColor(100, 100, 100)
     pdf.text(metric.label, xPos + cardWidth / 2, y + 8, { align: 'center' })
-    
+
     // Metric value
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'bold')
     pdf.setTextColor(...metric.color)
     pdf.text(metric.value, xPos + cardWidth / 2, y + 18, { align: 'center' })
-    
+
     xPos += cardWidth + 5
   })
 
   pdf.setTextColor(...textColor)
   pdf.setFont('helvetica', 'normal')
-
-  // Continue with the rest of the report...
-  // This is a simplified version - you can expand with charts, graphs, etc.
 
   pdf.save(`ApexFit_Report_${userData.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`)
 }

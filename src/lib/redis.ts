@@ -1,6 +1,8 @@
 import { createClient } from 'redis';
+import { redisConfig } from './config';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// Use centralized config for Redis settings
+const REDIS_URL = redisConfig.url;
 
 export const redis = createClient({
   url: REDIS_URL,
@@ -49,22 +51,33 @@ export async function getUserData(userId: string) {
   }
 }
 
-// Body fat entries management
+// Body fat entries management (aligned with migrate_to_redis.py)
 export async function saveEntry(userId: string, entry: any) {
   try {
     const entryKey = `entry:${userId}:${entry.id}`;
-    await redis.set(entryKey, JSON.stringify(entry));
-    
-    // Add to user's entry list
-    await redis.sAdd(`user:${userId}:entries`, entry.id);
-    
+
+    // Store as a hash for compatibility with migrated data
+    const toStore: Record<string, string> = {
+      id: String(entry.id),
+      user_id: String(userId),
+      date: entry.date ?? '',
+      weight: entry.weight != null ? String(entry.weight) : '',
+      body_fat_percentage:
+        entry.body_fat_percentage != null ? String(entry.body_fat_percentage) : '',
+      notes: entry.notes ?? '',
+      created_at: entry.created_at ?? '',
+      updated_at: entry.updated_at ?? '',
+    };
+
+    await redis.hSet(entryKey, toStore);
+
     // Add to sorted set by date for chronological ordering
     const timestamp = new Date(entry.date).getTime();
-    await redis.zAdd(`user:${userId}:entries:sorted`, {
-      score: timestamp,
-      value: entry.id
+    await redis.zAdd(`entries:${userId}`, {
+      score: isNaN(timestamp) ? Date.now() : timestamp,
+      value: String(entry.id),
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error saving entry:', error);
@@ -74,21 +87,44 @@ export async function saveEntry(userId: string, entry: any) {
 
 export async function getUserEntries(userId: string) {
   try {
-    // Get all entry IDs sorted by date
-    const entryIds = await redis.zRange(`user:${userId}:entries:sorted`, 0, -1);
-    
+    // Get all entry IDs sorted by date (most recent first)
+    const entryIds = await redis.zRange(`entries:${userId}`, 0, -1, { REV: true });
+
     if (!entryIds || entryIds.length === 0) {
       return [];
     }
-    
-    // Get all entries
-    const entries = await Promise.all(
-      entryIds.map(async (id) => {
-        const data = await redis.get(`entry:${userId}:${id}`);
-        return data ? JSON.parse(data) : null;
-      })
-    );
-    
+
+    // PERFORMANCE FIX: Use pipeline to batch all hGetAll calls
+    // Before: 13+ Redis calls for 12 entries (1 zRange + 12 hGetAll)
+    // After: 2 Redis calls total (1 zRange + 1 pipeline with 12 hGetAll)
+    const pipeline = redis.multi();
+    for (const id of entryIds) {
+      pipeline.hGetAll(`entry:${userId}:${id}`);
+    }
+
+    const results = await pipeline.exec();
+
+    const entries = entryIds.map((id, index) => {
+      const data = results[index] as Record<string, string> | null;
+      if (!data || Object.keys(data).length === 0) {
+        return null;
+      }
+
+      return {
+        id: data.id ?? id,
+        user_id: data.user_id ?? String(userId),
+        date: data.date,
+        weight: data.weight != null ? Number(data.weight) : undefined,
+        body_fat_percentage:
+          data.body_fat_percentage != null
+            ? Number(data.body_fat_percentage)
+            : undefined,
+        notes: data.notes ?? '',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+    });
+
     return entries.filter(Boolean);
   } catch (error) {
     console.error('Error getting user entries:', error);
@@ -98,11 +134,11 @@ export async function getUserEntries(userId: string) {
 
 export async function deleteEntry(userId: string, entryId: string) {
   try {
-    // Remove from Redis
-    await redis.del(`entry:${userId}:${entryId}`);
-    await redis.sRem(`user:${userId}:entries`, entryId);
-    await redis.zRem(`user:${userId}:entries:sorted`, entryId);
-    
+    const key = `entry:${userId}:${entryId}`;
+
+    await redis.del(key);
+    await redis.zRem(`entries:${userId}`, entryId);
+
     return true;
   } catch (error) {
     console.error('Error deleting entry:', error);
@@ -110,22 +146,32 @@ export async function deleteEntry(userId: string, entryId: string) {
   }
 }
 
-// Reports management
+
+// Reports management (aligned with migrate_to_redis.py)
 export async function saveReport(userId: string, report: any) {
   try {
     const reportKey = `report:${userId}:${report.id}`;
-    await redis.set(reportKey, JSON.stringify(report));
-    
-    // Add to user's report list
-    await redis.sAdd(`user:${userId}:reports`, report.id);
-    
-    // Add to sorted set by date
-    const timestamp = new Date(report.generated_at).getTime();
-    await redis.zAdd(`user:${userId}:reports:sorted`, {
-      score: timestamp,
-      value: report.id
+
+    const toStore: Record<string, string> = {
+      id: String(report.id),
+      user_id: String(userId),
+      title: report.title ?? '',
+      date: report.date ?? report.generated_at ?? '',
+      data: report.data ? JSON.stringify(report.data) : '',
+      file_path: report.file_path ?? '',
+      created_at: report.created_at ?? report.generated_at ?? '',
+      generated_at: report.generated_at ?? '',
+    };
+
+    await redis.hSet(reportKey, toStore);
+
+    const rawDate = toStore.date || toStore.generated_at;
+    const timestamp = new Date(rawDate).getTime();
+    await redis.zAdd(`reports:${userId}`, {
+      score: isNaN(timestamp) ? Date.now() : timestamp,
+      value: String(report.id),
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error saving report:', error);
@@ -135,21 +181,49 @@ export async function saveReport(userId: string, report: any) {
 
 export async function getUserReports(userId: string) {
   try {
-    // Get all report IDs sorted by date
-    const reportIds = await redis.zRange(`user:${userId}:reports:sorted`, 0, -1, { REV: true });
-    
+    const reportIds = await redis.zRange(`reports:${userId}`, 0, -1, { REV: true });
+
     if (!reportIds || reportIds.length === 0) {
       return [];
     }
-    
-    // Get all reports
-    const reports = await Promise.all(
-      reportIds.map(async (id) => {
-        const data = await redis.get(`report:${userId}:${id}`);
-        return data ? JSON.parse(data) : null;
-      })
-    );
-    
+
+    // PERFORMANCE FIX: Use pipeline to batch all hGetAll calls
+    // Before: N+1 Redis calls (1 zRange + N hGetAll)
+    // After: 2 Redis calls total (1 zRange + 1 pipeline)
+    const pipeline = redis.multi();
+    for (const id of reportIds) {
+      pipeline.hGetAll(`report:${userId}:${id}`);
+    }
+
+    const results = await pipeline.exec();
+
+    const reports = reportIds.map((id, index) => {
+      const data = results[index] as Record<string, string> | null;
+      if (!data || Object.keys(data).length === 0) {
+        return null;
+      }
+
+      let parsedData: any = undefined;
+      if (data.data) {
+        try {
+          parsedData = JSON.parse(data.data);
+        } catch {
+          parsedData = data.data;
+        }
+      }
+
+      return {
+        id: data.id ?? id,
+        user_id: data.user_id ?? String(userId),
+        title: data.title ?? '',
+        date: data.date ?? data.generated_at,
+        data: parsedData,
+        file_path: data.file_path ?? '',
+        created_at: data.created_at,
+        generated_at: data.generated_at,
+      };
+    });
+
     return reports.filter(Boolean);
   } catch (error) {
     console.error('Error getting user reports:', error);
@@ -157,9 +231,25 @@ export async function getUserReports(userId: string) {
   }
 }
 
+export async function deleteReport(userId: string, reportId: string) {
+  try {
+    const key = `report:${userId}:${reportId}`;
+
+    await redis.del(key);
+    await redis.zRem(`reports:${userId}`, reportId);
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    return false;
+  }
+}
+
+
 // Last calculation storage
 export async function saveLastCalculation(userId: string, calculation: any) {
   try {
+    // Simple string storage for last calculation
     await redis.set(`user:${userId}:lastCalculation`, JSON.stringify(calculation));
     return true;
   } catch (error) {
@@ -178,14 +268,52 @@ export async function getLastCalculation(userId: string) {
   }
 }
 
+// Clear all data for a user
+export async function clearAllUserData(userId: string) {
+  try {
+    const id = String(userId);
+
+    // Get all IDs first
+    const [entryIds, reportIds, calcIds] = await Promise.all([
+      redis.zRange(`entries:${id}`, 0, -1),
+      redis.zRange(`reports:${id}`, 0, -1),
+      redis.zRange(`calculations:${id}`, 0, -1),
+    ]);
+
+    // PERFORMANCE FIX: Collect all keys to delete and use batch delete
+    // Before: N sequential delete operations
+    // After: 1 batch delete operation
+    const keysToDelete = [
+      `user:${id}`,
+      `user:${id}:lastCalculation`,
+      `entries:${id}`,
+      `reports:${id}`,
+      `calculations:${id}`,
+      ...entryIds.map(entryId => `entry:${id}:${entryId}`),
+      ...reportIds.map(reportId => `report:${id}:${reportId}`),
+      ...calcIds.map(calcId => `calculation:${id}:${calcId}`),
+    ];
+
+    if (keysToDelete.length > 0) {
+      await redis.del(keysToDelete);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error clearing all user data:', error);
+    return false;
+  }
+}
+
 // Export all user data
 export async function exportUserData(userId: string) {
+
   try {
     const userData = await getUserData(userId);
     const entries = await getUserEntries(userId);
     const reports = await getUserReports(userId);
     const lastCalculation = await getLastCalculation(userId);
-    
+
     return {
       userData,
       entries,
@@ -206,26 +334,26 @@ export async function importUserData(userId: string, data: any) {
     if (data.userData) {
       await saveUserData(userId, data.userData);
     }
-    
+
     // Save entries
     if (data.entries && Array.isArray(data.entries)) {
       for (const entry of data.entries) {
         await saveEntry(userId, entry);
       }
     }
-    
+
     // Save reports
     if (data.reports && Array.isArray(data.reports)) {
       for (const report of data.reports) {
         await saveReport(userId, report);
       }
     }
-    
+
     // Save last calculation
     if (data.lastCalculation) {
       await saveLastCalculation(userId, data.lastCalculation);
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error importing user data:', error);
@@ -239,27 +367,27 @@ export async function clearUserData(userId: string) {
     // Get all entries and reports to delete
     const entryIds = await redis.sMembers(`user:${userId}:entries`);
     const reportIds = await redis.sMembers(`user:${userId}:reports`);
-    
+
     // Delete all entries
     for (const entryId of entryIds) {
       await redis.del(`entry:${userId}:${entryId}`);
     }
-    
+
     // Delete all reports
     for (const reportId of reportIds) {
       await redis.del(`report:${userId}:${reportId}`);
     }
-    
+
     // Delete user data and indexes
-    await redis.del(
+    await redis.del([
       `user:${userId}`,
       `user:${userId}:entries`,
       `user:${userId}:entries:sorted`,
       `user:${userId}:reports`,
       `user:${userId}:reports:sorted`,
       `user:${userId}:lastCalculation`
-    );
-    
+    ]);
+
     return true;
   } catch (error) {
     console.error('Error clearing user data:', error);

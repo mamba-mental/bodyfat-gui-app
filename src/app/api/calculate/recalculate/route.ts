@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
+import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
+import { pythonApiConfig } from '@/lib/config'
 
-const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001'
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
+const PYTHON_TIMEOUT_MS = pythonApiConfig.calculationTimeout;
 
 // CORS headers
 const corsHeaders = {
@@ -18,29 +22,45 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userData, newEntry } = await request.json()
-    
+
     console.log('Recalculate Request - User:', userData.name)
     console.log('New Entry:', newEntry)
-    
-    // Update user data with new entry values
+
+    // CRITICAL: Always use TODAY as start_date for fresh recalculation
+    // This ensures mid-week entries get recalculated from today, not old cached dates
+    const today = new Date().toISOString().split('T')[0]
+    const todayFormatted = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+
+    // Update user data with new entry values and TODAY as start_date
     const updatedUserData = {
       ...userData,
       current_weight: newEntry.weight,
-      current_bf: newEntry.body_fat_percentage || userData.current_bf
+      current_bf: newEntry.body_fat_percentage || userData.current_bf,
+      start_date: todayFormatted, // Always recalculate from TODAY
+      eating_pattern: userData.eating_pattern || 'standard',
+      eating_window_hours: userData.eating_window_hours ?? (userData.eating_pattern === 'intermittent_fasting' ? 8 : userData.eating_pattern === 'omad' ? 1 : 12),
     }
-    
+
+    console.log('Recalculating from TODAY:', today, 'with weight:', newEntry.weight)
+ 
     // Call the Python API to recalculate
     try {
-      const response = await fetch(`${PYTHON_API_URL}/recalculate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+
+      const response = await fetchWithTimeout(
+        `${PYTHON_API_URL}/recalculate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_data: updatedUserData,
+            entry: newEntry
+          }),
+
         },
-        body: JSON.stringify({
-          user_data: userData,
-          entry: newEntry
-        }),
-      })
+        PYTHON_TIMEOUT_MS,
+      )
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -48,27 +68,10 @@ export async function POST(request: NextRequest) {
       }
 
       const result: CalculationResult = await response.json()
-      
+
       return NextResponse.json(result, { headers: corsHeaders })
     } catch (pythonApiError) {
-      console.warn('Python API recalculation failed, using fallback:', pythonApiError)
-      
-      // Fallback: Return updated user data without recalculation
-      // This allows the app to continue functioning
-      const fallbackResult: CalculationResult = {
-        user_data: updatedUserData,
-        progression: [], // Empty progression as we can't calculate without Python API
-        summary: {
-          total_weight_loss: userData.current_weight - userData.goal_weight,
-          body_fat_reduction: userData.current_bf - userData.goal_bf,
-          muscle_gain: 0,
-          timeline_weeks: Math.ceil((new Date(userData.end_date).getTime() - new Date(userData.start_date).getTime()) / (7 * 24 * 60 * 60 * 1000))
-        },
-        confidence_score: 0,
-        ai_analysis: 'Python API unavailable for detailed calculations'
-      }
-      
-      return NextResponse.json(fallbackResult, { headers: corsHeaders })
+      throw pythonApiError
     }
   } catch (error) {
     console.error('Recalculation error:', error)

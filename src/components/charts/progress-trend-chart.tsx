@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
+import { Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts"
 import { TrendingDown, TrendingUp } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Badge } from "@/components/ui/badge"
 import { BodyFatEntry, WeeklyProgression } from "@/types"
 import { useApp } from "@/contexts/app-context"
+import { useSafeAnimationCallback } from "@/hooks/use-safe-animation-callback"
+import { useMountedRef } from "@/hooks/use-mounted-ref"
+import { buildProgressTrendChartData } from "./progress-trend-chart.utils"
 
 interface ProgressTrendChartProps {
   entries: BodyFatEntry[]
@@ -20,23 +23,27 @@ interface ProgressTrendChartProps {
 }
 
 const chartConfig = {
-  weight: {
-    label: "Weight (lbs)",
+  weightActual: {
+    label: "Weight (Actual)",
     color: "hsl(var(--chart-1))",
   },
-  bodyFat: {
-    label: "Body Fat (%)",
+  weightPredicted: {
+    label: "Weight (Predicted)",
+    color: "hsl(var(--chart-1) / 0.55)",
+  },
+  bodyFatActual: {
+    label: "Body Fat (Actual)",
     color: "hsl(var(--chart-2))",
   },
-  predicted: {
-    label: "Predicted",
-    color: "hsl(var(--muted-foreground))",
+  bodyFatPredicted: {
+    label: "Body Fat (Predicted)",
+    color: "hsl(var(--chart-2) / 0.55)",
   },
 } satisfies ChartConfig
 
-export function ProgressTrendChart({ 
-  entries, 
-  progression, 
+export function ProgressTrendChart({
+  entries,
+  progression,
   title = "Weight & Body Fat Trends",
   showBodyFat = true,
   showWeight = true,
@@ -44,69 +51,64 @@ export function ProgressTrendChart({
 }: ProgressTrendChartProps) {
   const { subscribeToDataChanges } = useApp()
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const isUpdatingRef = React.useRef(false)
+  const mountedRef = useMountedRef()
+
+  // Use safe animation callback for data updates with mounted guard
+  const handleDataChange = useSafeAnimationCallback(() => {
+    if (mountedRef.current) {
+      setRefreshKey(prev => prev + 1)
+    }
+  }, [])
 
   // Subscribe to data changes for automatic refresh
   React.useEffect(() => {
-    const unsubscribe = subscribeToDataChanges(() => {
-      // Prevent multiple rapid updates
-      if (!isUpdatingRef.current) {
-        isUpdatingRef.current = true
-        setRefreshKey(prev => prev + 1)
-        // Reset the flag after a short delay
-        setTimeout(() => {
-          isUpdatingRef.current = false
-        }, 100)
-      }
-    })
-    
+    const unsubscribe = subscribeToDataChanges(handleDataChange)
     return unsubscribe
-  }, [subscribeToDataChanges])
-  const chartData = React.useMemo(() => {
-    // Combine actual entries with predicted progression
-    const actualData = entries
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(entry => ({
-        date: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        fullDate: entry.date,
-        weight: entry.weight,
-        bodyFat: entry.body_fat_percentage,
-        type: 'actual' as const,
-      }))
+  }, [subscribeToDataChanges, handleDataChange])
+  const chartData = React.useMemo(
+    () => buildProgressTrendChartData(entries, progression),
+    [entries, progression, refreshKey]
+  )
 
-    // Add predicted data if available
-    const predictedData = progression
-      ?.slice(0, 12) // Show next 12 weeks
-      .map(week => ({
-        date: new Date(week.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        fullDate: week.date,
-        weight: week.weight,
-        bodyFat: week.body_fat_percentage,
-        type: 'predicted' as const,
-      })) || []
-
-    return [...actualData, ...predictedData]
-  }, [entries, progression, refreshKey])
+  const sortedActualEntries = React.useMemo(
+    () =>
+      [...entries].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ),
+    [entries]
+  )
 
   const weightTrend = React.useMemo(() => {
-    if (chartData.length < 2) return null
-    const actualEntries = chartData.filter(d => d.type === 'actual')
-    if (actualEntries.length < 2) return null
-    
-    const first = actualEntries[0].weight
-    const last = actualEntries[actualEntries.length - 1].weight
-    return last < first ? 'down' : 'up'
-  }, [chartData])
+    if (sortedActualEntries.length < 2) return null
+
+    const first = sortedActualEntries[0].weight
+    const last = sortedActualEntries[sortedActualEntries.length - 1].weight
+    return last < first ? "down" : "up"
+  }, [sortedActualEntries])
 
   const bodyFatTrend = React.useMemo(() => {
-    if (chartData.length < 2) return null
-    const actualEntries = chartData.filter(d => d.type === 'actual' && d.bodyFat)
-    if (actualEntries.length < 2) return null
-    
-    const first = actualEntries[0].bodyFat!
-    const last = actualEntries[actualEntries.length - 1].bodyFat!
-    return last < first ? 'down' : 'up'
-  }, [chartData])
+    const actualEntriesWithBodyFat = sortedActualEntries.filter(
+      entry => typeof entry.body_fat_percentage === "number"
+    )
+
+    if (actualEntriesWithBodyFat.length < 2) return null
+
+    const first = actualEntriesWithBodyFat[0].body_fat_percentage!
+    const last =
+      actualEntriesWithBodyFat[actualEntriesWithBodyFat.length - 1]
+        .body_fat_percentage!
+    return last < first ? "down" : "up"
+  }, [sortedActualEntries])
+
+  const hasWeightPredicted = React.useMemo(
+    () => chartData.some(point => point.weightPredicted !== null),
+    [chartData]
+  )
+
+  const hasBodyFatPredicted = React.useMemo(
+    () => chartData.some(point => point.bodyFatPredicted !== null),
+    [chartData]
+  )
 
   if (chartData.length === 0) {
     return (
@@ -171,6 +173,7 @@ export function ProgressTrendChart({
             />
             <YAxis
               yAxisId="weight"
+              hide={!showWeight}
               orientation="left"
               tickLine={false}
               axisLine={false}
@@ -178,6 +181,7 @@ export function ProgressTrendChart({
             />
             <YAxis
               yAxisId="bodyFat"
+              hide={!showBodyFat}
               orientation="right"
               tickLine={false}
               axisLine={false}
@@ -187,47 +191,111 @@ export function ProgressTrendChart({
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Line
-              yAxisId="weight"
-              dataKey="weight"
-              type="monotone"
-              stroke="var(--color-weight)"
-              strokeWidth={2}
-              dot={{
-                fill: "var(--color-weight)",
-                strokeWidth: 2,
-                r: 4,
-              }}
-              isAnimationActive={false}
-            />
-            <Line
-              yAxisId="bodyFat"
-              dataKey="bodyFat"
-              type="monotone"
-              stroke="var(--color-bodyFat)"
-              strokeWidth={2}
-              dot={{
-                fill: "var(--color-bodyFat)",
-                strokeWidth: 2,
-                r: 4,
-              }}
-              isAnimationActive={false}
-            />
+            {showWeight && (
+              <>
+                <Line
+                  yAxisId="weight"
+                  dataKey="weightActual"
+                  type="monotone"
+                  stroke="var(--color-weightActual)"
+                  strokeWidth={2}
+                  dot={{
+                    fill: "var(--color-weightActual)",
+                    strokeWidth: 2,
+                    r: 4,
+                  }}
+                  isAnimationActive={false}
+                  name="weightActual"
+                />
+                {hasWeightPredicted && (
+                  <Line
+                    yAxisId="weight"
+                    dataKey="weightPredicted"
+                    type="monotone"
+                    stroke="var(--color-weightPredicted)"
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    dot={false}
+                    isAnimationActive={false}
+                    name="weightPredicted"
+                  />
+                )}
+              </>
+            )}
+            {showBodyFat && (
+              <>
+                <Line
+                  yAxisId="bodyFat"
+                  dataKey="bodyFatActual"
+                  type="monotone"
+                  stroke="var(--color-bodyFatActual)"
+                  strokeWidth={2}
+                  dot={{
+                    fill: "var(--color-bodyFatActual)",
+                    strokeWidth: 2,
+                    r: 4,
+                  }}
+                  isAnimationActive={false}
+                  name="bodyFatActual"
+                />
+                {hasBodyFatPredicted && (
+                  <Line
+                    yAxisId="bodyFat"
+                    dataKey="bodyFatPredicted"
+                    type="monotone"
+                    stroke="var(--color-bodyFatPredicted)"
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    dot={false}
+                    isAnimationActive={false}
+                    name="bodyFatPredicted"
+                  />
+                )}
+              </>
+            )}
           </LineChart>
         </ChartContainer>
-        <div className="flex items-center justify-center space-x-6 mt-4 text-sm text-muted-foreground">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-0.5 bg-chart-1 rounded"></div>
-            <span>Weight (left axis)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-0.5 bg-chart-2 rounded"></div>
-            <span>Body Fat % (right axis)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-0.5 bg-muted-foreground rounded" style={{ borderTop: '1px dashed' }}></div>
-            <span>Predicted</span>
-          </div>
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
+          {showWeight && (
+            <>
+              <div className="flex items-center space-x-2">
+                <div
+                  className="w-3 h-0.5 rounded"
+                  style={{ background: "hsl(var(--chart-1))" }}
+                ></div>
+                <span>Weight (actual)</span>
+              </div>
+              {hasWeightPredicted && (
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-0.5 rounded border-t border-dashed"
+                    style={{ borderColor: "hsl(var(--chart-1))" }}
+                  ></div>
+                  <span>Weight (predicted)</span>
+                </div>
+              )}
+            </>
+          )}
+          {showBodyFat && (
+            <>
+              <div className="flex items-center space-x-2">
+                <div
+                  className="w-3 h-0.5 rounded"
+                  style={{ background: "hsl(var(--chart-2))" }}
+                ></div>
+                <span>Body fat % (actual)</span>
+              </div>
+              {hasBodyFatPredicted && (
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-0.5 rounded border-t border-dashed"
+                    style={{ borderColor: "hsl(var(--chart-2))" }}
+                  ></div>
+                  <span>Body fat % (predicted)</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

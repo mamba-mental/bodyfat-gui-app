@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Download, FileDown, FileText, Calendar, Weight, Target, TrendingDown, Brain, BarChart3 } from "lucide-react"
+import { ArrowLeft, Download, FileDown, FileText, Calendar, Weight, Target, TrendingDown, Brain, BarChart3, Eye } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { Report, WeeklyProgression } from "@/types"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
+import { formatDate } from "@/lib/date-utils"
+// @ts-ignore
+import TurndownService from 'turndown'
 
 interface ReportViewPageProps {
   params: Promise<{
@@ -29,6 +32,13 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
     return reports.find(r => r.id === unwrappedParams.id)
   }, [reports, unwrappedParams.id])
 
+  const calc = report?.calculation_result
+  const hasValidCalculation =
+    calc &&
+    typeof calc === 'object' &&
+    calc.summary &&
+    calc.user_data
+
   if (!report) {
     return (
       <div className="container max-w-4xl mx-auto space-y-6 p-6">
@@ -44,7 +54,31 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
     )
   }
 
-  const calc = report.calculation_result
+  if (!hasValidCalculation) {
+    return (
+      <div className="container max-w-4xl mx-auto space-y-6 p-6">
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold">{report.title}</h1>
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Data Unavailable</CardTitle>
+              <CardDescription>
+                This report does not include calculation details. Regenerate the report to view full metrics.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/reports')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Reports
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const { summary, user_data: userData } = calc
 
   const handleDownloadHTML = () => {
     if (report?.html_content) {
@@ -61,39 +95,34 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
   }
 
   const handleDownloadMarkdown = () => {
-    if (report?.calculation_result) {
-      const calc = report.calculation_result
-      const markdown = `# ${report.title}
+    // Convert the Python-generated HTML to markdown using Turndown
+    if (report?.html_content) {
+      const turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        emDelimiter: '*',
+        bulletListMarker: '-'
+      })
 
-## Summary
-- **Total Weight Loss:** ${calc.summary?.total_weight_loss?.toFixed(1) || 'N/A'} lbs
-- **Body Fat Reduction:** ${calc.summary?.body_fat_reduction?.toFixed(1) || 'N/A'}%
-- **Muscle Gain:** ${calc.summary?.muscle_gain?.toFixed(1) || 'N/A'} lbs
-- **Timeline:** ${calc.summary?.timeline_weeks || 'N/A'} weeks
+      // Add custom rule for tables to preserve formatting
+      turndownService.addRule('tables', {
+        filter: 'table',
+        replacement: function (content: string) {
+          return '\n\n' + content + '\n\n'
+        }
+      })
 
-## Current Stats
-- **Weight:** ${calc.user_data?.current_weight || 'N/A'} lbs
-- **Body Fat:** ${calc.user_data?.current_bf || 'N/A'}%
+      // Remove images to avoid huge base64 strings
+      turndownService.addRule('images', {
+        filter: 'img',
+        replacement: function (content: string, node: any) {
+          const alt = (node as HTMLElement).getAttribute('alt') || 'Chart'
+          return `\n\n*[Image: ${alt} - View in HTML/PDF version]*\n\n`
+        }
+      })
 
-## Goal Stats
-- **Target Weight:** ${calc.user_data?.goal_weight || 'N/A'} lbs
-- **Target Body Fat:** ${calc.user_data?.goal_bf || 'N/A'}%
+      const markdown = turndownService.turndown(report.html_content)
 
-${calc.confidence_score ? `## Plan Confidence Score: ${calc.confidence_score}/100` : ''}
-
-## Weekly Progression
-| Week | Date | Weight (lbs) | Body Fat % | Daily Calories | TDEE | Lean Mass | Fat Mass |
-|------|------|-------------|------------|----------------|------|-----------|----------|
-${calc.progression.map((week: WeeklyProgression, index: number) => 
-  `| ${index + 1} | ${week.date} | ${week.weight.toFixed(1)} | ${week.body_fat_percentage.toFixed(1)} | ${Math.round(week.daily_calorie_intake)} | ${Math.round(week.tdee)} | ${week.lean_mass.toFixed(1)} | ${week.fat_mass.toFixed(1)} |`
-).join('\n')}
-
-${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
-
----
-*Generated on ${new Date(report.generated_at).toLocaleString()}*
-`
-      
       const blob = new Blob([markdown], { type: 'text/markdown' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -107,16 +136,30 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
   }
 
   const handleDownloadPDF = async () => {
+    // Use the Python-generated HTML as the source for PDF
+    if (report?.html_content) {
+      await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
+      return
+    }
+
+    // Fallback: try the styled generator if no html_content available
     if (report) {
       try {
-        // Use the styled PDF generator
         await generateStyledPDF(report)
       } catch (error) {
         console.error('PDF generation failed:', error)
-        // Fallback to HTML-based PDF
-        if (report.html_content) {
-          await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
-        }
+        alert('Unable to generate PDF: no report content available')
+      }
+    }
+  }
+
+  const handleViewFullReport = () => {
+    if (report?.html_content) {
+      const win = window.open("", "_blank")
+      if (win) {
+        win.document.write(report.html_content)
+        win.document.close()
+        win.document.title = report.title
       }
     }
   }
@@ -138,6 +181,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {report.html_content && (
+            <Button onClick={handleViewFullReport} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <ClientIcon icon={Eye} className="mr-2 h-4 w-4" />
+              View Full Report
+            </Button>
+          )}
           <Button variant="outline" onClick={handleDownloadHTML}>
             <Download className="mr-2 h-4 w-4" />
             HTML
@@ -162,10 +211,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {calc.summary.total_weight_loss.toFixed(1)} lbs
+              {typeof summary.total_weight_loss === 'number'
+                ? `${summary.total_weight_loss.toFixed(1)} lbs`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.current_weight} → {calc.user_data.goal_weight} lbs
+              {`${userData.current_weight ?? '—'} → ${userData.goal_weight ?? '—'} lbs`}
             </p>
           </CardContent>
         </Card>
@@ -177,10 +228,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {calc.summary.body_fat_reduction.toFixed(1)}%
+              {typeof summary.body_fat_reduction === 'number'
+                ? `${summary.body_fat_reduction.toFixed(1)}%`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.current_bf}% → {calc.user_data.goal_bf}%
+              {`${userData.current_bf ?? '—'}% → ${userData.goal_bf ?? '—'}%`}
             </p>
           </CardContent>
         </Card>
@@ -192,10 +245,10 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {calc.summary.timeline_weeks} weeks
+              {summary.timeline_weeks ?? '—'} weeks
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date(calc.user_data.start_date).toLocaleDateString()} → {new Date(calc.user_data.end_date).toLocaleDateString()}
+              {`${userData.start_date ? new Date(userData.start_date).toLocaleDateString() : '—'} → ${userData.end_date ? new Date(userData.end_date).toLocaleDateString() : '—'}`}
             </p>
           </CardContent>
         </Card>
@@ -207,10 +260,12 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {calc.summary.muscle_gain.toFixed(1)} lbs
+              {typeof summary.muscle_gain === 'number'
+                ? `${summary.muscle_gain.toFixed(1)} lbs`
+                : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {calc.user_data.workout_type} focused
+              {userData.workout_type ? `${userData.workout_type} focused` : '—'}
             </p>
           </CardContent>
         </Card>
@@ -229,15 +284,15 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Age:</span>
-                  <span>{calc.user_data.age} years</span>
+                  <span>{userData.age ?? '—'} years</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gender:</span>
-                  <span>{calc.user_data.gender === 'm' ? 'Male' : 'Female'}</span>
+                  <span>{userData.gender === 'm' ? 'Male' : userData.gender === 'f' ? 'Female' : '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Height:</span>
-                  <span>{calc.user_data.height_feet}'{calc.user_data.height_inches}"</span>
+                  <span>{userData.height_feet}'{userData.height_inches}"</span>
                 </div>
               </div>
             </div>
@@ -247,15 +302,15 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Workout Type:</span>
-                  <Badge variant="outline">{calc.user_data.workout_type}</Badge>
+                  <Badge variant="outline">{userData.workout_type ?? '—'}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Training Days:</span>
-                  <span>{calc.user_data.workout_days}/week</span>
+                  <span>{userData.workout_days ?? '—'}/week</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Activity Level:</span>
-                  <span>{calc.user_data.activity_level}/5</span>
+                  <span>{userData.activity_level ?? '—'}/5</span>
                 </div>
               </div>
             </div>
@@ -265,11 +320,11 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Protein Intake:</span>
-                  <span>{calc.user_data.protein_intake}g/day</span>
+                  <span>{userData.protein_intake ?? '—'}g/day</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Diet Type:</span>
-                  <Badge variant="outline">{calc.user_data.diet_type}</Badge>
+                  <Badge variant="outline">{userData.diet_type ?? '—'}</Badge>
                 </div>
                 {calc.confidence_score && (
                   <div className="flex justify-between">
@@ -332,7 +387,7 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                 {calc.progression.map((week, index) => (
                   <TableRow key={index} className={index % 2 === 0 ? "bg-muted/50" : ""}>
                     <TableCell className="font-medium">{index + 1}</TableCell>
-                    <TableCell>{week.date}</TableCell>
+                    <TableCell>{formatDate(week.date)}</TableCell>
                     <TableCell className="text-right font-mono">
                       {week.weight.toFixed(1)} lbs
                     </TableCell>
@@ -352,8 +407,8 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
                       {week.fat_mass.toFixed(1)} lbs
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {index > 0 ? 
-                        `${(calc.progression[index - 1].weight - week.weight).toFixed(1)} lbs` : 
+                      {index > 0 ?
+                        `${(calc.progression[index - 1].weight - week.weight).toFixed(1)} lbs` :
                         '-'
                       }
                     </TableCell>
@@ -374,39 +429,39 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ? 
+              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ?
                 calc.progression.slice(0, 4).map((week, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Week {index + 1}</span>
-                    <Badge variant="outline">{week.date}</Badge>
+                  <div key={index} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Week {index + 1}</span>
+                      <Badge variant="outline">{formatDate(week.date)}</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">RMR:</span>
+                        <span className="font-mono">{Math.round(week.rmr)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">TEF:</span>
+                        <span className="font-mono">{Math.round(week.tef)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">NEAT:</span>
+                        <span className="font-mono">{Math.round(week.neat)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Deficit:</span>
+                        <span className="font-mono text-green-600">
+                          {Math.round(week.tdee - week.daily_calorie_intake)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">RMR:</span>
-                      <span className="font-mono">{Math.round(week.rmr)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">TEF:</span>
-                      <span className="font-mono">{Math.round(week.tef)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">NEAT:</span>
-                      <span className="font-mono">{Math.round(week.neat)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Deficit:</span>
-                      <span className="font-mono text-green-600">
-                        {Math.round(week.tdee - week.daily_calorie_intake)}
-                      </span>
-                    </div>
+                )) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    No metabolic data available
                   </div>
-                </div>
-              )) : (
-                <div className="text-center text-muted-foreground py-4">
-                  No metabolic data available
-                </div>
-              )}
+                )}
             </div>
           </CardContent>
         </Card>
@@ -418,37 +473,37 @@ ${calc.ai_analysis ? `## AI Analysis\n${calc.ai_analysis}` : ''}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ? 
+              {calc.progression && Array.isArray(calc.progression) && calc.progression.length > 0 ?
                 calc.progression.slice(0, 6).map((week, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <div className="text-sm">
+                        <div className="font-medium">{formatDate(week.date)}</div>
+                        <div className="text-muted-foreground">
+                          {week.weight.toFixed(1)} lbs • {week.body_fat_percentage.toFixed(1)}%
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm">
-                      <div className="font-medium">{week.date}</div>
+                    <div className="text-right text-sm">
+                      <div className="font-medium text-green-600">
+                        +{week.muscle_gain.toFixed(2)} lbs muscle
+                      </div>
                       <div className="text-muted-foreground">
-                        {week.weight.toFixed(1)} lbs • {week.body_fat_percentage.toFixed(1)}%
+                        {index > 0 ?
+                          `${(calc.progression[index - 1].fat_mass - week.fat_mass).toFixed(1)} lbs fat lost` :
+                          'Baseline'
+                        }
                       </div>
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    <div className="font-medium text-green-600">
-                      +{week.muscle_gain.toFixed(2)} lbs muscle
-                    </div>
-                    <div className="text-muted-foreground">
-                      {index > 0 ? 
-                        `${(calc.progression[index - 1].fat_mass - week.fat_mass).toFixed(1)} lbs fat lost` : 
-                        'Baseline'
-                      }
-                    </div>
+                )) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    No body composition data available
                   </div>
-                </div>
-              )) : (
-                <div className="text-center text-muted-foreground py-4">
-                  No body composition data available
-                </div>
-              )}
+                )}
             </div>
           </CardContent>
         </Card>

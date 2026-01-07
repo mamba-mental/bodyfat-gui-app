@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Theme Persistence API
+  version: 1.3.1
+  description: |
+    API contract for theme preference endpoints supporting FR-014, FR-015, FR-016.
+    
+    Constitutional Requirements:
+    - Article III: Hybrid persistence (localStorage + database + SSR cookie)
+    
+    Functional Requirements Addressed:
+    - FR-014: Theme preference persists across browser sessions
+    - FR-015: Selected theme applies correctly on page load
+    - FR-016: Theme survives browser refresh and restart
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server (Next.js)
+
+paths:
+  /theme:
+    get:
+      summary: Retrieve user's theme preference
+      description: |
+        Fetches theme preference with hybrid persistence strategy.
+        
+        Priority order:
+        1. SSR cookie (for initial page load)
+        2. Database (for authenticated users)
+        3. localStorage (fallback for unauthenticated)
+        
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          description: Optional user ID (null for unauthenticated)
+        - in: cookie
+          name: theme
+          schema:
+            type: string
+            enum: ["light", "dark", "system"]
+          description: SSR theme cookie for initial page load
+      
+      responses:
+        '200':
+          description: Theme preference retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemePreference'
+              example:
+                preferenceId: "theme-123e4567-e89b-12d3-a456-426614174000"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                theme: "dark"
+                persistenceMethod: "database"
+                lastUpdated: "2025-10-07T12:00:00Z"
+          headers:
+            Set-Cookie:
+              description: Theme cookie for SSR
+              schema:
+                type: string
+                example: "theme=dark; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000"
+        
+        '404':
+          description: No theme preference found (use default)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update user's theme preference
+      description: |
+        Updates theme with hybrid persistence:
+        - Unauthenticated: localStorage only
+        - Authenticated: localStorage + database + cookie
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeUpdate'
+            example:
+              userId: "550e8400-e29b-41d4-a716-446655440000"
+              theme: "dark"
+      
+      responses:
+        '200':
+          description: Theme preference updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemePreference'
+          headers:
+            Set-Cookie:
+              description: Updated theme cookie for SSR
+              schema:
+                type: string
+                example: "theme=dark; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000"
+        
+        '400':
+          description: Invalid theme value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ThemePreference:
+      type: object
+      required:
+        - theme
+        - persistenceMethod
+        - lastUpdated
+      properties:
+        preferenceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null for unauthenticated users
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null for unauthenticated users
+        theme:
+          type: string
+          enum: ["light", "dark", "system"]
+          description: Selected theme
+        persistenceMethod:
+          type: string
+          enum: ["localStorage", "database", "cookie"]
+          description: Primary persistence strategy used
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp of last theme change
+    
+    ThemeUpdate:
+      type: object
+      required:
+        - theme
+      properties:
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID (null for unauthenticated)
+        theme:
+          type: string
+          enum: ["light", "dark", "system"]
+          description: New theme preference
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
