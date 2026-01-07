@@ -13,6 +13,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { DATA_DIR } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
+import { pythonApiConfig } from '@/lib/config';
 
 // Type definitions matching integration test expectations
 interface ReportGenerationRequest {
@@ -90,8 +91,8 @@ interface ReportRecord {
 
 const REPORTS_FILE = path.join(DATA_DIR, 'reports.json');
 const ENTRIES_FILE = path.join(DATA_DIR, 'entries-history.json');
-// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-const PYTHON_API_URL = 'http://127.0.0.1:8001';
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
 
 // Activity level multipliers for TDEE calculation
 const ACTIVITY_MULTIPLIERS: { [key: string]: number } = {

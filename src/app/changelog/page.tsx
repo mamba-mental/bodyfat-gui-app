@@ -14,6 +14,23 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.6.0",
+    date: "2026-01-07",
+    type: "improvement",
+    changes: [
+      "Production-Ready Overhaul: Reduced app-context.tsx from 867 to 270 lines via modular action extraction",
+      "Production-Ready Overhaul: Split dashboard.tsx (660 lines) into modular component structure",
+      "Performance: Implemented lazy loading for jsPDF and html2canvas (~350KB bundle reduction)",
+      "Performance: Fixed N+1 Redis queries using pipeline batching (13+ calls reduced to 2)",
+      "Performance: Added parallel chart generation in PRIME using ThreadPoolExecutor",
+      "Reliability: Created resilient-fetch.ts with exponential backoff and circuit breaker pattern",
+      "Security: Fixed CORS configuration to use environment-based allowed origins",
+      "Infrastructure: Created centralized config.ts for environment variables",
+      "Infrastructure: Added data backup system (backup_system.py) for zero data loss guarantee",
+      "Cleanup: Removed unused Python dependencies (redis, aioredis, psutil)"
+    ]
+  },
+  {
     version: "1.5.0",
     date: "2025-11-16",
     type: "fix",

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, CalculationResult } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
+import { pythonApiConfig } from '@/lib/config'
 
-// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-const PYTHON_API_URL = 'http://127.0.0.1:8001';
-const PYTHON_TIMEOUT_MS = 60000
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
+const PYTHON_TIMEOUT_MS = pythonApiConfig.calculationTimeout;
 
 // CORS headers
 const corsHeaders = {
@@ -25,14 +26,22 @@ export async function POST(request: NextRequest) {
     console.log('Recalculate Request - User:', userData.name)
     console.log('New Entry:', newEntry)
 
-    // Update user data with new entry values
+    // CRITICAL: Always use TODAY as start_date for fresh recalculation
+    // This ensures mid-week entries get recalculated from today, not old cached dates
+    const today = new Date().toISOString().split('T')[0]
+    const todayFormatted = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+
+    // Update user data with new entry values and TODAY as start_date
     const updatedUserData = {
       ...userData,
       current_weight: newEntry.weight,
       current_bf: newEntry.body_fat_percentage || userData.current_bf,
+      start_date: todayFormatted, // Always recalculate from TODAY
       eating_pattern: userData.eating_pattern || 'standard',
       eating_window_hours: userData.eating_window_hours ?? (userData.eating_pattern === 'intermittent_fasting' ? 8 : userData.eating_pattern === 'omad' ? 1 : 12),
     }
+
+    console.log('Recalculating from TODAY:', today, 'with weight:', newEntry.weight)
  
     // Call the Python API to recalculate
     try {

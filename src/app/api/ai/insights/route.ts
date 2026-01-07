@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData, BodyFatEntry, CalculationResult } from '@/types'
+import { pythonApiConfig } from '@/lib/config'
 
-// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-const PYTHON_API_URL = 'http://127.0.0.1:8001'
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
 
 // CORS headers
 const corsHeaders = {

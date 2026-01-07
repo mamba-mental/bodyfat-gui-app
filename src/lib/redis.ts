@@ -1,6 +1,8 @@
 import { createClient } from 'redis';
+import { redisConfig } from './config';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://172.23.89.12:6385';
+// Use centralized config for Redis settings
+const REDIS_URL = redisConfig.url;
 
 export const redis = createClient({
   url: REDIS_URL,
@@ -92,29 +94,36 @@ export async function getUserEntries(userId: string) {
       return [];
     }
 
-    const entries = await Promise.all(
-      entryIds.map(async (id) => {
-        const key = `entry:${userId}:${id}`;
-        const data = await redis.hGetAll(key);
-        if (!data || Object.keys(data).length === 0) {
-          return null;
-        }
+    // PERFORMANCE FIX: Use pipeline to batch all hGetAll calls
+    // Before: 13+ Redis calls for 12 entries (1 zRange + 12 hGetAll)
+    // After: 2 Redis calls total (1 zRange + 1 pipeline with 12 hGetAll)
+    const pipeline = redis.multi();
+    for (const id of entryIds) {
+      pipeline.hGetAll(`entry:${userId}:${id}`);
+    }
 
-        return {
-          id: data.id ?? id,
-          user_id: data.user_id ?? String(userId),
-          date: data.date,
-          weight: data.weight != null ? Number(data.weight) : undefined,
-          body_fat_percentage:
-            data.body_fat_percentage != null
-              ? Number(data.body_fat_percentage)
-              : undefined,
-          notes: data.notes ?? '',
-          created_at: data.created_at,
-          updated_at: data.updated_at,
-        };
-      })
-    );
+    const results = await pipeline.exec();
+
+    const entries = entryIds.map((id, index) => {
+      const data = results[index] as Record<string, string> | null;
+      if (!data || Object.keys(data).length === 0) {
+        return null;
+      }
+
+      return {
+        id: data.id ?? id,
+        user_id: data.user_id ?? String(userId),
+        date: data.date,
+        weight: data.weight != null ? Number(data.weight) : undefined,
+        body_fat_percentage:
+          data.body_fat_percentage != null
+            ? Number(data.body_fat_percentage)
+            : undefined,
+        notes: data.notes ?? '',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+    });
 
     return entries.filter(Boolean);
   } catch (error) {
@@ -178,35 +187,42 @@ export async function getUserReports(userId: string) {
       return [];
     }
 
-    const reports = await Promise.all(
-      reportIds.map(async (id) => {
-        const key = `report:${userId}:${id}`;
-        const data = await redis.hGetAll(key);
-        if (!data || Object.keys(data).length === 0) {
-          return null;
-        }
+    // PERFORMANCE FIX: Use pipeline to batch all hGetAll calls
+    // Before: N+1 Redis calls (1 zRange + N hGetAll)
+    // After: 2 Redis calls total (1 zRange + 1 pipeline)
+    const pipeline = redis.multi();
+    for (const id of reportIds) {
+      pipeline.hGetAll(`report:${userId}:${id}`);
+    }
 
-        let parsedData: any = undefined;
-        if (data.data) {
-          try {
-            parsedData = JSON.parse(data.data);
-          } catch {
-            parsedData = data.data;
-          }
-        }
+    const results = await pipeline.exec();
 
-        return {
-          id: data.id ?? id,
-          user_id: data.user_id ?? String(userId),
-          title: data.title ?? '',
-          date: data.date ?? data.generated_at,
-          data: parsedData,
-          file_path: data.file_path ?? '',
-          created_at: data.created_at,
-          generated_at: data.generated_at,
-        };
-      })
-    );
+    const reports = reportIds.map((id, index) => {
+      const data = results[index] as Record<string, string> | null;
+      if (!data || Object.keys(data).length === 0) {
+        return null;
+      }
+
+      let parsedData: any = undefined;
+      if (data.data) {
+        try {
+          parsedData = JSON.parse(data.data);
+        } catch {
+          parsedData = data.data;
+        }
+      }
+
+      return {
+        id: data.id ?? id,
+        user_id: data.user_id ?? String(userId),
+        title: data.title ?? '',
+        date: data.date ?? data.generated_at,
+        data: parsedData,
+        file_path: data.file_path ?? '',
+        created_at: data.created_at,
+        generated_at: data.generated_at,
+      };
+    });
 
     return reports.filter(Boolean);
   } catch (error) {
@@ -257,30 +273,30 @@ export async function clearAllUserData(userId: string) {
   try {
     const id = String(userId);
 
-    // Delete user core data
-    await redis.del(`user:${id}`);
-    await redis.del(`user:${id}:lastCalculation`);
+    // Get all IDs first
+    const [entryIds, reportIds, calcIds] = await Promise.all([
+      redis.zRange(`entries:${id}`, 0, -1),
+      redis.zRange(`reports:${id}`, 0, -1),
+      redis.zRange(`calculations:${id}`, 0, -1),
+    ]);
 
-    // Delete entries
-    const entryIds = await redis.zRange(`entries:${id}`, 0, -1);
-    for (const entryId of entryIds) {
-      await redis.del(`entry:${id}:${entryId}`);
-    }
-    await redis.del(`entries:${id}`);
+    // PERFORMANCE FIX: Collect all keys to delete and use batch delete
+    // Before: N sequential delete operations
+    // After: 1 batch delete operation
+    const keysToDelete = [
+      `user:${id}`,
+      `user:${id}:lastCalculation`,
+      `entries:${id}`,
+      `reports:${id}`,
+      `calculations:${id}`,
+      ...entryIds.map(entryId => `entry:${id}:${entryId}`),
+      ...reportIds.map(reportId => `report:${id}:${reportId}`),
+      ...calcIds.map(calcId => `calculation:${id}:${calcId}`),
+    ];
 
-    // Delete reports
-    const reportIds = await redis.zRange(`reports:${id}`, 0, -1);
-    for (const reportId of reportIds) {
-      await redis.del(`report:${id}:${reportId}`);
+    if (keysToDelete.length > 0) {
+      await redis.del(keysToDelete);
     }
-    await redis.del(`reports:${id}`);
-
-    // Delete calculations stored in calculations:{userId}
-    const calcIds = await redis.zRange(`calculations:${id}`, 0, -1);
-    for (const calcId of calcIds) {
-      await redis.del(`calculation:${id}:${calcId}`);
-    }
-    await redis.del(`calculations:${id}`);
 
     return true;
   } catch (error) {

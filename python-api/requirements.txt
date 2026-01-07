@@ -3,11 +3,6 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 python-multipart==0.0.6
 
-# Performance optimization dependencies
-psutil>=5.9.0
-redis>=5.0.0
-aioredis>=2.0.0
-
 # PRIME engine dependencies (inherited from parent project)
 matplotlib>=3.7.0
 seaborn>=0.12.0

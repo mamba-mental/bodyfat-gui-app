@@ -54,7 +54,9 @@ describe('Dashboard Reset Logic', () => {
       deleteReport: vi.fn(),
       clearAllData: vi.fn(),
       refreshWidgets: vi.fn(),
-      subscribeToDataChanges: vi.fn(() => () => { })
+      subscribeToDataChanges: vi.fn(() => () => { }),
+      createNewProgram: vi.fn(() => 'mock-program-id'),
+      refreshKey: 0
     }
 
     return render(

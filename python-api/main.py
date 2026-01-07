@@ -18,6 +18,7 @@ import asyncio
 
 # Import data endpoints
 from data_endpoints import router as data_router
+from backup_endpoints import router as backup_router
 
 # Import performance optimizations (DISABLED - causes startup hang)
 # from performance_optimizations import (
@@ -79,10 +80,20 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Include data persistence endpoints
 app.include_router(data_router)
 
-# Enable CORS for the Next.js development server and all localhost ports
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Include backup endpoints
+app.include_router(backup_router)
+
+# CORS Configuration - Use environment variable for production security
+# Set ALLOWED_ORIGINS env var as comma-separated list in production
+# Example: ALLOWED_ORIGINS=https://myapp.com,https://api.myapp.com
+def get_allowed_origins() -> list:
+    """Get allowed origins from environment or use development defaults."""
+    env_origins = os.environ.get("ALLOWED_ORIGINS", "")
+    if env_origins:
+        return [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+
+    # Development defaults - specific origins only (no wildcard)
+    return [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3005",
@@ -93,11 +104,21 @@ app.add_middleware(
         "http://127.0.0.1:3005",
         "http://127.0.0.1:4000",
         "http://127.0.0.1:5000",
-        "*",  # Allow all origins in development
-    ],
+        # Docker network origins
+        "http://apex-fit-ai:3000",
+        "http://apex-fit-ai-new:3000",
+        # NAS/production origins (configurable via env)
+    ]
+
+ALLOWED_ORIGINS = get_allowed_origins()
+print(f"[CORS] Configured origins: {ALLOWED_ORIGINS}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 

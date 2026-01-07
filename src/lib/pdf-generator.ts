@@ -1,8 +1,43 @@
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { Report, CalculationResult, UserData, WeeklyProgression } from '@/types'
+/**
+ * PDF Generator - Lazy-loaded PDF generation utilities
+ *
+ * Uses dynamic imports to lazy-load jsPDF (~200KB) and html2canvas (~150KB)
+ * These libraries are only loaded when actually needed, reducing initial bundle size
+ */
+
+import { Report } from '@/types'
+
+// Cache for dynamically imported modules
+let jsPDFModule: typeof import('jspdf') | null = null
+let html2canvasModule: typeof import('html2canvas') | null = null
+
+/**
+ * Lazy load jsPDF library
+ */
+async function getJsPDF() {
+  if (!jsPDFModule) {
+    jsPDFModule = await import('jspdf')
+  }
+  return jsPDFModule.default
+}
+
+/**
+ * Lazy load html2canvas library
+ */
+async function getHtml2Canvas() {
+  if (!html2canvasModule) {
+    html2canvasModule = await import('html2canvas')
+  }
+  return html2canvasModule.default
+}
 
 export async function generatePDFFromHTML(htmlContent: string, filename: string): Promise<void> {
+  // Lazy load both libraries in parallel
+  const [jsPDF, html2canvas] = await Promise.all([
+    getJsPDF(),
+    getHtml2Canvas()
+  ])
+
   // Create a temporary container for the HTML
   const container = document.createElement('div')
   container.style.position = 'absolute'
@@ -18,10 +53,7 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
       useCORS: true,
       logging: false,
       windowWidth: 800,
-      ignoreElements: (element) => {
-        // Skip elements that might have problematic CSS
-        return false
-      },
+      ignoreElements: () => false,
       onclone: (clonedDoc) => {
         // Replace modern CSS color functions with fallbacks
         const styleSheets = clonedDoc.styleSheets
@@ -37,14 +69,13 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
                     const prop = rule.style[k]
                     const value = rule.style.getPropertyValue(prop)
                     if (value && (value.includes('lab(') || value.includes('oklch('))) {
-                      // Replace with a safe fallback color
                       rule.style.setProperty(prop, '#000000', 'important')
                     }
                   }
                 }
               }
             }
-          } catch (e) {
+          } catch {
             // Skip stylesheets we can't access (CORS)
             continue
           }
@@ -109,7 +140,9 @@ export async function generatePDFFromHTML(htmlContent: string, filename: string)
   }
 }
 
-export function generatePDFFromReport(report: Report): void {
+export async function generatePDFFromReport(report: Report): Promise<void> {
+  const jsPDF = await getJsPDF()
+
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
@@ -245,6 +278,8 @@ export function generatePDFFromReport(report: Report): void {
 
 // Generate styled PDF with better formatting
 export async function generateStyledPDF(report: Report): Promise<void> {
+  const jsPDF = await getJsPDF()
+
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.getWidth()
   const margin = 15
@@ -331,9 +366,6 @@ export async function generateStyledPDF(report: Report): Promise<void> {
 
   pdf.setTextColor(...textColor)
   pdf.setFont('helvetica', 'normal')
-
-  // Continue with the rest of the report...
-  // This is a simplified version - you can expand with charts, graphs, etc.
 
   pdf.save(`ApexFit_Report_${userData.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`)
 }

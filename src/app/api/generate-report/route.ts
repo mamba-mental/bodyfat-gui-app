@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserData } from '@/types'
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout'
+import { pythonApiConfig } from '@/lib/config'
 
-// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-const PYTHON_API_URL = 'http://127.0.0.1:8001';
+// Use centralized config for Python API settings
+const PYTHON_API_URL = pythonApiConfig.url;
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes to match PRIME workload expectations
 
 // CORS headers
@@ -69,10 +70,6 @@ export async function POST(request: NextRequest) {
       diet_type: userData.diet_type || "balanced",
       exercise_type: userData.exercise_type || "resistance",
       sleep_quality: userData.sleep_quality || "good",
-      // Training scores (required by Python API)
-      volume_score: userData.volume_score || 7.0,
-      intensity_score: userData.intensity_score || 7.0,
-      frequency_score: userData.frequency_score || 7.0,
       // Additional required fields for Python API
       activity_level: userData.activity_level || 3,  // 1-5 scale (1=sedentary, 5=very active)
       resistance_training: userData.resistance_training ?? true,

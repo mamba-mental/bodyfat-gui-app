@@ -2,6 +2,10 @@
 """
 Fast version of PRIME Report Generator that skips AI analysis for quick report generation.
 This is a standalone implementation that doesn't depend on AI components.
+
+Performance optimizations:
+- Parallel chart generation using ThreadPoolExecutor
+- Reduced matplotlib rendering overhead
 """
 
 import os
@@ -16,15 +20,100 @@ import numpy as np
 import base64
 from io import BytesIO
 from jinja2 import Template
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import only the non-AI dependent modules
 from .PRIME_Utils import calculate_age, DIET_MULTIPLIERS, EXERCISE_ADJUSTMENTS
 from .PRIME_Calculations import calculate_lean_mass_preservation_scores
 from .PRIME_Date_Utils import parse_date
 
+
+def _generate_weight_chart(dates, weights, images_dir, timestamp):
+    """Generate weight progress chart in a separate thread."""
+    try:
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.plot(dates, weights, marker='o', linewidth=3, markersize=8, label='Weight', color='#2E86AB')
+        ax.set_title('Weight Progress Over Time', fontsize=16, fontweight='bold', pad=20)
+        ax.set_xlabel('Date', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Weight (lbs)', fontsize=12, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=12)
+        ax.tick_params(axis='x', rotation=45)
+
+        # Save to file for markdown
+        weight_chart_filename = f"weight_progress_{timestamp}.png"
+        weight_chart_path = os.path.join(images_dir, weight_chart_filename)
+        plt.savefig(weight_chart_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+
+        # Save to base64 for HTML
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        base64_data = base64.b64encode(buffer.getvalue()).decode()
+        buffer.close()
+        plt.close(fig)
+
+        return {
+            'weight_progress_chart': base64_data,
+            'weight_progress_path': f"images/{weight_chart_filename}"
+        }
+    except Exception as e:
+        print(f"[WARNING] Weight chart creation failed: {e}")
+        return {'weight_progress_chart': '', 'weight_progress_path': ''}
+
+
+def _generate_body_composition_chart(dates, body_fat_pcts, lean_mass, fat_mass, images_dir, timestamp):
+    """Generate body composition chart in a separate thread."""
+    try:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+        # Body fat percentage
+        ax1.plot(dates, body_fat_pcts, marker='s', linewidth=3, markersize=8, label='Body Fat %', color='#A23B72')
+        ax1.set_title('Body Fat Percentage Over Time', fontsize=14, fontweight='bold')
+        ax1.set_ylabel('Body Fat %', fontsize=12, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(fontsize=12)
+
+        # Lean vs Fat mass
+        ax2.plot(dates, lean_mass, marker='^', linewidth=3, markersize=8, label='Lean Mass', color='#F18F01')
+        ax2.plot(dates, fat_mass, marker='v', linewidth=3, markersize=8, label='Fat Mass', color='#C73E1D')
+        ax2.set_title('Body Composition Over Time', fontsize=14, fontweight='bold')
+        ax2.set_xlabel('Date', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Mass (lbs)', fontsize=12, fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(fontsize=12)
+
+        for ax in [ax1, ax2]:
+            ax.tick_params(axis='x', rotation=45)
+
+        plt.tight_layout()
+
+        # Save to file for markdown
+        body_comp_filename = f"body_composition_{timestamp}.png"
+        body_comp_path = os.path.join(images_dir, body_comp_filename)
+        plt.savefig(body_comp_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+
+        # Save to base64 for HTML
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        base64_data = base64.b64encode(buffer.getvalue()).decode()
+        buffer.close()
+        plt.close(fig)
+
+        return {
+            'body_composition_chart': base64_data,
+            'body_composition_path': f"images/{body_comp_filename}"
+        }
+    except Exception as e:
+        print(f"[WARNING] Body composition chart creation failed: {e}")
+        return {'body_composition_chart': '', 'body_composition_path': ''}
+
+
 def create_professional_charts(progression_data, output_dir):
     """
     Create professional charts for the report with proper styling.
+    Uses parallel generation for improved performance.
 
     Args:
         progression_data (list): Weekly progression data
@@ -38,106 +127,47 @@ def create_professional_charts(progression_data, output_dir):
     os.makedirs(images_dir, exist_ok=True)
     chart_data = {
         'weight_progress_path': '',
-        'body_composition_path': ''
+        'body_composition_path': '',
+        'weight_progress_chart': '',
+        'body_composition_chart': ''
     }
-    
-    # Set professional style
+
+    # Set professional style (must be done before parallel generation)
     plt.style.use('default')
     sns.set_palette("Set2")
-    
+
     # Extract data for plotting
     dates = []
     for d in progression_data:
         try:
-            # Use centralized date parser that handles MMDDYY, ISO, and other formats
             dates.append(parse_date(d['date']))
         except (ValueError, KeyError) as e:
-            # Fallback to current date if parsing fails
             dates.append(datetime.datetime.now().date())
             print(f"[WARNING] Could not parse date: {d.get('date', 'missing')} - {e}")
-    
+
     weights = [d['weight'] for d in progression_data]
     body_fat_pcts = [d['body_fat_percentage'] for d in progression_data]
     lean_mass = [d['lean_mass'] for d in progression_data]
     fat_mass = [d['fat_mass'] for d in progression_data]
-    
-    # Create weight progress chart
-    try:
-        fig, ax = plt.subplots(figsize=(12, 8))
-        ax.plot(dates, weights, marker='o', linewidth=3, markersize=8, label='Weight', color='#2E86AB')
-        ax.set_title('Weight Progress Over Time', fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel('Date', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Weight (lbs)', fontsize=12, fontweight='bold')
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=12)
-        
-        # Format dates on x-axis
-        ax.tick_params(axis='x', rotation=45)
-        
-        # Save to file for markdown
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        weight_chart_filename = f"weight_progress_{timestamp}.png"
-        weight_chart_path = os.path.join(images_dir, weight_chart_filename)
-        plt.savefig(weight_chart_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
-        chart_data['weight_progress_path'] = f"images/{weight_chart_filename}"
 
-        # Save to base64 for HTML
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
-        buffer.seek(0)
-        chart_data['weight_progress_chart'] = base64.b64encode(buffer.getvalue()).decode()
-        buffer.close()
-        plt.close()
+    # Generate shared timestamp for both charts
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    except Exception as e:
-        print(f"[WARNING] Weight chart creation failed: {e}")
-        chart_data['weight_progress_chart'] = ""
-    
-    # Create body composition chart
-    try:
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
-        
-        # Body fat percentage
-        ax1.plot(dates, body_fat_pcts, marker='s', linewidth=3, markersize=8, label='Body Fat %', color='#A23B72')
-        ax1.set_title('Body Fat Percentage Over Time', fontsize=14, fontweight='bold')
-        ax1.set_ylabel('Body Fat %', fontsize=12, fontweight='bold')
-        ax1.grid(True, alpha=0.3)
-        ax1.legend(fontsize=12)
-        
-        # Lean vs Fat mass
-        ax2.plot(dates, lean_mass, marker='^', linewidth=3, markersize=8, label='Lean Mass', color='#F18F01')
-        ax2.plot(dates, fat_mass, marker='v', linewidth=3, markersize=8, label='Fat Mass', color='#C73E1D')
-        ax2.set_title('Body Composition Over Time', fontsize=14, fontweight='bold')
-        ax2.set_xlabel('Date', fontsize=12, fontweight='bold')
-        ax2.set_ylabel('Mass (lbs)', fontsize=12, fontweight='bold')
-        ax2.grid(True, alpha=0.3)
-        ax2.legend(fontsize=12)
-        
-        # Format dates
-        for ax in [ax1, ax2]:
-            ax.tick_params(axis='x', rotation=45)
-        
-        plt.tight_layout()
+    # Generate charts in parallel using ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = {
+            executor.submit(_generate_weight_chart, dates, weights, images_dir, timestamp): 'weight',
+            executor.submit(_generate_body_composition_chart, dates, body_fat_pcts, lean_mass, fat_mass, images_dir, timestamp): 'body_comp'
+        }
 
-        # Save to file for markdown
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        body_comp_filename = f"body_composition_{timestamp}.png"
-        body_comp_path = os.path.join(images_dir, body_comp_filename)
-        plt.savefig(body_comp_path, format='png', dpi=100, bbox_inches='tight', facecolor='white')
-        chart_data['body_composition_path'] = f"images/{body_comp_filename}"
+        for future in as_completed(futures):
+            chart_type = futures[future]
+            try:
+                result = future.result()
+                chart_data.update(result)
+            except Exception as e:
+                print(f"[WARNING] {chart_type} chart generation failed: {e}")
 
-        # Save to base64 for HTML
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight', facecolor='white')
-        buffer.seek(0)
-        chart_data['body_composition_chart'] = base64.b64encode(buffer.getvalue()).decode()
-        buffer.close()
-        plt.close()
-
-    except Exception as e:
-        print(f"[WARNING] Body composition chart creation failed: {e}")
-        chart_data['body_composition_chart'] = ""
-    
     return chart_data
 
 def prepare_input_parameters_for_report(user_data):
