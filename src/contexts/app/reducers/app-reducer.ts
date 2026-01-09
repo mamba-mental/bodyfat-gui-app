@@ -122,6 +122,30 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         error: null,
       }
 
+    case 'ARCHIVE_PROGRAM':
+      return {
+        ...state,
+        current_user: state.current_user
+          ? {
+              ...state.current_user,
+              archived_programs: [
+                action.payload,
+                ...(state.current_user.archived_programs || [])
+              ]
+            }
+          : null,
+        error: null,
+      }
+
+    case 'SET_ARCHIVED_PROGRAMS':
+      return {
+        ...state,
+        current_user: state.current_user
+          ? { ...state.current_user, archived_programs: action.payload }
+          : null,
+        error: null,
+      }
+
     default:
       return state
   }

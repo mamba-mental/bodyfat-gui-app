@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { calculateAge } from "@/lib/date-utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { useApp } from "@/contexts/app-context"
 import { getEatingPatternOptions, getEatingWindowHours } from "@/lib/eating-patterns"
@@ -28,7 +29,9 @@ import { getEatingPatternOptions, getEatingWindowHours } from "@/lib/eating-patt
 
 export default function CustomSetupPage() {
   const router = useRouter()
-  const { setUserData, state } = useApp()
+  const searchParams = useSearchParams()
+  const isNewProgram = searchParams.get('newProgram') === 'true'
+  const { setUserData, createNewProgram, state } = useApp()
   const { current_user } = state
 
   const normalizeDateInput = (value?: string | null) => {
@@ -221,21 +224,52 @@ export default function CustomSetupPage() {
       eating_window_hours: getEatingWindowHours(formData.eating_pattern)
     }
 
-
+    // Save the user data first
     setUserData(processedData)
+
+    // If this is a new program, create the program reference after saving
+    if (isNewProgram) {
+      // Create a new program - this will use the newly saved current_weight and current_bf
+      // as the program reference baseline
+      createNewProgram()
+      console.log('[Setup] New program created with fresh stats:', processedData.current_weight, 'lbs,', processedData.current_bf, '% BF')
+    }
+
     router.push("/")
+  }
+
+  // Determine title and description based on context
+  const getPageTitle = () => {
+    if (isNewProgram) return 'Start New Program'
+    if (current_user) return 'Update Profile'
+    return 'Custom Profile Setup'
+  }
+
+  const getPageDescription = () => {
+    if (isNewProgram) return 'Enter your current stats to start a fresh program. Your new weight and body fat percentage will become the baseline for tracking progress.'
+    if (current_user) return 'Update your personalized body composition tracking profile'
+    return 'Create your personalized body composition tracking profile'
   }
 
   return (
     <div className="container max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          {current_user ? 'Update Profile' : 'Custom Profile Setup'}
+          {getPageTitle()}
         </h1>
         <p className="text-muted-foreground">
-          {current_user ? 'Update your personalized body composition tracking profile' : 'Create your personalized body composition tracking profile'}
+          {getPageDescription()}
         </p>
       </div>
+
+      {isNewProgram && (
+        <Alert>
+          <AlertDescription>
+            Update your <strong>Current Weight</strong> and <strong>Current Body Fat %</strong> below.
+            These values will become your new program baseline for tracking progress.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -581,36 +615,68 @@ export default function CustomSetupPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.resistance_training}
-                  onCheckedChange={(checked) => handleInputChange('resistance_training', checked)}
-                />
-                <Label>I do resistance training</Label>
+              <div className="space-y-2">
+                <Label htmlFor="resistance_training">Resistance Training</Label>
+                <Select
+                  value={formData.resistance_training ? "yes" : "no"}
+                  onValueChange={(value) => handleInputChange('resistance_training', value === "yes")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.is_athlete}
-                  onCheckedChange={(checked) => handleInputChange('is_athlete', checked)}
-                />
-                <Label>I am a competitive athlete</Label>
+              <div className="space-y-2">
+                <Label htmlFor="is_athlete">Competitive Athlete</Label>
+                <Select
+                  value={formData.is_athlete ? "yes" : "no"}
+                  onValueChange={(value) => handleInputChange('is_athlete', value === "yes")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.is_bodybuilder}
-                  onCheckedChange={(checked) => handleInputChange('is_bodybuilder', checked)}
-                />
-                <Label>I am a bodybuilder</Label>
+              <div className="space-y-2">
+                <Label htmlFor="is_bodybuilder">Bodybuilder</Label>
+                <Select
+                  value={formData.is_bodybuilder ? "yes" : "no"}
+                  onValueChange={(value) => handleInputChange('is_bodybuilder', value === "yes")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.ped_use}
-                  onCheckedChange={(checked) => handleInputChange('ped_use', checked)}
-                />
-                <Label>I use performance enhancing substances</Label>
+              <div className="space-y-2">
+                <Label htmlFor="ped_use">Performance Enhancing Substances</Label>
+                <Select
+                  value={formData.ped_use ? "yes" : "no"}
+                  onValueChange={(value) => handleInputChange('ped_use', value === "yes")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>

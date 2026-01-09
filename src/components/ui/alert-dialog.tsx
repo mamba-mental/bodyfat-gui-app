@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils"
 
 interface AlertDialogProps {
   children: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 interface AlertDialogTriggerProps {
@@ -37,9 +39,19 @@ const AlertDialogContext = React.createContext<{
   setOpen: () => {},
 })
 
-const AlertDialog: React.FC<AlertDialogProps> = ({ children }) => {
-  const [open, setOpen] = React.useState(false)
-  
+const AlertDialog: React.FC<AlertDialogProps> = ({ children, open: controlledOpen, onOpenChange }) => {
+  const [internalOpen, setInternalOpen] = React.useState(false)
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = React.useCallback((value: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(value)
+    }
+    onOpenChange?.(value)
+  }, [isControlled, onOpenChange])
+
   return (
     <AlertDialogContext.Provider value={{ open, setOpen }}>
       {children}

@@ -28,8 +28,9 @@ export interface UserData {
   workout_days: number; // per week
   job_activity: number; // 1-4 scale
   leisure_activity: number; // 1-4 scale
-  program_reference?: ProgramReferenceSnapshot;
-  current_program_id?: string; // ID of the current active program for tracking
+  program_reference?: ProgramReferenceSnapshot | null;
+  current_program_id?: string | null; // ID of the current active program for tracking
+  archived_programs?: ArchivedProgram[]; // List of archived programs for history
 
 
   // Advanced Training & Nutrition
@@ -64,6 +65,59 @@ export interface ProgramReferenceSnapshot {
   start_date: string;
   initial_weight: number;
   initial_bf: number;
+}
+
+// Program Archiving Types
+export type ProgramStatus = 'active' | 'archived' | 'completed';
+
+export interface ProgramSummary {
+  /** Total weight change in lbs (negative = loss) */
+  total_weight_change: number;
+  /** Total body fat percentage change (negative = loss) */
+  total_bf_change: number;
+  /** Duration of program in days */
+  duration_days: number;
+  /** Average weekly weight loss/gain in lbs */
+  average_weekly_loss: number;
+  /** Number of entries recorded */
+  entries_count: number;
+  /** Best entry achieved during program */
+  best_entry?: {
+    date: string;
+    weight: number;
+    bf: number;
+  };
+  /** User notes added when archiving */
+  notes?: string;
+}
+
+export interface ArchivedProgram {
+  /** Unique identifier (e.g., "program-1699123456789") */
+  id: string;
+  /** User-editable name for the program */
+  name: string;
+  /** Program status */
+  status: ProgramStatus;
+  /** ISO date when program was created */
+  created_at: string;
+  /** ISO date when program was archived */
+  archived_at?: string;
+  /** Program start date (ISO) */
+  start_date: string;
+  /** Program end date (ISO, set when archived) */
+  end_date?: string;
+  /** Starting weight in lbs */
+  initial_weight: number;
+  /** Starting body fat percentage */
+  initial_bf: number;
+  /** Final weight captured when archived */
+  final_weight?: number;
+  /** Final body fat percentage captured when archived */
+  final_bf?: number;
+  /** Number of entries recorded during this program */
+  entry_count: number;
+  /** Summary statistics calculated on archive */
+  summary?: ProgramSummary;
 }
 
 export interface WeeklyProgression {
@@ -112,6 +166,7 @@ export interface Report {
   user_id: string;
   title: string;
   generated_at: Date | string;
+  entry_date?: string; // Date of the entry used for this report
   calculation_result?: CalculationResult;
   html_content?: string;
   pdf_path?: string;
@@ -136,9 +191,8 @@ export interface AppState {
 
 export type AppAction =
   | { type: 'SET_USER_DATA'; payload: UserData }
-  | { type: 'SET_PROGRAM_REFERENCE'; payload: ProgramReferenceSnapshot }
+  | { type: 'SET_PROGRAM_REFERENCE'; payload: ProgramReferenceSnapshot | null }
   | { type: 'ADD_ENTRY'; payload: BodyFatEntry }
-
   | { type: 'SET_ENTRIES'; payload: BodyFatEntry[] }
   | { type: 'UPDATE_ENTRY'; payload: BodyFatEntry }
   | { type: 'DELETE_ENTRY'; payload: string }
@@ -149,7 +203,10 @@ export type AppAction =
   | { type: 'SET_REPORT_GENERATION_STATUS'; payload: { status: string; entryDate?: string } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'CLEAR_ERROR' };
+  | { type: 'CLEAR_ERROR' }
+  // Program Archiving actions
+  | { type: 'ARCHIVE_PROGRAM'; payload: ArchivedProgram }
+  | { type: 'SET_ARCHIVED_PROGRAMS'; payload: ArchivedProgram[] };
 
 // Form-specific types
 export interface UserFormData extends Omit<UserData, 'height_cm'> {

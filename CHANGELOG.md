@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-01-09
+
+### Fixed
+- **Program Archive & New Program TypeScript Errors**: Fixed 17 TypeScript compilation errors affecting program archiving and new program creation functionality
+  - Updated `SET_PROGRAM_REFERENCE` action type to accept `null` payload for clearing program state
+  - Added `null` support to `UserData.program_reference` and `UserData.current_program_id` types
+  - Fixed AlertDialog component to support controlled mode with `open` and `onOpenChange` props
+  - Added missing `Switch` component import to custom setup page
+  - Updated `parseDateToLocal()` to accept both `Date` and `string` types
+  - Fixed Redis type casting with proper `unknown` intermediate type
+  - Fixed API route null filtering for entries and reports
+  - Added undefined check for `protein_intake` in AI service
+
+- **Modal Dialog Transparency**: Fixed see-through modal dialogs where background content was bleeding through
+  - Changed dialog background from `bg-background` to solid `bg-white dark:bg-zinc-900`
+  - Increased overlay opacity from 50% to 80% with backdrop blur effect
+  - Modals now have fully opaque backgrounds for better readability
+
+### Technical Improvements
+- Zero TypeScript errors (`npx tsc --noEmit` passes)
+- Production build completes successfully
+- Serena MCP integration configured with project memories
+
 ## [1.3.2] - 2025-10-10
 
 ### Added

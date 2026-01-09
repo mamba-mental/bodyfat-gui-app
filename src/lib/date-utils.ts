@@ -77,7 +77,12 @@ export function formatAge(dob?: string, fallbackAge?: number): string {
   return `${age} years`;
 }
 
-export function parseDateToLocal(dateStr: string): Date | null {
+export function parseDateToLocal(dateStr: string | Date): Date | null {
+  // If already a Date, return it
+  if (dateStr instanceof Date) {
+    return dateStr;
+  }
+
   const normalized = normaliseDobString(dateStr);
   if (!normalized) return null;
 

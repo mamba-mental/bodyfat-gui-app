@@ -47,7 +47,7 @@ export async function GET() {
     pythonError = error instanceof Error ? error.message : 'Failed to reach Python API';
   }
 
-  const localEntries = (await getUserEntries(String(USER_ID))).filter((e): e is BodyFatEntry => e !== null);
+  const localEntries = (await getUserEntries(String(USER_ID))).filter((e) => e !== null) as BodyFatEntry[];
   let entries = localEntries;
 
   if (remoteEntries && remoteEntries.length > 0) {

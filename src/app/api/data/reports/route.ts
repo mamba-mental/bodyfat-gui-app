@@ -52,7 +52,7 @@ export async function GET() {
   }
 
   if (!reports) {
-    reports = await getUserReports(String(USER_ID));
+    reports = (await getUserReports(String(USER_ID))).filter((r) => r !== null) as Report[];
   } else {
     // Persist the remote reports so they are available offline later
     for (const report of reports) {

@@ -105,7 +105,7 @@ export async function getUserEntries(userId: string) {
     const results = await pipeline.exec();
 
     const entries = entryIds.map((id, index) => {
-      const data = results[index] as Record<string, string> | null;
+      const data = results[index] as unknown as Record<string, string> | null;
       if (!data || Object.keys(data).length === 0) {
         return null;
       }
@@ -198,7 +198,7 @@ export async function getUserReports(userId: string) {
     const results = await pipeline.exec();
 
     const reports = reportIds.map((id, index) => {
-      const data = results[index] as Record<string, string> | null;
+      const data = results[index] as unknown as Record<string, string> | null;
       if (!data || Object.keys(data).length === 0) {
         return null;
       }

@@ -38,7 +38,7 @@ export async function addEntry(
     ...entryData,
     id: generateId(),
     user_id: currentUser.name,
-    program_id: currentUser.current_program_id,
+    program_id: currentUser.current_program_id ?? undefined,
     created_at: now,
     updated_at: now,
   }

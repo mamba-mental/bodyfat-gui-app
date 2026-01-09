@@ -407,7 +407,7 @@ export class AIService {
     
     // Bodybuilding specific insights
     if (user.workout_type === 'Bodybuilding') {
-      if (user.protein_intake < user.current_weight * 1.0) {
+      if (user.protein_intake !== undefined && user.protein_intake < user.current_weight * 1.0) {
         insights.push({
           id: `bb-protein-${timestamp.getTime()}`,
           type: 'tip',

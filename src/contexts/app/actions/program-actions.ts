@@ -1,11 +1,12 @@
 /**
  * Program Actions - Program management logic
  *
- * Handles creating new programs and program reference snapshots
+ * Handles creating new programs, program reference snapshots, and archiving
  */
 
-import { UserData, BodyFatEntry, AppAction, ProgramReferenceSnapshot } from '@/types'
+import { UserData, BodyFatEntry, AppAction, ProgramReferenceSnapshot, ArchivedProgram, ProgramSummary } from '@/types'
 import { saveUserData } from '@/lib/storage-api'
+import { config } from '@/lib/config'
 
 interface ProgramActionDeps {
   dispatch: React.Dispatch<AppAction>
@@ -85,5 +86,164 @@ export async function deleteReport(
     const message = error instanceof Error ? error.message : 'Failed to delete report'
     dispatch({ type: 'SET_ERROR', payload: message })
     console.error('Error deleting report:', error)
+  }
+}
+
+interface ArchiveProgramDeps extends ProgramActionDeps {
+  programReference: ProgramReferenceSnapshot | null
+}
+
+/**
+ * Archives the current program and creates a new one.
+ * - Calculates summary statistics
+ * - Saves archived program to storage
+ * - Creates a new active program
+ * @returns The archived program, or null if archiving failed
+ */
+export async function archiveProgram(
+  name: string,
+  notes: string,
+  deps: ArchiveProgramDeps
+): Promise<ArchivedProgram | null> {
+  const { dispatch, currentUser, entries, programReference, refreshWidgets } = deps
+
+  if (!currentUser || !programReference) {
+    console.warn('[ProgramActions] Cannot archive program: missing user data or program reference')
+    return null
+  }
+
+  // Get current program entries (filter by current_program_id if set)
+  const currentProgramId = currentUser.current_program_id
+  const programEntries = currentProgramId
+    ? entries.filter(e => e.program_id === currentProgramId || !e.program_id)
+    : entries
+
+  if (programEntries.length === 0) {
+    console.warn('[ProgramActions] Cannot archive program: no entries')
+    return null
+  }
+
+  // Calculate final metrics from latest entry
+  const latestEntry = programEntries[0] // Entries are sorted newest first
+  const finalWeight = latestEntry?.weight || currentUser.current_weight
+  const finalBf = latestEntry?.body_fat_percentage || currentUser.current_bf
+
+  // Calculate duration
+  const startDate = new Date(programReference.start_date)
+  const endDate = new Date()
+  const durationDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  const durationWeeks = durationDays / 7
+
+  // Calculate changes
+  const totalWeightChange = finalWeight - programReference.initial_weight
+  const totalBfChange = finalBf - programReference.initial_bf
+  const averageWeeklyLoss = durationWeeks > 0 ? Math.abs(totalWeightChange) / durationWeeks : 0
+
+  // Find best entry (lowest weight or lowest BF)
+  const bestEntry = programEntries.reduce((best, entry) => {
+    const entryWeight = entry.weight
+    const entryBf = entry.body_fat_percentage || Infinity
+    const bestWeight = best?.weight || Infinity
+    const bestBf = best?.body_fat_percentage || Infinity
+
+    // Prefer lower weight, then lower BF
+    if (entryWeight < bestWeight || (entryWeight === bestWeight && entryBf < bestBf)) {
+      return entry
+    }
+    return best
+  }, programEntries[0])
+
+  // Create program summary
+  const summary: ProgramSummary = {
+    total_weight_change: totalWeightChange,
+    total_bf_change: totalBfChange,
+    duration_days: durationDays,
+    average_weekly_loss: averageWeeklyLoss,
+    entries_count: programEntries.length,
+    best_entry: bestEntry ? {
+      date: typeof bestEntry.date === 'string' ? bestEntry.date : bestEntry.date.toISOString(),
+      weight: bestEntry.weight,
+      bf: bestEntry.body_fat_percentage || 0,
+    } : undefined,
+    notes: notes || undefined,
+  }
+
+  // Create archived program
+  const archivedProgram: ArchivedProgram = {
+    id: currentProgramId || `program-${Date.now()}`,
+    name: name || `Program ${startDate.toLocaleDateString()}`,
+    status: 'archived',
+    created_at: programReference.start_date,
+    archived_at: endDate.toISOString(),
+    start_date: programReference.start_date,
+    end_date: endDate.toISOString().split('T')[0],
+    initial_weight: programReference.initial_weight,
+    initial_bf: programReference.initial_bf,
+    final_weight: finalWeight,
+    final_bf: finalBf,
+    entry_count: programEntries.length,
+    summary,
+  }
+
+  try {
+    // Save to Python API
+    const response = await fetch(`${config.pythonApi.url}/api/programs/archive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, notes }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || 'Failed to archive program')
+    }
+
+    // Dispatch archive action to add to state
+    dispatch({ type: 'ARCHIVE_PROGRAM', payload: archivedProgram })
+
+    // Clear the program reference so user can enter new baseline values
+    dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: null })
+    // Also clear current program_id from user data
+    if (currentUser?.current_program_id) {
+      const updatedUser = {
+        ...currentUser,
+        current_program_id: null,
+        program_reference: null,
+      }
+      void saveUserData(updatedUser)
+      dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
+    }
+
+    refreshWidgets()
+    console.log('[ProgramActions] Program archived successfully, ready for new baseline:', archivedProgram.id)
+    return archivedProgram
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to archive program'
+    dispatch({ type: 'SET_ERROR', payload: message })
+    console.error('[ProgramActions] Error archiving program:', error)
+    return null
+  }
+}
+
+/**
+ * Fetches archived programs from the Python API
+ */
+export async function fetchArchivedPrograms(
+  dispatch: React.Dispatch<AppAction>
+): Promise<ArchivedProgram[]> {
+  try {
+    const response = await fetch(`${config.pythonApi.url}/api/programs`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch programs')
+    }
+
+    const data = await response.json()
+    const archivedPrograms = data.archived || []
+
+    dispatch({ type: 'SET_ARCHIVED_PROGRAMS', payload: archivedPrograms })
+    return archivedPrograms
+  } catch (error) {
+    console.error('[ProgramActions] Error fetching archived programs:', error)
+    return []
   }
 }
