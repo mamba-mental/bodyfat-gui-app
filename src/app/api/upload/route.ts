@@ -51,6 +51,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate file size (20MB limit)
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'File size must be less than 20MB' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Generate unique filename
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);

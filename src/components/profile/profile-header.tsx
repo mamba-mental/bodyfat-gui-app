@@ -41,8 +41,19 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
       })
 
       if (!uploadResponse.ok) {
-        const error = await uploadResponse.json()
-        throw new Error(error.error || 'Upload failed')
+        let errorMessage = 'Upload failed'
+        try {
+          const errorData = await uploadResponse.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // Response wasn't JSON (e.g., 413 HTML error page)
+          if (uploadResponse.status === 413) {
+            errorMessage = 'File is too large. Please use a smaller image.'
+          } else {
+            errorMessage = `Upload failed (status ${uploadResponse.status})`
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const { url: imageUrl } = await uploadResponse.json()
