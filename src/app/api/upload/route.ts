@@ -51,14 +51,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'File size must be less than 5MB' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
     // Generate unique filename
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);

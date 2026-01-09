@@ -22,6 +22,10 @@ const changelog: ChangelogEntry[] = [
       "Updated report wording to emphasize predictions and weekly recalculation recommendations",
       "Fixed stale dashboard data showing old program stats after archiving a program",
       "Fixed weight/body fat values not updating when starting a new program",
+      "Fixed Reports page program progress showing entries count instead of actual timeline progress",
+      "Fixed Weekly Consistency widget using entries count instead of timeline-based weeks",
+      "Fixed AI Analysis completion percentage using incorrect week calculations",
+      "Removed image file size restrictions for profile pictures and banners (dimension guidance retained)",
       "Added profile picture size guidance tooltip (recommended: 400x400px)",
       "Verified banner upload/delete functionality with 1500x400px sizing guidance"
     ]

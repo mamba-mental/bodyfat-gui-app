@@ -29,12 +29,6 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
     setUploading(true)
 
     try {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB')
-        return
-      }
-
       // Create form data for upload
       const formData = new FormData()
       formData.append('file', file)
@@ -146,7 +140,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
         
         {showEditButtons && (
           <div className="absolute top-4 right-4 flex gap-2">
-            <label htmlFor="banner-upload" className="cursor-pointer" title="Recommended size: 1500x400px. Max 5MB. JPG, PNG, or WebP format.">
+            <label htmlFor="banner-upload" className="cursor-pointer" title="Recommended size: 1500x400px. JPG, PNG, or WebP format.">
               <Button
                 size="sm"
                 variant="secondary"
@@ -206,7 +200,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
                 <label
                   htmlFor="picture-upload"
                   className="cursor-pointer"
-                  title={user.profile_picture ? "Change Profile Picture (recommended: 400x400px, max 5MB)" : "Upload Profile Picture (recommended: 400x400px, max 5MB)"}
+                  title={user.profile_picture ? "Change Profile Picture (recommended: 400x400px)" : "Upload Profile Picture (recommended: 400x400px)"}
                 >
                   <div className="absolute -bottom-1 -right-1 rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition-colors shadow-md">
                     <Camera className="h-4 w-4" />
