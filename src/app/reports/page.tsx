@@ -434,15 +434,39 @@ export default function ReportsPage() {
 
                         <div>
                           <h5 className="font-medium mb-2">Weekly Consistency</h5>
-                          <div className="flex items-center space-x-2">
-                            <Progress value={(entries.length / (current_calculation?.progression?.length || 16)) * 100} className="flex-1" />
-                            <span className="text-sm font-medium">
-                              {Math.round((entries.length / (current_calculation?.progression?.length || 16)) * 100)}%
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {entries.length} of {current_calculation?.progression?.length || 16} weeks tracked
-                          </p>
+                          {(() => {
+                            // Calculate based on timeline (consistent with dashboard)
+                            if (!current_user?.start_date || !current_user?.end_date) {
+                              return (
+                                <>
+                                  <div className="flex items-center space-x-2">
+                                    <Progress value={0} className="flex-1" />
+                                    <span className="text-sm font-medium">0%</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">No active program</p>
+                                </>
+                              )
+                            }
+                            const startDate = new Date(current_user.start_date)
+                            const endDate = new Date(current_user.end_date)
+                            const today = new Date()
+                            const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                            const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                            const progressPercent = Math.min(100, Math.round((daysElapsed / totalDays) * 100))
+                            const currentWeek = Math.max(1, Math.ceil(daysElapsed / 7))
+                            const totalWeeks = Math.ceil(totalDays / 7)
+                            return (
+                              <>
+                                <div className="flex items-center space-x-2">
+                                  <Progress value={progressPercent} className="flex-1" />
+                                  <span className="text-sm font-medium">{progressPercent}%</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {currentWeek} of {totalWeeks} weeks tracked
+                                </p>
+                              </>
+                            )
+                          })()}
                         </div>
 
                         <div>
@@ -672,9 +696,16 @@ export default function ReportsPage() {
                     
                     <div className="text-center p-4 border rounded-lg">
                       <div className="text-lg font-bold text-blue-600">
-                        {current_calculation && current_calculation.progression && current_calculation.progression.length > 0 ? 
-                          Math.round((entries.length / current_calculation.progression.length) * 100) : 0
-                        }%
+                        {(() => {
+                          // Calculate based on timeline (consistent with dashboard)
+                          if (!current_user?.start_date || !current_user?.end_date) return 0
+                          const startDate = new Date(current_user.start_date)
+                          const endDate = new Date(current_user.end_date)
+                          const today = new Date()
+                          const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                          const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                          return Math.min(100, Math.round((daysElapsed / totalDays) * 100))
+                        })()}%
                       </div>
                       <div className="text-sm text-muted-foreground">Completion</div>
                       <div className="text-xs text-muted-foreground mt-1">Program progress</div>

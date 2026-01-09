@@ -133,7 +133,14 @@ function generateFallbackInsights(
 
   // Nutrition insights
   if (calculation && calculation.progression && Array.isArray(calculation.progression) && calculation.progression.length > 0) {
-    const currentWeekIndex = Math.min(entries.length, calculation.progression.length - 1)
+    // Calculate current week based on timeline instead of entries count
+    let currentWeekIndex = 0
+    if (user.start_date) {
+      const startDate = new Date(user.start_date)
+      const today = new Date()
+      const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+      currentWeekIndex = Math.min(Math.ceil(daysElapsed / 7), calculation.progression.length - 1)
+    }
     const currentCalories = calculation.progression[currentWeekIndex]?.daily_calorie_intake
 
     if (currentCalories) {
@@ -149,9 +156,16 @@ function generateFallbackInsights(
     }
   }
 
-  // Goal insights
+  // Goal insights - calculate based on timeline
   const timeToGoal = parseInt(user.timeline_weeks?.toString() || '16') || 16
-  const weeksRemaining = Math.max(0, timeToGoal - entries.length)
+  let weeksRemaining = timeToGoal
+  if (user.start_date) {
+    const startDate = new Date(user.start_date)
+    const today = new Date()
+    const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+    const currentWeek = Math.ceil(daysElapsed / 7)
+    weeksRemaining = Math.max(0, timeToGoal - currentWeek)
+  }
 
   insights.push({
     id: '5',
