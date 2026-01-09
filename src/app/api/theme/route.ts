@@ -16,6 +16,7 @@ import { DATA_DIR } from '@/lib/constants';
 // Type definitions matching OpenAPI schema
 interface ThemeResponse {
   theme: 'light' | 'dark' | 'system';
+  font?: string;
   updated_at?: string;
   source: 'localStorage' | 'cookie' | 'database' | 'default';
   sync_status: SyncStatus;
@@ -23,12 +24,14 @@ interface ThemeResponse {
 }
 
 interface ThemeUpdateRequest {
-  theme: 'light' | 'dark' | 'system';
+  theme?: 'light' | 'dark' | 'system';
+  font?: string;
   user_id?: string;
 }
 
 interface ThemeUpdateResponse {
-  theme: 'light' | 'dark' | 'system';
+  theme?: 'light' | 'dark' | 'system';
+  font?: string;
   updated_at: string;
   storage_updates: StorageUpdates;
   sync_broadcast: boolean;
@@ -51,6 +54,7 @@ const THEME_FILE = path.join(DATA_DIR, 'theme-preferences.json');
 interface ThemeStore {
   [userId: string]: {
     theme: 'light' | 'dark' | 'system';
+    font?: string;
     updated_at: string;
   };
 }
@@ -85,6 +89,7 @@ export async function GET(request: NextRequest) {
     const cookieTheme = request.cookies.get('theme')?.value as 'light' | 'dark' | 'system' | undefined;
 
     let theme: 'light' | 'dark' | 'system' = 'system';
+    let font: string | undefined;
     let source: 'localStorage' | 'cookie' | 'database' | 'default' = 'default';
     let updated_at: string | undefined;
 
@@ -95,6 +100,7 @@ export async function GET(request: NextRequest) {
 
       if (userTheme) {
         theme = userTheme.theme;
+        font = userTheme.font;
         updated_at = userTheme.updated_at;
         source = 'database';
       }
@@ -108,6 +114,7 @@ export async function GET(request: NextRequest) {
 
     const response: ThemeResponse = {
       theme,
+      font,
       updated_at,
       source,
       sync_status: {
@@ -132,14 +139,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT /api/theme - Update theme preference
+// PUT /api/theme - Update theme preference and/or font
 export async function PUT(request: NextRequest) {
   try {
     const body: ThemeUpdateRequest = await request.json();
 
-    // Validate theme value
+    // Validate theme value if provided
     const validThemes = ['light', 'dark', 'system'];
-    if (!validThemes.includes(body.theme)) {
+    if (body.theme && !validThemes.includes(body.theme)) {
       return NextResponse.json(
         {
           error: 'ValidationError',
@@ -149,12 +156,23 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { theme, user_id } = body;
+    // Must have at least theme or font to update
+    if (!body.theme && !body.font) {
+      return NextResponse.json(
+        {
+          error: 'ValidationError',
+          message: 'Must provide theme or font to update',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { theme, font, user_id } = body;
     const updated_at = new Date().toISOString();
 
     const storage_updates: StorageUpdates = {
       localStorage: true, // Client-side will update localStorage
-      cookie: true,
+      cookie: !!theme,
       database: false,
     };
 
@@ -162,8 +180,10 @@ export async function PUT(request: NextRequest) {
     if (user_id) {
       try {
         const themeStore = await readThemeData();
+        const existing = themeStore[user_id] || { theme: 'system', updated_at };
         themeStore[user_id] = {
-          theme,
+          theme: theme || existing.theme,
+          font: font || existing.font,
           updated_at,
         };
         await writeThemeData(themeStore);
@@ -176,18 +196,21 @@ export async function PUT(request: NextRequest) {
 
     const response: ThemeUpdateResponse = {
       theme,
+      font,
       updated_at,
       storage_updates,
       sync_broadcast: true, // Client-side will use BroadcastChannel API
     };
 
-    // Set cookie for SSR compatibility
+    // Set cookie for SSR compatibility (theme only)
     const nextResponse = NextResponse.json(response, { status: 200 });
-    nextResponse.cookies.set('theme', theme, {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      path: '/',
-      sameSite: 'lax',
-    });
+    if (theme) {
+      nextResponse.cookies.set('theme', theme, {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        path: '/',
+        sameSite: 'lax',
+      });
+    }
 
     return nextResponse;
   } catch (error) {

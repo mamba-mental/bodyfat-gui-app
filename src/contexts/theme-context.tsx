@@ -193,7 +193,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (userIdRef.current === 'default') {
       userIdRef.current = resolveUserId()
     }
-    
+
     // Update localStorage
     const savedSettings = localStorage.getItem(THEME_STORAGE_KEY)
     if (savedSettings) {
@@ -210,6 +210,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         display: { theme: theme, font: newFont }
       }
       localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(defaultSettings))
+    }
+
+    // Persist to theme API for cross-session storage
+    try {
+      await fetch(withBasePath('/api/theme'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          font: newFont,
+          user_id: userIdRef.current
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save font to server:', error)
     }
   }
 

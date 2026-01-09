@@ -55,16 +55,24 @@ interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined)
 
+// Cache duration for data fetches (30 seconds)
+const DATA_CACHE_DURATION_MS = 30 * 1000
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const [refreshKey, setRefreshKey] = React.useState(0)
   const refreshCallbacksRef = React.useRef<(() => void)[]>([])
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastFetchTimestampRef = React.useRef<number>(0)
+  const forceRefreshRef = React.useRef<boolean>(false)
 
   const refreshWidgets = React.useCallback(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current)
     }
+
+    // Mark that we need a forced refresh (bypass cache)
+    forceRefreshRef.current = true
 
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey(prev => prev + 1)
@@ -94,6 +102,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true
 
     const loadData = async () => {
+      // Check if we can skip fetching (use cached data)
+      const now = Date.now()
+      const timeSinceLastFetch = now - lastFetchTimestampRef.current
+      const hasExistingData = state.current_user !== null || state.entries.length > 0
+
+      // Skip fetch if data was loaded recently and no forced refresh
+      if (hasExistingData && timeSinceLastFetch < DATA_CACHE_DURATION_MS && !forceRefreshRef.current) {
+        console.log('[AppContext] Using cached data, skipping fetch')
+        return
+      }
+
+      // Reset force refresh flag
+      forceRefreshRef.current = false
+
       dispatch({ type: 'SET_LOADING', payload: true })
 
       try {
@@ -157,7 +179,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         if (didUpdate) {
           dispatch({ type: 'CLEAR_ERROR' })
-          refreshWidgets()
+          // Update cache timestamp after successful fetch
+          lastFetchTimestampRef.current = Date.now()
+          // Note: Don't call refreshWidgets here as it would trigger another fetch
         } else if (allRejected) {
           dispatch({ type: 'SET_ERROR', payload: 'Failed to load data from server' })
         }
