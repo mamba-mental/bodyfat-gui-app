@@ -10,7 +10,9 @@ import {
   saveUserData,
   clearAllData,
   migrateFromLocalStorage,
-  deleteReport as deleteReportFromStorage
+  deleteReport as deleteReportFromStorage,
+  initializeDataSync,
+  getSyncStatus
 } from '@/lib/storage-api'
 import { useMountedRef } from '@/hooks/use-mounted-ref'
 import { useAnnouncements } from '@/hooks/use-announcements'
@@ -47,7 +49,7 @@ interface AppContextType {
   clearAllData: () => void
   refreshWidgets: () => void
   subscribeToDataChanges: (callback: () => void) => () => void
-  createNewProgram: () => string | null
+  createNewProgram: (overrideWeight?: number, overrideBf?: number) => string | null
   refreshKey: number
 }
 
@@ -95,6 +97,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true })
 
       try {
+        // Initialize data sync (warm Redis cache from SQLite if needed)
+        try {
+          await initializeDataSync()
+          console.log('[AppContext] Data sync initialized successfully')
+        } catch (syncError) {
+          console.warn('[AppContext] Data sync initialization failed, continuing with fallback:', syncError)
+        }
+
         const migrated = await migrateFromLocalStorage()
         if (migrated) {
           console.log('Data migrated from localStorage to server')
@@ -227,12 +237,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await deleteReportAction(reportId, deleteReportFromStorage, { dispatch, refreshWidgets })
   }, [refreshWidgets])
 
-  const createNewProgram = React.useCallback((): string | null => {
+  const createNewProgram = React.useCallback((overrideWeight?: number, overrideBf?: number): string | null => {
     return createProgramAction({
       dispatch,
       currentUser: state.current_user,
       entries: state.entries,
       refreshWidgets,
+      overrideWeight,
+      overrideBf,
     })
   }, [state.current_user, state.entries, refreshWidgets])
 

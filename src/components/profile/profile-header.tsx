@@ -206,7 +206,7 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
                 <label
                   htmlFor="picture-upload"
                   className="cursor-pointer"
-                  title={user.profile_picture ? "Change Profile Picture" : "Upload Profile Picture"}
+                  title={user.profile_picture ? "Change Profile Picture (recommended: 400x400px, max 5MB)" : "Upload Profile Picture (recommended: 400x400px, max 5MB)"}
                 >
                   <div className="absolute -bottom-1 -right-1 rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition-colors shadow-md">
                     <Camera className="h-4 w-4" />

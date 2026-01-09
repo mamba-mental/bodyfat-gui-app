@@ -17,8 +17,8 @@ export interface UserData {
   // Goals
   goal_weight: number; // lbs
   goal_bf: number; // percentage
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
 
   // Activity & Training
   activity_level: number; // 1-5 scale

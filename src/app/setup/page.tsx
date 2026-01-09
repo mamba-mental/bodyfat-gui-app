@@ -121,7 +121,7 @@ export default function SetupPage() {
                 ✅ Profile Complete
               </CardTitle>
               <CardDescription className="text-green-700">
-                Your profile was set up on {new Date(current_user.start_date).toLocaleDateString()}
+                Your profile was set up on {current_user.start_date ? new Date(current_user.start_date).toLocaleDateString() : 'N/A'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

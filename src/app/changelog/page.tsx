@@ -14,6 +14,41 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "1.7.1",
+    date: "2026-01-09",
+    type: "fix",
+    changes: [
+      "Fixed PDF pagination: Page breaks now correctly placed after sections 3, 7, and 12 only",
+      "Updated report wording to emphasize predictions and weekly recalculation recommendations",
+      "Fixed stale dashboard data showing old program stats after archiving a program",
+      "Fixed weight/body fat values not updating when starting a new program",
+      "Added profile picture size guidance tooltip (recommended: 400x400px)",
+      "Verified banner upload/delete functionality with 1500x400px sizing guidance"
+    ]
+  },
+  {
+    version: "1.7.0",
+    date: "2026-01-07",
+    type: "feature",
+    changes: [
+      "Multi-provider AI support: Use OpenRouter, Groq, OpenAI, Gemini, and more for report generation",
+      "Cost-effective AI options: Switch to free/cheaper models via OpenRouter (e.g., google/gemini-flash-1.5-8b)",
+      "Universal LLM Client integration: AI Confidence Analyzer now supports 12+ LLM providers",
+      "Configurable AI settings: Set provider and model via environment variables or API request",
+      "Backward compatible: Defaults to Anthropic Claude if no AI settings provided"
+    ]
+  },
+  {
+    version: "1.6.1",
+    date: "2026-01-07",
+    type: "fix",
+    changes: [
+      "Fixed AI Confidence Analyzer model ID (claude-3-5-sonnet-20241022 -> claude-sonnet-4-20250514)",
+      "Cleaned up test entries from SQLite database",
+      "Report generation now works correctly with updated Anthropic API"
+    ]
+  },
+  {
     version: "1.6.0",
     date: "2026-01-07",
     type: "improvement",

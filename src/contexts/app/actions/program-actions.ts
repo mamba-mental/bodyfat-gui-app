@@ -13,6 +13,10 @@ interface ProgramActionDeps {
   currentUser: UserData | null
   entries: BodyFatEntry[]
   refreshWidgets: () => void
+  /** Override weight for new program (use when state hasn't updated yet) */
+  overrideWeight?: number
+  /** Override body fat for new program (use when state hasn't updated yet) */
+  overrideBf?: number
 }
 
 /**
@@ -22,7 +26,7 @@ interface ProgramActionDeps {
  * @returns The new program ID, or null if no user data exists
  */
 export function createNewProgram(deps: ProgramActionDeps): string | null {
-  const { dispatch, currentUser, refreshWidgets } = deps
+  const { dispatch, currentUser, refreshWidgets, overrideWeight, overrideBf } = deps
 
   if (!currentUser) {
     console.warn('[ProgramActions] Cannot create new program: no user data')
@@ -34,11 +38,11 @@ export function createNewProgram(deps: ProgramActionDeps): string | null {
   const now = new Date()
   const todayStr = now.toISOString().split('T')[0]
 
-  // ALWAYS use profile data as baseline for new program
-  // This ensures the user's actual current weight/BF is used, not stale entry data
-  const currentWeight = currentUser.current_weight
-  const currentBF = currentUser.current_bf
-  console.log('[ProgramActions] Creating new program with profile baseline:', currentWeight, 'lbs,', currentBF, '% BF')
+  // Use override values if provided (for when state hasn't updated yet)
+  // Otherwise fall back to current user profile data
+  const currentWeight = overrideWeight ?? currentUser.current_weight
+  const currentBF = overrideBf ?? currentUser.current_bf
+  console.log('[ProgramActions] Creating new program with baseline:', currentWeight, 'lbs,', currentBF, '% BF', overrideWeight ? '(from override)' : '(from profile)')
 
   // Create program reference snapshot
   const programReference: ProgramReferenceSnapshot = {
@@ -50,11 +54,22 @@ export function createNewProgram(deps: ProgramActionDeps): string | null {
   // Dispatch to update state
   dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: programReference })
 
-  // Update user data with new program ID
+  // Calculate default end date (16 weeks from today)
+  const defaultWeeks = currentUser.timeline_weeks || 16
+  const endDate = new Date(now.getTime() + (defaultWeeks * 7 * 24 * 60 * 60 * 1000))
+  const endDateStr = endDate.toISOString().split('T')[0]
+
+  // Update user data with new program ID AND new start/end dates
+  // Also update current_weight and current_bf if override values were provided
   const updatedUser = {
     ...currentUser,
     current_program_id: programId,
     program_reference: programReference,
+    start_date: todayStr, // Update start_date for new program
+    end_date: endDateStr, // Update end_date for new program
+    // Use override values to ensure dashboard shows correct current stats
+    current_weight: currentWeight,
+    current_bf: currentBF,
   }
   void saveUserData(updatedUser)
   dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
@@ -203,12 +218,15 @@ export async function archiveProgram(
 
     // Clear the program reference so user can enter new baseline values
     dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: null })
-    // Also clear current program_id from user data
+    // Also clear current program_id AND dates from user data
+    // This ensures dashboard shows "no active program" instead of stale data
     if (currentUser?.current_program_id) {
       const updatedUser = {
         ...currentUser,
         current_program_id: null,
         program_reference: null,
+        start_date: null,
+        end_date: null,
       }
       void saveUserData(updatedUser)
       dispatch({ type: 'SET_USER_DATA', payload: updatedUser })

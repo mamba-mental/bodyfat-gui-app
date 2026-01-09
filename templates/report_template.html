@@ -6,9 +6,25 @@
     <title>Body Fat and Weight Loss Calculator Report - {{ name }}</title>
     <style>
         /* Professional Report Styles - Embedded for PDF generation */
+        /* Optimized for clean pagination matching reference PDF */
+
         @page {
-            margin: 2cm;
+            margin: 1.5cm 2cm 2cm 2cm;
             size: letter;
+
+            @top-center {
+                content: "Body Fat and Weight Loss Calculator Report";
+                font-family: Georgia, serif;
+                font-size: 9pt;
+                color: #666;
+            }
+
+            @bottom-center {
+                content: counter(page);
+                font-family: Georgia, serif;
+                font-size: 9pt;
+                color: #666;
+            }
         }
 
         * {
@@ -28,9 +44,18 @@
             background-color: #fff;
         }
 
+        /* Page break control - explicit for PDF generators */
         .page-break {
-            page-break-after: always;
-            padding: 15px;
+            display: block;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-before: auto;
+            break-before: auto;
+            height: 0;
+            margin: 0;
+            padding: 0;
+            border: none;
+            clear: both;
         }
 
         header {
@@ -52,93 +77,110 @@
             color: #2980b9;
             border-bottom: 2px solid #2980b9;
             padding-bottom: 5px;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            page-break-after: avoid;
         }
 
         h3 {
             font-size: 11pt;
             color: #34495e;
-            margin-top: 15px;
-            margin-bottom: 10px;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            page-break-after: avoid;
         }
 
+        /* Table Styles - matching reference PDF */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-size: 9pt;
         }
 
         th, td {
-            border: 1px solid #bdc3c7;
-            padding: 8px 10px;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
             text-align: left;
         }
 
         th {
-            background-color: #3498db;
-            color: white;
+            background-color: #f5f5f5;
+            color: #333;
             font-weight: bold;
+            border-bottom: 2px solid #ddd;
         }
 
         tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #fafafa;
         }
 
-        tr:hover {
-            background-color: #ecf0f1;
-        }
-
+        /* Small tables for Weekly Progress - fits on page */
         .small-table {
-            font-size: 7pt;
-            margin-bottom: 8px;
+            font-size: 7.5pt;
+            margin-bottom: 10px;
         }
 
         .small-table th, .small-table td {
-            padding: 4px 6px;
+            padding: 4px 5px;
         }
 
+        /* Sections */
         section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             page-break-inside: avoid;
+        }
+
+        /* Allow Weekly Progress table to break if needed */
+        .allow-break {
+            page-break-inside: auto;
         }
 
         ul {
             padding-left: 25px;
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         li {
-            margin-bottom: 8px;
-            line-height: 1.5;
+            margin-bottom: 6px;
+            line-height: 1.4;
         }
 
+        /* Charts - sized to fit both on one page */
         .charts-container {
             width: 100%;
-            margin: 15px 0;
+            margin: 10px 0;
             text-align: center;
+            page-break-inside: avoid;
         }
 
         .chart {
-            width: 90%;
-            margin: 0 auto 20px auto;
+            width: 100%;
+            margin: 0 auto 15px auto;
             page-break-inside: avoid;
+        }
+
+        .chart h3 {
+            margin-bottom: 5px;
+            font-size: 10pt;
         }
 
         .chart img {
             max-width: 100%;
+            max-height: 280px;
+            width: auto;
             height: auto;
-            margin: 10px auto;
+            margin: 5px auto;
             display: block;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
 
+        /* Info boxes with blue left border - matching reference */
         .supplemental-info {
             background-color: #f8f9fa;
-            padding: 15px;
-            margin: 15px 0;
+            padding: 12px 15px;
+            margin: 10px 0;
             border-left: 4px solid #3498db;
             border-radius: 0 4px 4px 0;
             page-break-inside: avoid;
@@ -147,28 +189,46 @@
         .supplemental-info h3 {
             color: #2980b9;
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 10pt;
         }
 
+        .supplemental-info ul {
+            margin: 5px 0;
+        }
+
+        .supplemental-info li {
+            margin-bottom: 4px;
+            font-size: 9pt;
+        }
+
+        .supplemental-info p {
+            margin: 5px 0;
+            font-size: 9pt;
+        }
+
+        /* Combined sections container */
         .combined-sections {
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
 
+        /* Data container for reference tables */
         .data-container {
-            margin-top: 15px;
+            margin-top: 12px;
         }
 
         .data-section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             page-break-inside: avoid;
         }
 
         .data-section h3 {
             background-color: #34495e;
             color: white;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 4px 4px 0 0;
             margin-bottom: 0;
+            font-size: 10pt;
         }
 
         .data-section table {
@@ -177,12 +237,12 @@
         }
 
         footer {
-            margin-top: 40px;
+            margin-top: 30px;
             text-align: center;
             font-style: italic;
             color: #777;
             border-top: 1px solid #ddd;
-            padding-top: 15px;
+            padding-top: 12px;
         }
 
         /* Print-specific styles */
@@ -193,11 +253,17 @@
             }
 
             .page-break {
-                page-break-before: always;
+                page-break-after: always;
+                height: 0;
+                visibility: hidden;
             }
 
             table {
                 page-break-inside: avoid;
+            }
+
+            .small-table {
+                page-break-inside: auto;
             }
 
             img {
@@ -211,6 +277,25 @@
             .supplemental-info {
                 page-break-inside: avoid;
             }
+
+            h2, h3 {
+                page-break-after: avoid;
+            }
+
+            /* Keep headers with following content */
+            h2 + *, h3 + * {
+                page-break-before: avoid;
+            }
+        }
+
+        /* Specific styling for two-column profile tables */
+        .profile-table td:first-child {
+            width: 45%;
+            font-weight: 500;
+        }
+
+        .profile-table td:last-child {
+            width: 55%;
         }
     </style>
 </head>
@@ -219,11 +304,15 @@
     <header>
         <h1>Body Fat and Weight Loss Calculator Report - {{ name }}</h1>
         <p>Report Date: {{ report_date }}</p>
+        <p style="font-style: italic; color: #666; font-size: 9pt; margin-top: 8px;">
+            <strong>Note:</strong> This report contains <strong>predictions</strong> based on your current profile inputs.
+            For best accuracy, recalculate weekly as you update your weight and body composition measurements.
+        </p>
     </header>
 
     <section>
         <h2>1. Current Profile</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Height:</td><td>{{ height }}</td></tr>
             <tr><td>Current Weight:</td><td>{{ "%.2f"|format(initial_weight) }} lbs</td></tr>
             <tr><td>Current Body Fat:</td><td>{{ "%.2f"|format(initial_body_fat) }}%</td></tr>
@@ -236,7 +325,7 @@
 
     <section>
         <h2>2. Target Goals</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Goal Weight:</td><td>{{ "%.2f"|format(goal_weight) }} lbs</td></tr>
             <tr><td>Goal Body Fat:</td><td>{{ "%.2f"|format(goal_body_fat) }}%</td></tr>
             <tr><td>Timeline:</td><td>{{ start_date }} to {{ end_date }}</td></tr>
@@ -246,7 +335,7 @@
 
     <section>
         <h2>3. Current Activity Profile</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Activity Level:</td><td>{{ activity_level }}</td></tr>
             <tr><td>Training Experience:</td><td>{{ experience_level }}</td></tr>
             <tr><td>Workout Type:</td><td>{{ workout_type }}</td></tr>
@@ -254,7 +343,7 @@
             <tr><td>Currently Using Resistance Training:</td><td>{{ resistance_training }}</td></tr>
             <tr><td>Athlete Status:</td><td>{{ athlete_status }}</td></tr>
         </tbody></table>
-        
+
         <div class="supplemental-info">
             <h3>Understanding Your Activity Profile:</h3>
             <ul>
@@ -266,19 +355,19 @@
         </div>
     </section>
 
-    <!-- Page 2 -->
+    <!-- Page 2: Metabolic Profile, Lifestyle, Workout Analysis -->
     <div class="page-break"></div>
     
     <section>
         <h2>4. Current Metabolic Profile</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Base Metabolic Rate (RMR):</td><td>{{ "%.2f"|format(initial_rmr) }} cal/day</td></tr>
             <tr><td>Total Daily Energy Expenditure (TDEE):</td><td>{{ "%.2f"|format(initial_tdee) }} cal/day</td></tr>
             <tr><td>Thermic Effect of Food (TEF):</td><td>{{ "%.2f"|format(tef) }} cal/day</td></tr>
             <tr><td>Non-Exercise Activity Thermogenesis (NEAT):</td><td>{{ "%.2f"|format(neat) }} cal/day</td></tr>
             <tr><td>Recommended Daily Calorie Intake:</td><td>{{ "%.2f"|format(initial_daily_calorie_intake) }} cal/day</td></tr>
         </tbody></table>
-        
+
         <div class="supplemental-info">
             <h3>Understanding Your Metabolic Profile:</h3>
             <ul>
@@ -292,7 +381,7 @@
 
     <section>
         <h2>Additional Lifestyle Factors</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Target Daily Protein Intake:</td><td>{{ protein_intake }} grams</td></tr>
             <tr><td>Diet Type:</td><td>{{ diet_type }}</td></tr>
             <tr><td>Reported PED Use:</td><td>{{ ped_use }}</td></tr>
@@ -311,7 +400,7 @@
 
     <section>
         <h2>5. Workout Analysis</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Type:</td><td>{{ workout_type }}</td></tr>
             <tr><td>Frequency:</td><td>{{ workout_frequency }} days/week</td></tr>
             <tr><td>Volume Score:</td><td>{{ "%.2f"|format(volume_score) }} - {{ get_score_description(volume_score) }}</td></tr>
@@ -329,9 +418,6 @@
         </div>
     </section>
 
-    <!-- Page 3 -->
-    <div class="page-break"></div>
-
     <section>
         <h2>6. Predicted Progress Charts</h2>
         <div class="charts-container">
@@ -346,13 +432,9 @@
         </div>
     </section>
 
-    <!-- Page 4 -->
-    <div class="page-break"></div>
-
     <div class="combined-sections">
-        <section>
+        <section class="allow-break">
             <h2>7. Weekly Progress Forecast</h2>
-
         <table class="small-table">
             <tbody><tr>
                 <th>Date</th>
@@ -384,7 +466,12 @@
             {% endfor %}
             </tbody></table>
     </section>
+    </div>
 
+    <!-- Page break after Section 7: Weekly Progress Forecast -->
+    <div class="page-break"></div>
+
+    <div class="combined-sections">
         <section>
             <h2>8. Body Composition Changes</h2>
 
@@ -409,37 +496,35 @@
         </section>
     </div>
 
-    <!-- Page 5 -->
-    <div class="page-break"></div>
-
     <section>
-        <h2>9. Expected Results</h2>
-        <table>
+        <h2>9. Predicted Results</h2>
+        <table class="profile-table">
             <tbody><tr><td>Total Weight Loss:</td><td>{{ "%.2f"|format(total_weight_loss) }} lbs</td></tr>
             <tr><td>Fat Loss:</td><td>{{ "%.2f"|format(total_bf_loss) }}%</td></tr>
             <tr><td>Muscle Gain:</td><td>{{ "%.2f"|format(total_muscle_gain) }} lbs</td></tr>
         </tbody></table>
-        
+
         <h3>Average Weekly Changes:</h3>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Weight Loss:</td><td>{{ "%.2f"|format(avg_weekly_loss) }} lbs</td></tr>
             <tr><td>Muscle Gain:</td><td>{{ "%.2f"|format(avg_muscle_gain) }} lbs</td></tr>
         </tbody></table>
 
         <div class="supplemental-info">
-            <h3>Understanding Your Results:</h3>
+            <h3>Understanding Your Predicted Results:</h3>
             <ul>
-                <li><strong>Total Weight Loss:</strong> Your projected loss of {{ "%.2f"|format(total_weight_loss) }} lbs is designed to be sustainable and preserve muscle mass.</li>
-                <li><strong>Fat Loss:</strong> A reduction of {{ "%.2f"|format(total_bf_loss) }}% body fat represents a healthy rate of fat loss.</li>
-                <li><strong>Muscle Changes:</strong> The program aims to gain/maintain {{ "%.2f"|format(total_muscle_gain) }} lbs of muscle while losing fat.</li>
-                <li><strong>Weekly Progress:</strong> Targeting {{ "%.2f"|format(avg_weekly_loss) }} lbs per week ensures steady, sustainable progress.</li>
+                <li><strong>Total Weight Loss:</strong> Based on current inputs, you are predicted to lose {{ "%.2f"|format(total_weight_loss) }} lbs sustainably while preserving muscle mass.</li>
+                <li><strong>Fat Loss:</strong> A predicted reduction of {{ "%.2f"|format(total_bf_loss) }}% body fat represents a healthy rate of loss.</li>
+                <li><strong>Muscle Changes:</strong> The algorithm predicts a gain/maintenance of {{ "%.2f"|format(total_muscle_gain) }} lbs of muscle while losing fat.</li>
+                <li><strong>Weekly Progress:</strong> Predicted weekly loss of {{ "%.2f"|format(avg_weekly_loss) }} lbs ensures steady, sustainable progress.</li>
+                <li><strong>Recalculation:</strong> Update your profile weekly with actual measurements to refine these predictions.</li>
             </ul>
         </div>
     </section>
 
     <section>
         <h2>10. Metabolic Adaptation Forecast</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Initial Week:</td><td>{{ "%.2f"|format(week_1_adaptation) }} multiplier</td></tr>
             <tr><td>Final Week:</td><td>{{ "%.2f"|format(final_week_adaptation) }} multiplier</td></tr>
             <tr><td>Expected Adaptation:</td><td>{{ "%.2f"|format(adaptation_percentage) }}% change</td></tr>
@@ -458,7 +543,7 @@
 
     <section>
         <h2>11. Final Phase Targets</h2>
-        <table>
+        <table class="profile-table">
             <tbody><tr><td>Maintenance Calories:</td><td>{{ "%.2f"|format(final_tdee) }} calories/day</td></tr>
             <tr><td>Weekly Energy Output:</td><td>{{ "%.2f"|format(final_weekly_caloric_output) }} calories</td></tr>
         </tbody></table>
@@ -472,9 +557,6 @@
             </ul>
         </div>
     </section>
-
-    <!-- Page 6+ -->
-    <div class="page-break"></div>
 
     <section>
         <h2>12. Input Parameter Analysis</h2>
@@ -534,10 +616,11 @@
                 </tr></tbody></table>
         </div>
     </section>
-    
-    <!-- Page Break before AI Confidence Analysis if it exists -->
-    {% if confidence_analysis %}
+
+    <!-- Page break after Section 12: Input Parameter Analysis -->
     <div class="page-break"></div>
+
+    {% if confidence_analysis %}
     <section>
         <h2>13. AI Confidence Analysis</h2>
         <div class="supplemental-info">
@@ -655,9 +738,7 @@
         {% endif %}
     </section>
     {% endif %}
-    
-    <!-- Page Break before Comprehensive Parameter Reference Guide -->
-    <div class="page-break"></div>
+
     <!-- Comprehensive Parameter Reference Guide -->
     <section class="section">
         <h2>{{ "14" if confidence_analysis else "13" }}. Comprehensive Parameter Reference Guide</h2>
@@ -771,8 +852,6 @@
             </ul>
         </div>
     </section>
-
-    <div class="page-break"></div>
 
     <section>
         <h2>{{ "14" if confidence_analysis else "13" }}. Comprehensive Reference Guide</h2>
