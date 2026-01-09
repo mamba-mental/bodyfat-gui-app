@@ -249,7 +249,7 @@ export default function ReportsPage() {
                     {report_generation_status || 'No report generation in progress.'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Entry used: {report_generation_entry_date || 'Not recorded'}
+                    Entry used: {report_generation_entry_date || reports[0]?.entry_date || 'Not recorded'}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Last report: {reports.length > 0 ? new Date(reports[0].generated_at).toLocaleString() : 'None generated yet'}
@@ -295,14 +295,33 @@ export default function ReportsPage() {
                   <ClientIcon icon={Activity} className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {current_calculation?.progression ? 
-                      Math.round((entries.length / current_calculation.progression.length) * 100) : 0
-                    }%
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Week {entries.length} of {current_calculation?.progression?.length || 0}
-                  </p>
+                  {(() => {
+                    // Calculate progress based on program timeline (consistent with dashboard)
+                    if (!current_user?.start_date || !current_user?.end_date) {
+                      return (
+                        <>
+                          <div className="text-2xl font-bold">0%</div>
+                          <p className="text-xs text-muted-foreground">No active program</p>
+                        </>
+                      )
+                    }
+                    const startDate = new Date(current_user.start_date)
+                    const endDate = new Date(current_user.end_date)
+                    const today = new Date()
+                    const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                    const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                    const progressPercent = Math.min(100, Math.round((daysElapsed / totalDays) * 100))
+                    const currentWeek = Math.max(1, Math.ceil(daysElapsed / 7))
+                    const totalWeeks = Math.ceil(totalDays / 7)
+                    return (
+                      <>
+                        <div className="text-2xl font-bold">{progressPercent}%</div>
+                        <p className="text-xs text-muted-foreground">
+                          Week {currentWeek} of {totalWeeks}
+                        </p>
+                      </>
+                    )
+                  })()}
                 </CardContent>
               </Card>
 
