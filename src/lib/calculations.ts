@@ -25,12 +25,13 @@ export interface ApiResponse<T> {
  */
 export async function calculateProgression(userData: UserData): Promise<CalculationResult> {
   try {
+    // FastAPI expects { user_data: UserData } format when endpoint has multiple body params
     const response = await fetch(`${API_BASE_URL}/calculate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify({ user_data: userData }),
     })
 
     if (!response.ok) {

@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Increased overlay opacity from 50% to 80% with backdrop blur effect
   - Modals now have fully opaque backgrounds for better readability
 
+- **Calculate API Request Format**: Fixed 500 errors when generating reports after creating new program
+  - Python FastAPI endpoint expects `{ user_data: UserData }` format when endpoint has multiple body parameters
+  - Fixed request wrapping in `src/app/api/calculate/route.ts`
+  - Fixed request wrapping in `src/lib/calculations.ts`
+  - Fixed request wrapping in `src/lib/api-cache.ts`
+  - Report generation now works correctly after program archive and new program creation
+
 ### Technical Improvements
 - Zero TypeScript errors (`npx tsc --noEmit` passes)
 - Production build completes successfully

@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
     console.log('Sending to Python API:', JSON.stringify(apiData, null, 2))
 
     // Call the Python PRIME calculation engine
+    // Note: FastAPI expects { user_data: UserData, ai_settings?: AISettings } format
+    // when the endpoint has multiple body parameters
     try {
       const response = await fetchWithTimeout(
         targetUrl,
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(apiData),
+          body: JSON.stringify({ user_data: apiData }),
         },
         PYTHON_TIMEOUT_MS,
       )

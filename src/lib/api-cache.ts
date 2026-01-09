@@ -215,9 +215,10 @@ export class OptimizedAPI {
 
   // Calculation methods
   async calculate(userData: any, useCache = true) {
+    // FastAPI expects { user_data: UserData } when endpoint has multiple body params
     return apiCache.request('/python-api/calculate', {
       method: 'POST',
-      body: userData,
+      body: { user_data: userData },
       cache: useCache,
       cacheTTL: 3600000 // 1 hour for expensive calculations
     })
