@@ -122,7 +122,7 @@ export default function ChartsPage() {
             <p className="text-muted-foreground mb-4">
               You need at least one entry to generate progress charts.
             </p>
-            <Button onClick={() => window.location.href = '/entries/new'}>
+            <Button variant="default" onClick={() => window.location.href = '/entries/new'}>
               Add Your First Entry
             </Button>
           </CardContent>
@@ -401,7 +401,7 @@ export default function ChartsPage() {
                 <p className="text-muted-foreground mb-4">
                   Complete a PRIME calculation on the dashboard to view detailed metabolic insights.
                 </p>
-                <Button onClick={() => window.location.href = '/'}>
+                <Button variant="secondary" onClick={() => window.location.href = '/'}>
                   Go to Dashboard
                 </Button>
               </CardContent>

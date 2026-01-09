@@ -168,7 +168,7 @@ export function ArchiveModal({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleArchive} disabled={archiving}>
+          <Button variant="default" onClick={handleArchive} disabled={archiving}>
             {archiving ? "Archiving..." : "Archive & Start New"}
           </Button>
         </DialogFooter>

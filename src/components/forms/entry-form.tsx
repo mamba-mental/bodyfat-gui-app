@@ -296,16 +296,17 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
           </CardContent>
           
           <CardFooter className="flex justify-between">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="secondary"
               onClick={() => form.reset()}
               aria-label="Reset form to default values"
             >
               Reset
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
+              variant="default"
               disabled={isLoading}
               aria-describedby={isLoading ? "saving-status" : undefined}
               aria-label={isLoading ? "Saving entry, please wait" : "Save entry to your progress history"}

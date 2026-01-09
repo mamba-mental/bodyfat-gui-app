@@ -198,13 +198,13 @@ export default function EntriesPage() {
         </div>
         <div className="flex items-center space-x-2">
           {filteredEntries.length > 0 && (
-            <Button variant="outline" onClick={exportEntries}>
+            <Button variant="secondary" onClick={exportEntries}>
               <ClientIcon icon={Download} className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
           )}
           <Link href="/entries/new">
-            <Button>
+            <Button variant="default">
               <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
               Add Entry
             </Button>
@@ -318,13 +318,13 @@ export default function EntriesPage() {
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditEntry(entry)}>
+                        <Button variant="secondary" size="sm" onClick={() => handleEditEntry(entry)}>
                           <ClientIcon icon={Edit} className="h-4 w-4" />
                         </Button>
-                        
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button variant="destructive" size="sm">
                               <ClientIcon icon={Trash2} className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -360,7 +360,7 @@ export default function EntriesPage() {
                   }
                 </p>
                 <Link href="/entries/new">
-                  <Button>
+                  <Button variant="default">
                     <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
                     Add Your First Entry
                   </Button>
@@ -437,7 +437,7 @@ export default function EntriesPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateEntry} disabled={loading}>
+            <Button variant="default" onClick={handleUpdateEntry} disabled={loading}>
               {loading ? "Updating..." : "Update Entry"}
             </Button>
           </DialogFooter>

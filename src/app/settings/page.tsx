@@ -29,6 +29,7 @@ import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/contexts/theme-context"
 import { ProfileHeader } from "@/components/profile/profile-header"
 import { FontSelector } from "@/components/settings/font-selector"
+import { SyncStatus } from "@/components/settings/sync-status"
 import { useRouter } from "next/navigation"
 import { withBasePath } from "@/lib/api-path"
 
@@ -247,7 +248,7 @@ export default function SettingsPage() {
               Saved
             </Badge>
           )}
-          <Button onClick={handleSaveSettings}>
+          <Button variant="default" onClick={handleSaveSettings}>
             <ClientIcon icon={Save} className="mr-2 h-4 w-4" />
             Save Settings
           </Button>
@@ -450,7 +451,7 @@ export default function SettingsPage() {
                       <span>{current_user.current_weight} lbs</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="mt-3" onClick={() => window.location.href = '/setup/custom'}>
+                  <Button variant="secondary" className="mt-3" onClick={() => window.location.href = '/setup/custom'}>
                     Update Profile
                   </Button>
                 </div>
@@ -591,6 +592,8 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="data" className="space-y-4">
+          <SyncStatus />
+
           <Card>
             <CardHeader>
               <CardTitle>Data Management</CardTitle>
@@ -621,7 +624,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Button onClick={handleExportData} className="w-full" variant="outline">
+                  <Button onClick={handleExportData} className="w-full" variant="secondary">
                     <ClientIcon icon={Download} className="mr-2 h-4 w-4" />
                     Export All Data
                   </Button>
@@ -703,6 +706,7 @@ export default function SettingsPage() {
                 </p>
 
                 <Button
+                  variant="secondary"
                   onClick={() => router.push('/settings/ai')}
                   className="w-full md:w-auto"
                 >

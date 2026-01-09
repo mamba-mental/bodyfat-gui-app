@@ -137,8 +137,8 @@ export default function SetupPage() {
               </div>
               
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="secondary"
                   className="flex-1"
                   onClick={() => router.push('/setup/custom')}
                 >
@@ -188,7 +188,7 @@ export default function SetupPage() {
                   </div>
                 </div>
                 
-                <Button onClick={handleQuickSetup} className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
+                <Button variant="default" onClick={handleQuickSetup} className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
                   Start with Demo Profile
                 </Button>
                 
@@ -227,8 +227,8 @@ export default function SetupPage() {
                   </div>
                 </div>
                 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="secondary"
                   className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
                   onClick={() => router.push('/setup/custom')}
                 >

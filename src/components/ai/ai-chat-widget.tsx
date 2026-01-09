@@ -363,6 +363,7 @@ export function AIChatWidget({
                 disabled={isLoading}
               />
               <Button
+                variant="default"
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isLoading}
                 size="sm"
@@ -374,7 +375,7 @@ export function AIChatWidget({
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setInputValue("How am I doing with my progress?")}
                 disabled={isLoading}
@@ -382,7 +383,7 @@ export function AIChatWidget({
                 Check Progress
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setInputValue("What should my daily calories be?")}
                 disabled={isLoading}
@@ -390,7 +391,7 @@ export function AIChatWidget({
                 Calorie Help
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setInputValue("Give me some motivation")}
                 disabled={isLoading}

@@ -164,7 +164,7 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button onClick={handleGenerateReport} disabled={loading}>
+          <Button variant="default" onClick={handleGenerateReport} disabled={loading}>
             <ClientIcon icon={FileText} className="mr-2 h-4 w-4" />
             {loading ? "Generating..." : "Generate New Report"}
           </Button>
@@ -764,7 +764,7 @@ export default function ReportsPage() {
                             </Button>
                           )}
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={() => handleDownloadHTML(report)}
                           >
@@ -772,7 +772,7 @@ export default function ReportsPage() {
                             HTML
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={() => handleDownloadMarkdown(report)}
                           >
@@ -780,7 +780,7 @@ export default function ReportsPage() {
                             MD
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={() => handleDownloadPDF(report)}
                           >
@@ -788,10 +788,9 @@ export default function ReportsPage() {
                             PDF
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
                             onClick={() => handleDeleteReport(report.id)}
-                            className="text-destructive hover:text-destructive"
                           >
                             <ClientIcon icon={TrashIcon} className="h-3 w-3" />
                           </Button>
@@ -822,7 +821,7 @@ export default function ReportsPage() {
             <p className="text-muted-foreground mb-4">
               You need to have a PRIME calculation completed before you can generate reports.
             </p>
-            <Button onClick={() => window.location.href = '/'}>
+            <Button variant="secondary" onClick={() => window.location.href = '/'}>
               Go to Dashboard
             </Button>
           </CardContent>

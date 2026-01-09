@@ -229,9 +229,8 @@ export default function CustomSetupPage() {
 
     // If this is a new program, create the program reference after saving
     if (isNewProgram) {
-      // Create a new program - this will use the newly saved current_weight and current_bf
-      // as the program reference baseline
-      createNewProgram()
+      // Create a new program - pass the new weight/BF directly since state hasn't updated yet
+      createNewProgram(processedData.current_weight, processedData.current_bf)
       console.log('[Setup] New program created with fresh stats:', processedData.current_weight, 'lbs,', processedData.current_bf, '% BF')
     }
 
@@ -749,7 +748,7 @@ export default function CustomSetupPage() {
           >
             Back
           </Button>
-          <Button type="submit">
+          <Button type="submit" variant="default">
             {current_user ? 'Update Profile' : 'Create Profile'}
           </Button>
         </div>

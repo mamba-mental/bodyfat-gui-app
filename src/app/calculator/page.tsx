@@ -265,7 +265,7 @@ export default function CalculatorPage() {
                     )}
                   </div>
                   
-                  <Button onClick={calculateNavyMethod} className="w-full">
+                  <Button onClick={calculateNavyMethod} className="w-full" variant="default">
                     Calculate Body Fat
                   </Button>
                 </CardContent>
@@ -336,7 +336,7 @@ export default function CalculatorPage() {
                     </div>
                   </div>
                   
-                  <Button onClick={calculateBMI} className="w-full">
+                  <Button onClick={calculateBMI} className="w-full" variant="default">
                     Calculate Body Fat
                   </Button>
                 </CardContent>
