@@ -97,7 +97,10 @@ def get_allowed_origins() -> list:
         return [origin.strip() for origin in env_origins.split(",") if origin.strip()]
 
     # Development defaults - specific origins only (no wildcard)
+    # STANDARDIZED PORT: Frontend 3713 | Backend 8313
     return [
+        "http://localhost:3713",
+        "http://127.0.0.1:3713",
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3005",
