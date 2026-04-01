@@ -16,21 +16,22 @@ import { ProgressTrendChart } from "@/components/charts/progress-trend-chart"
 import { GoalProgressWidget } from "@/components/charts/goal-progress-widget"
 import { MetabolicInsightsWidget } from "@/components/charts/metabolic-insights-widget"
 import { CalorieManagementWidget } from "@/components/charts/calorie-management-widget"
+import { BeforeAfterComparison } from "@/components/charts/before-after-comparison"
+import { PhotoTimeline } from "@/components/charts/photo-timeline"
 import { ChartErrorBoundary } from "@/components/error-boundary-chart"
 
 export default function ChartsPage() {
   const { state } = useApp()
   const { current_user, current_calculation, entries } = state
-  
+
   const [timeRange, setTimeRange] = useState<"all" | "3months" | "6months" | "1year">("all")
-  const [chartType, setChartType] = useState<"weight" | "bodyfat" | "combined">("combined")
 
   const filteredEntries = React.useMemo(() => {
     if (timeRange === "all") return entries
-    
+
     const now = new Date()
     const cutoffDate = new Date(now)
-    
+
     switch (timeRange) {
       case "3months":
         cutoffDate.setMonth(now.getMonth() - 3)
@@ -42,31 +43,31 @@ export default function ChartsPage() {
         cutoffDate.setFullYear(now.getFullYear() - 1)
         break
     }
-    
+
     return entries.filter(entry => new Date(entry.date) >= cutoffDate)
   }, [entries, timeRange])
 
   const getProgressStats = () => {
     if (!current_user || entries.length === 0) return null
-    
+
     const latestEntry = entries[0]
     const oldestEntry = filteredEntries[filteredEntries.length - 1] || entries[entries.length - 1]
-    
+
     const weightChange = latestEntry.weight - oldestEntry.weight
     const bfChange = (latestEntry.body_fat_percentage || 0) - (oldestEntry.body_fat_percentage || 0)
-    
+
     const weightProgress = calculateProgressPercentage(
       current_user.current_weight,
       latestEntry.weight,
       current_user.goal_weight
     )
-    
+
     const bfProgress = calculateProgressPercentage(
       current_user.current_bf,
       latestEntry.body_fat_percentage || current_user.current_bf,
       current_user.goal_bf
     )
-    
+
     return {
       weightChange,
       bfChange,
@@ -140,9 +141,9 @@ export default function ChartsPage() {
             Visual tracking of your body composition progress over time
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
+          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as typeof timeRange)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
@@ -153,7 +154,7 @@ export default function ChartsPage() {
               <SelectItem value="3months">Last 3 Months</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Badge variant="secondary">
             {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
           </Badge>
@@ -227,25 +228,30 @@ export default function ChartsPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="comparison">Comparison</TabsTrigger>
+          <TabsTrigger value="photos">Photos</TabsTrigger>
           <TabsTrigger value="weight">Weight Tracking</TabsTrigger>
           <TabsTrigger value="composition">Body Composition</TabsTrigger>
           <TabsTrigger value="goals">Goal Progress</TabsTrigger>
           <TabsTrigger value="metabolic">Metabolic Insights</TabsTrigger>
         </TabsList>
 
+        {/* Overview tab: existing chart + goal projection + trend overlay toggle */}
         <TabsContent value="overview" className="space-y-4">
           <ChartErrorBoundary title="Overall Progress Trend">
-            <ProgressTrendChart 
+            <ProgressTrendChart
               entries={filteredEntries}
               progression={current_calculation?.progression}
               title="Overall Progress Trend"
-              description="Weight and body fat progress with AI predictions"
+              description="Weight and body fat progress with AI predictions and goal projection"
+              showProjection={true}
+              showComparisonToggle={true}
             />
           </ChartErrorBoundary>
-          
+
           <div className="grid gap-4 lg:grid-cols-2">
             <ChartErrorBoundary title="Goal Progress">
-              <GoalProgressWidget 
+              <GoalProgressWidget
                 user={current_user}
                 entries={filteredEntries}
                 progression={current_calculation?.progression}
@@ -253,12 +259,26 @@ export default function ChartsPage() {
             </ChartErrorBoundary>
             {current_calculation && (
               <ChartErrorBoundary title="Metabolic Insights">
-                <MetabolicInsightsWidget 
+                <MetabolicInsightsWidget
                   progression={current_calculation.progression}
                 />
               </ChartErrorBoundary>
             )}
           </div>
+        </TabsContent>
+
+        {/* Comparison tab: Before/After widget (FR-012a) */}
+        <TabsContent value="comparison" className="space-y-4">
+          <ChartErrorBoundary title="Before / After Comparison">
+            <BeforeAfterComparison />
+          </ChartErrorBoundary>
+        </TabsContent>
+
+        {/* Photos tab: Photo timeline (FR-012d) */}
+        <TabsContent value="photos" className="space-y-4">
+          <ChartErrorBoundary title="Photo Progress Timeline">
+            <PhotoTimeline />
+          </ChartErrorBoundary>
         </TabsContent>
 
         <TabsContent value="weight" className="space-y-4">
@@ -268,16 +288,17 @@ export default function ChartsPage() {
               <CardDescription>Detailed view of your weight loss journey</CardDescription>
             </CardHeader>
             <CardContent>
-              <ProgressTrendChart 
+              <ProgressTrendChart
                 entries={filteredEntries}
                 progression={current_calculation?.progression}
                 title=""
                 description=""
                 showBodyFat={false}
+                showProjection={true}
               />
             </CardContent>
           </Card>
-          
+
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -312,7 +333,7 @@ export default function ChartsPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Recent Trends</CardTitle>
@@ -323,7 +344,7 @@ export default function ChartsPage() {
                     {filteredEntries.slice(0, 5).map((entry, index) => {
                       const prevEntry = filteredEntries[index + 1]
                       const change = prevEntry ? entry.weight - prevEntry.weight : 0
-                      
+
                       return (
                         <div key={entry.id} className="flex items-center justify-between">
                           <div className="space-y-1">
@@ -360,7 +381,7 @@ export default function ChartsPage() {
               <CardDescription>Track changes in body fat percentage over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <ProgressTrendChart 
+              <ProgressTrendChart
                 entries={filteredEntries.filter(e => e.body_fat_percentage)}
                 progression={current_calculation?.progression}
                 title=""
@@ -372,7 +393,7 @@ export default function ChartsPage() {
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-4">
-          <GoalProgressWidget 
+          <GoalProgressWidget
             user={current_user}
             entries={filteredEntries}
             progression={current_calculation?.progression}
@@ -382,11 +403,11 @@ export default function ChartsPage() {
         <TabsContent value="metabolic" className="space-y-4">
           {current_calculation ? (
             <div className="space-y-4">
-              <MetabolicInsightsWidget 
+              <MetabolicInsightsWidget
                 progression={current_calculation.progression}
               />
-              
-              <CalorieManagementWidget 
+
+              <CalorieManagementWidget
                 progression={current_calculation.progression}
                 currentCalories={current_calculation.progression && current_calculation.progression.length > 0 ? current_calculation.progression[0].daily_calorie_intake : 0}
               />

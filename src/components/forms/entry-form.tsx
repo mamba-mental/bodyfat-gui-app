@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CalendarIcon, Save } from "lucide-react"
+import { CalendarIcon, Save, Camera, X } from "lucide-react"
 import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
@@ -35,6 +35,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
+const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024 // 2 MB limit for base64 storage
+
 const entryFormSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
@@ -44,6 +46,7 @@ const entryFormSchema = z.object({
   }),
   body_fat_percentage: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
+  photo: z.string().optional(),
 })
 
 type EntryFormValues = z.infer<typeof entryFormSchema>
@@ -55,6 +58,11 @@ interface EntryFormProps {
 }
 
 export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps) {
+  const [photoPreview, setPhotoPreview] = React.useState<string | null>(
+    defaultValues?.photo ?? null
+  )
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
     defaultValues: {
@@ -62,10 +70,46 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
       weight: 0,
       body_fat_percentage: undefined,
       notes: "",
+      photo: undefined,
       ...defaultValues,
     },
     mode: "onChange", // Validate on change for better accessibility
   })
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      const announcer = document.createElement('div')
+      announcer.setAttribute('aria-live', 'assertive')
+      announcer.className = 'sr-announcer'
+      announcer.textContent = 'Photo must be smaller than 2 MB'
+      document.body.appendChild(announcer)
+      setTimeout(() => {
+        if (document.body.contains(announcer)) document.body.removeChild(announcer)
+      }, 3000)
+      return
+    }
+
+    if (!file.type.startsWith('image/')) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string
+      setPhotoPreview(base64)
+      form.setValue('photo', base64)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removePhoto = () => {
+    setPhotoPreview(null)
+    form.setValue('photo', undefined)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = (data: EntryFormValues) => {
     // Announce successful form submission
@@ -74,13 +118,13 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
     announcer.className = 'sr-announcer'
     announcer.textContent = 'Form submitted successfully'
     document.body.appendChild(announcer)
-    
+
     setTimeout(() => {
       if (document.body.contains(announcer)) {
         document.body.removeChild(announcer)
       }
     }, 1000)
-    
+
     onSubmit(data)
   }
 
@@ -125,7 +169,7 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
           Record your weight and body fat percentage for tracking progress
         </CardDescription>
       </CardHeader>
-      
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)}>
           <CardContent className="space-y-6">
@@ -293,13 +337,64 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
                 </FormItem>
               )}
             />
+
+            {/* Progress Photo Upload (FR-012d) */}
+            <FormItem>
+              <FormLabel>Progress Photo (Optional)</FormLabel>
+              <FormControl>
+                <div className="space-y-3">
+                  {photoPreview ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={photoPreview}
+                        alt="Progress photo preview"
+                        className="w-32 h-40 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
+                        aria-label="Remove photo"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-[44px]"
+                      onClick={() => fileInputRef.current?.click()}
+                      aria-label="Upload a progress photo"
+                    >
+                      <Camera className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Add Progress Photo
+                    </Button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                    aria-hidden="true"
+                  />
+                </div>
+              </FormControl>
+              <FormDescription id="photo-description">
+                Optional progress photo for visual tracking (max 2 MB, JPEG/PNG)
+              </FormDescription>
+            </FormItem>
           </CardContent>
-          
+
           <CardFooter className="flex justify-between">
             <Button
               type="button"
               variant="secondary"
-              onClick={() => form.reset()}
+              onClick={() => {
+                form.reset()
+                removePhoto()
+              }}
               aria-label="Reset form to default values"
             >
               Reset
@@ -313,8 +408,8 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
             >
               {isLoading ? (
                 <>
-                  <div 
-                    className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" 
+                  <div
+                    className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
                     aria-hidden="true"
                   />
                   <span>Saving...</span>

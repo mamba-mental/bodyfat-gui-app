@@ -142,6 +142,7 @@ export interface BodyFatEntry {
   weight: number;
   body_fat_percentage?: number;
   notes?: string;
+  photo?: string; // Base64-encoded progress photo (optional)
   user_id: string;
   program_id?: string; // Links entry to a specific program for tracking
   created_at: Date | string;
