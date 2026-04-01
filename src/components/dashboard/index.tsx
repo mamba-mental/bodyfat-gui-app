@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, AlertCircle } from "lucide-react"
+import { Activity, ArrowRight, AlertCircle, Target, Brain, TrendingUp } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import Link from "next/link"
 
@@ -58,21 +58,63 @@ export function Dashboard() {
 
   if (!current_user) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome to ApexFit.ai - Alpha</CardTitle>
-            <CardDescription>Set up your profile to start tracking your progress</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/setup">
-              <Button className="min-h-[44px]">
-                <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
-                Set Up Profile
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="flex-1 p-4 md:p-8 pt-6">
+        <div className="grid gap-8 lg:grid-cols-[1fr_1fr] items-start">
+          {/* Left column — welcome CTA */}
+          <Card className="flex flex-col items-center text-center py-12 md:py-16 lg:items-start lg:text-left">
+            <CardContent className="flex flex-col items-center gap-6 lg:items-start">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                <ClientIcon icon={Activity} className="h-8 w-8 text-primary" />
+              </div>
+
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Welcome to Ap3xFit.ai
+                </h1>
+                <p className="max-w-md text-muted-foreground">
+                  Track your body composition journey with AI-powered insights.
+                  Our precision engine turns metrics into progress.
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-2 lg:items-start">
+                <Link href="/setup">
+                  <Button size="lg" className="gap-2">
+                    Set Up Profile
+                    <ClientIcon icon={ArrowRight} className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <span className="text-xs text-muted-foreground">
+                  Takes about 2 minutes
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right column — preview widget placeholders */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {[
+              { icon: Target, label: "Body Fat %", desc: "Current estimate & trend" },
+              { icon: Brain, label: "AI Readiness", desc: "Personalized coaching score" },
+              { icon: TrendingUp, label: "Weekly Goal", desc: "Progress toward your target" },
+            ].map(({ icon, label, desc }) => (
+              <Card
+                key={label}
+                className="border-dashed opacity-60 py-5"
+              >
+                <CardContent className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed">
+                    <ClientIcon icon={icon} className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
