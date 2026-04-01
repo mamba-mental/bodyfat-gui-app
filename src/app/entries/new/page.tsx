@@ -14,9 +14,11 @@ import { AIInsightsPanel } from "@/components/ai/ai-insights-panel"
 export default function NewEntryPage() {
   const router = useRouter()
   const { state, addEntry } = useApp()
-  const { loading, error } = state
+  const { error } = state
+  const [isSaving, setIsSaving] = React.useState(false)
 
   const handleSubmit = async (data: { date: Date; weight: number; body_fat_percentage?: number; notes?: string }) => {
+    setIsSaving(true)
     try {
       await addEntry({
         date: data.date,
@@ -24,12 +26,14 @@ export default function NewEntryPage() {
         body_fat_percentage: data.body_fat_percentage,
         notes: data.notes,
       })
-      
+
       // Redirect to dashboard after successful submission
       router.push("/")
     } catch (error) {
       console.error("Error saving entry:", error)
       // Error is handled by the context
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -59,7 +63,7 @@ export default function NewEntryPage() {
       
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <EntryForm onSubmit={handleSubmit} isLoading={loading} />
+          <EntryForm onSubmit={handleSubmit} isLoading={isSaving} />
         </div>
         <div className="lg:col-span-1">
           <AIInsightsPanel 
