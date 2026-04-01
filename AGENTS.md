@@ -433,4 +433,48 @@ These commands make AI calls and may take up to a minute:
 
 ---
 
+## Essential Plugins & MCP Servers
+
+### TTS Notification Server (MANDATORY)
+
+**All agents MUST use tts-mcp-server proactively for notifications.**
+
+```javascript
+// Required for all status updates, completions, and alerts
+mcp__tts-mcp-server__speak_text({
+  text: "Status message",
+  service: "elevenlabs",
+  voice: "default"
+})
+```
+
+**Rules:**
+- Use for task completions, errors, milestones, and progress updates
+- ONLY use ElevenLabs voices - NEVER the robot/Microsoft default
+- Fallback chain: tts-mcp-server → voice-mode → voice-mode-docker
+
+### Ralph Loop Python Plugin
+
+Cross-platform self-referential AI development loop for Windows/PowerShell.
+
+**Commands:**
+| Command | Description |
+|---------|-------------|
+| `/ralph-loop <prompt>` | Start iterative loop |
+| `/cancel-ralph` | Stop active loop |
+| `/ralph-loop --help` | Show options |
+
+**Key Options:**
+- `--max-iterations N` - Limit iterations (default: unlimited)
+- `--completion-promise 'TEXT'` - Exit when promise becomes true
+
+**Example:**
+```bash
+/ralph-loop Refactor the auth module --max-iterations 15 --completion-promise 'All tests pass'
+```
+
+**Repository:** https://github.com/mamba-mental/ralph-wiggum-loop-python
+
+---
+
 _This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._

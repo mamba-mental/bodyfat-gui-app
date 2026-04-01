@@ -77,7 +77,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
             </Button>
-            <Button onClick={() => window.location.href = '/'} variant="outline">
+            <Button onClick={() => window.location.href = '/'} variant="secondary">
               Go to Dashboard
             </Button>
           </div>

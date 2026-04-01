@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 
   // API rewrites for development - uses env var or defaults to localhost
   async rewrites() {
-    const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8001';
+    const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8313';
     return [
       {
         source: '/python-api/:path*',

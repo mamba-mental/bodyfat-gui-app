@@ -14,10 +14,25 @@ export type ProgressTrendChartPoint = {
 
 const MAX_PREDICTED_WEEKS = 12
 
-const formatLabelDate = (value: Date) =>
-  value.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+const formatLabelDate = (value: Date) => {
+  if (isNaN(value.getTime())) return "Invalid"
+  return value.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
 
-const normaliseDate = (value: Date | string) => new Date(value)
+const normaliseDate = (value: Date | string): Date => {
+  const date = new Date(value)
+  // Return current date if invalid to prevent crashes
+  if (isNaN(date.getTime())) {
+    console.warn('[Chart] Invalid date value:', value)
+    return new Date()
+  }
+  return date
+}
+
+const safeToISOString = (date: Date): string => {
+  if (isNaN(date.getTime())) return new Date().toISOString()
+  return date.toISOString()
+}
 
 export function buildProgressTrendChartData(
   entries: BodyFatEntry[],
@@ -34,7 +49,7 @@ export function buildProgressTrendChartData(
 
       return {
         date: formatLabelDate(entryDate),
-        fullDate: entryDate.toISOString(),
+        fullDate: safeToISOString(entryDate),
         type: "actual",
         weightActual: entry.weight,
         weightPredicted: null,
@@ -54,7 +69,7 @@ export function buildProgressTrendChartData(
 
         return {
           date: formatLabelDate(progressionDate),
-          fullDate: progressionDate.toISOString(),
+          fullDate: safeToISOString(progressionDate),
           type: "predicted",
           weightActual: null,
           weightPredicted: week.weight,

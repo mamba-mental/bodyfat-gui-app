@@ -1,6 +1,21 @@
 import { UserData, BodyFatEntry, Report, CalculationResult } from '@/types'
+import { dataSync, initializeDataSync } from './data-sync'
 
 const API_BASE_URL = '/api' // Next.js API routes
+
+// Re-export sync utilities for app initialization
+export { dataSync, initializeDataSync } from './data-sync'
+export { DataSync } from './data-sync'
+
+// Sync status for UI components
+export async function getSyncStatus() {
+  return dataSync.getSyncStatus()
+}
+
+// Manual sync trigger
+export async function syncData() {
+  return dataSync.syncFromSQLite()
+}
 
 // Helper function for API calls
 // Timeout increased to 120s to accommodate PRIME calculation time
@@ -40,9 +55,10 @@ async function callApi<T>(endpoint: string, method: string = 'GET', data?: any):
 }
 
 // --- User Data ---
+// Uses DataSync for write-through caching (Redis cache + SQLite persistence)
 export async function getUserData(): Promise<UserData | null> {
   try {
-    return await callApi<UserData>('/data/user')
+    return await dataSync.getUserData()
   } catch (error) {
     console.error('Error fetching user data:', error)
     return null
@@ -50,13 +66,18 @@ export async function getUserData(): Promise<UserData | null> {
 }
 
 export async function saveUserData(userData: UserData): Promise<UserData> {
-  return await callApi<UserData>('/data/user', 'POST', userData)
+  const result = await dataSync.saveUserData(userData)
+  if (!result.success) {
+    console.error('saveUserData partial failure:', result.error)
+  }
+  return userData
 }
 
 // --- Entries ---
+// Uses DataSync for write-through caching (Redis cache + SQLite persistence)
 export async function getEntries(): Promise<BodyFatEntry[]> {
   try {
-    return await callApi<BodyFatEntry[]>('/data/entries')
+    return await dataSync.getEntries()
   } catch (error) {
     console.error('Error fetching entries:', error)
     return []
@@ -64,17 +85,25 @@ export async function getEntries(): Promise<BodyFatEntry[]> {
 }
 
 export async function saveEntry(entry: BodyFatEntry): Promise<BodyFatEntry> {
-  return await callApi<BodyFatEntry>('/data/entries', 'POST', entry)
+  const result = await dataSync.saveEntry(entry)
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to save entry')
+  }
+  return entry
 }
 
 export async function deleteEntry(entryId: string): Promise<void> {
-  await callApi<void>('/data/entries', 'DELETE', { id: entryId })
+  const result = await dataSync.deleteEntry(entryId)
+  if (!result.success) {
+    console.error('deleteEntry partial failure:', result.error)
+  }
 }
 
 // --- Reports ---
+// Uses DataSync for write-through caching (Redis cache + SQLite persistence)
 export async function getReports(): Promise<Report[]> {
   try {
-    return await callApi<Report[]>('/data/reports')
+    return await dataSync.getReports()
   } catch (error) {
     console.error('Error fetching reports:', error)
     return []
@@ -82,11 +111,22 @@ export async function getReports(): Promise<Report[]> {
 }
 
 export async function saveReport(report: Report): Promise<Report> {
-  return await callApi<Report>('/data/reports', 'POST', report)
+  const result = await dataSync.saveReport(report)
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to save report')
+  }
+  return report
 }
 
 export async function saveReports(reports: Report[]): Promise<Report[]> {
-  return await callApi<Report[]>('/data/reports', 'POST', reports)
+  // Save each report with write-through sync — fail on first error
+  for (const report of reports) {
+    const result = await dataSync.saveReport(report)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save report')
+    }
+  }
+  return reports
 }
 
 export async function deleteReport(reportId: string): Promise<void> {

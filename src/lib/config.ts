@@ -24,10 +24,11 @@ const getPublicEnv = (key: string, defaultValue: string): string => {
 
 /**
  * Python API Configuration
+ * STANDARDIZED PORTS: Frontend 3713 | Backend/Python API 8313
  */
 export const pythonApiConfig = {
-  /** Base URL for Python PRIME API */
-  url: getPublicEnv('NEXT_PUBLIC_PYTHON_API_URL', 'http://127.0.0.1:8001'),
+  /** Base URL for Python PRIME API - STANDARDIZED PORT: 8313 */
+  url: getPublicEnv('NEXT_PUBLIC_PYTHON_API_URL', 'http://127.0.0.1:8313'),
 
   /** Default timeout for calculations (60 seconds) */
   calculationTimeout: parseInt(
@@ -81,12 +82,13 @@ export const appConfig = {
 
 /**
  * CORS Configuration (for Python API)
+ * STANDARDIZED PORTS: Frontend 3713 | Backend/Python API 8313
  */
 export const corsConfig = {
   /** Allowed origins for CORS */
   allowedOrigins: getServerEnv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000'
+    'http://localhost:3713,http://127.0.0.1:3713,http://localhost:3000,http://127.0.0.1:3000'
   ).split(','),
 } as const;
 

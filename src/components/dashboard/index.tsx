@@ -22,6 +22,7 @@ export function Dashboard() {
 
   const {
     current_user,
+    program_reference,
     current_calculation,
     entries,
     reports,
@@ -35,6 +36,7 @@ export function Dashboard() {
     setUserData,
     createNewProgram,
     calculateAndUpdateProgression,
+    archiveProgram,
   } = useDashboardData()
 
   React.useEffect(() => {
@@ -45,35 +47,12 @@ export function Dashboard() {
     await generateNewReport()
   }, [generateNewReport])
 
-  const handleStartNewProgram = React.useCallback(async () => {
-    if (!current_user) return
-
-    const newProgramId = createNewProgram()
-    if (!newProgramId) {
-      console.error('[Dashboard] Failed to create new program')
-      return
+  const handleArchiveProgram = React.useCallback(async (name: string, notes: string) => {
+    const result = await archiveProgram(name, notes)
+    if (result) {
+      console.log('[Dashboard] Program archived successfully:', result.id)
     }
-
-    const startDateIso = new Date().toISOString().split('T')[0]
-    const timelineWeeks = current_user.timeline_weeks || 16
-    const endDateIso = new Date(Date.now() + timelineWeeks * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-    const newStartWeight = current_user.current_weight
-    const newStartBF = current_user.current_bf
-    console.log('[Dashboard] Starting new program with profile baseline:', newStartWeight, 'lbs,', newStartBF, '% BF')
-
-    const updatedUser = {
-      ...current_user,
-      current_program_id: newProgramId,
-      current_weight: newStartWeight,
-      current_bf: newStartBF,
-      start_date: startDateIso,
-      end_date: endDateIso
-    }
-
-    setUserData(updatedUser)
-    await calculateAndUpdateProgression(updatedUser)
-  }, [current_user, createNewProgram, setUserData, calculateAndUpdateProgression])
+  }, [archiveProgram])
 
   if (!mounted) return null
 
@@ -103,9 +82,10 @@ export function Dashboard() {
       <DashboardHeader
         currentUser={current_user}
         entries={entries}
+        programReference={program_reference}
         loading={loading}
         reportGenerationStatus={report_generation_status}
-        onStartNewProgram={handleStartNewProgram}
+        onArchiveProgram={handleArchiveProgram}
         onGenerateReport={handleGenerateReport}
       />
 

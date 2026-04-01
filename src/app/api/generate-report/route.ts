@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate report. Please ensure the Python API is running on port 8001.',
+        error: 'Failed to generate report. Please ensure the Python API is running on port 8313.',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500, headers: corsHeaders }

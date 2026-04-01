@@ -258,7 +258,7 @@ export function AIInsightsPanel({
                     {insight.actionable && insight.action && (
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           className="text-xs"
                           onClick={() => {
@@ -290,7 +290,7 @@ export function AIInsightsPanel({
             {insights.length > 0 && (
               <div className="text-center pt-2">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={loadInsights}
                   disabled={isLoading}

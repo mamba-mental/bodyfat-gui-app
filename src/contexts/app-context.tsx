@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
-import { UserData, BodyFatEntry, AppAction } from '@/types'
+import { UserData, BodyFatEntry, AppAction, AppState } from '@/types'
 import {
   getUserData,
   getEntries,
@@ -55,16 +55,58 @@ interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined)
 
-// Cache duration for data fetches (30 seconds)
-const DATA_CACHE_DURATION_MS = 30 * 1000
+// Cache duration for data fetches (60 seconds for better UX)
+const DATA_CACHE_DURATION_MS = 60 * 1000
+const SESSION_CACHE_KEY = 'appContext_lastFetch'
+const SESSION_DATA_KEY = 'appContext_cachedData'
+
+// Helper to safely access sessionStorage
+const getSessionTimestamp = (): number => {
+  if (typeof window === 'undefined') return 0
+  try {
+    return parseInt(sessionStorage.getItem(SESSION_CACHE_KEY) || '0', 10)
+  } catch {
+    return 0
+  }
+}
+
+const setSessionTimestamp = (timestamp: number): void => {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(SESSION_CACHE_KEY, String(timestamp))
+  } catch {
+    // Ignore sessionStorage errors
+  }
+}
+
+const getCachedData = (): Partial<AppState> | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = sessionStorage.getItem(SESSION_DATA_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+const setCachedData = (data: Partial<AppState>): void => {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(SESSION_DATA_KEY, JSON.stringify(data))
+  } catch {
+    // Ignore sessionStorage errors
+  }
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const [refreshKey, setRefreshKey] = React.useState(0)
   const refreshCallbacksRef = React.useRef<(() => void)[]>([])
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
-  const lastFetchTimestampRef = React.useRef<number>(0)
+  // Initialize from sessionStorage for hot reload persistence
+  const lastFetchTimestampRef = React.useRef<number>(getSessionTimestamp())
   const forceRefreshRef = React.useRef<boolean>(false)
+  const initialDataLoadedRef = React.useRef<boolean>(false)
 
   const refreshWidgets = React.useCallback(() => {
     if (refreshTimeoutRef.current) {
@@ -102,14 +144,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true
 
     const loadData = async () => {
-      // Check if we can skip fetching (use cached data)
+      // Step 1: Immediately restore from sessionStorage for instant display
+      if (!initialDataLoadedRef.current) {
+        const cached = getCachedData()
+        if (cached) {
+          console.log('[AppContext] Restoring from sessionStorage for instant display')
+          if (cached.current_user) {
+            dispatch({ type: 'SET_USER_DATA', payload: cached.current_user })
+          }
+          if (cached.entries && cached.entries.length > 0) {
+            dispatch({ type: 'SET_ENTRIES', payload: cached.entries })
+          }
+          if (cached.reports && cached.reports.length > 0) {
+            dispatch({ type: 'SET_REPORTS', payload: cached.reports })
+          }
+          if (cached.current_calculation) {
+            dispatch({ type: 'SET_CALCULATION_RESULT', payload: cached.current_calculation })
+          }
+        }
+        initialDataLoadedRef.current = true
+      }
+
+      // Step 2: Check if we can skip fetching (use cached data)
       const now = Date.now()
       const timeSinceLastFetch = now - lastFetchTimestampRef.current
       const hasExistingData = state.current_user !== null || state.entries.length > 0
 
       // Skip fetch if data was loaded recently and no forced refresh
       if (hasExistingData && timeSinceLastFetch < DATA_CACHE_DURATION_MS && !forceRefreshRef.current) {
-        console.log('[AppContext] Using cached data, skipping fetch')
+        console.log('[AppContext] Using cached data, skipping fetch (age: ' + Math.round(timeSinceLastFetch / 1000) + 's)')
         return
       }
 
@@ -180,7 +243,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (didUpdate) {
           dispatch({ type: 'CLEAR_ERROR' })
           // Update cache timestamp after successful fetch
-          lastFetchTimestampRef.current = Date.now()
+          const fetchTimestamp = Date.now()
+          lastFetchTimestampRef.current = fetchTimestamp
+          setSessionTimestamp(fetchTimestamp)
+          // Save data to sessionStorage for instant restore on hot reload
+          setCachedData({
+            current_user: userResult.status === 'fulfilled' ? ensureEatingPattern(userResult.value) : null,
+            entries: entriesResult.status === 'fulfilled' ? entriesResult.value : [],
+            reports: reportsResult.status === 'fulfilled' ? reportsResult.value : [],
+            current_calculation: calculationResult.status === 'fulfilled' ? calculationResult.value : null,
+          })
           // Note: Don't call refreshWidgets here as it would trigger another fetch
         } else if (allRejected) {
           dispatch({ type: 'SET_ERROR', payload: 'Failed to load data from server' })

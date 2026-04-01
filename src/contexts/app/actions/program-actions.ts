@@ -213,23 +213,19 @@ export async function archiveProgram(
       throw new Error(errorData.detail || 'Failed to archive program')
     }
 
-    // Dispatch archive action to add to state
-    dispatch({ type: 'ARCHIVE_PROGRAM', payload: archivedProgram })
+    // Use the server response as the source of truth
+    const data = await response.json()
 
-    // Clear the program reference so user can enter new baseline values
-    dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: null })
-    // Also clear current program_id AND dates from user data
-    // This ensures dashboard shows "no active program" instead of stale data
-    if (currentUser?.current_program_id) {
-      const updatedUser = {
-        ...currentUser,
-        current_program_id: null,
-        program_reference: null,
-        start_date: null,
-        end_date: null,
-      }
-      void saveUserData(updatedUser)
-      dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
+    // Dispatch archive action with the server-confirmed archived program
+    dispatch({ type: 'ARCHIVE_PROGRAM', payload: data.archived_program ?? archivedProgram })
+
+    // Update user data from server response (has new program_id, dates, etc.)
+    if (data.updated_user) {
+      dispatch({ type: 'SET_USER_DATA', payload: data.updated_user })
+      dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: data.updated_user.program_reference ?? null })
+    } else {
+      // Fallback if server doesn't return updated_user (backwards compat)
+      dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: null })
     }
 
     refreshWidgets()

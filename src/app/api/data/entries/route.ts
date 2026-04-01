@@ -10,8 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-// Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-const PYTHON_API_URL = 'http://127.0.0.1:8001';
+// STANDARDIZED PORTS: Frontend 3713 | Backend/Python API 8313
+const PYTHON_API_URL = 'http://127.0.0.1:8313';
 const PYTHON_TIMEOUT_MS = 8000;
 const USER_ID = 1;
 

@@ -56,7 +56,7 @@ if (!fs.existsSync(dataFile)) {
 }
 
 // Check Python API connection
-const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8000';
+const pythonApiUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8313';
 fetch(pythonApiUrl)
   .then(response => {
     if (!response.ok) {

@@ -66,22 +66,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch(withBasePath(`/api/theme${query}`))
         if (response.ok) {
           const data = await response.json()
-          if (mountedRef.current && data?.theme) {
-            setTheme(data.theme)
+          if (mountedRef.current && (data?.theme || data?.font)) {
+            if (data.theme) setTheme(data.theme)
+            if (data.font) setFont(data.font)
             // Also mirror into localStorage for instant reloads
             const existing = localStorage.getItem(THEME_STORAGE_KEY)
             if (existing) {
               try {
                 const parsed = JSON.parse(existing)
-                parsed.display = { ...parsed.display, theme: data.theme }
+                parsed.display = {
+                  ...parsed.display,
+                  ...(data.theme && { theme: data.theme }),
+                  ...(data.font && { font: data.font })
+                }
                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(parsed))
               } catch {
                 // ignore malformed local storage
               }
+            } else if (data.theme || data.font) {
+              // Create localStorage entry if none exists
+              localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({
+                display: {
+                  theme: data.theme || 'system',
+                  font: data.font || 'roboto'
+                }
+              }))
             }
-          }
-          if (mountedRef.current && data?.font) {
-            setFont(data.font)
           }
         }
       } catch (error) {

@@ -2,7 +2,9 @@
 """
 PRIME AI Confidence Analyzer
 Created: 12/29/2024
-Purpose: AI-powered confidence scoring using Anthropic Claude 4.0 Sonnet API
+Updated: 01/07/2026
+Purpose: AI-powered confidence scoring using multiple LLM providers
+Supports: Anthropic, OpenRouter, OpenAI, Gemini, Groq, and more via Universal LLM Client
 """
 
 import os
@@ -11,8 +13,22 @@ import logging
 import asyncio
 from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime
-from anthropic import AsyncAnthropic, APIError
 from dataclasses import dataclass
+
+# Import Universal LLM Client for multi-provider support
+try:
+    from PRIME_Universal_LLM_Client import UniversalLLMClient
+except ImportError:
+    from new_prime_python_code.PRIME_Universal_LLM_Client import UniversalLLMClient
+
+# Optional: Import Anthropic for backward compatibility
+try:
+    from anthropic import AsyncAnthropic, APIError
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    AsyncAnthropic = None
+    APIError = Exception
 
 # Load environment variables from .env file
 try:
@@ -54,27 +70,84 @@ class ConfidenceScore:
 class AIConfidenceAnalyzer:
     """
     AI-powered confidence analyzer for body composition calculations.
-    Uses Anthropic Claude 4.0 Sonnet for intelligent analysis.
+    Supports multiple LLM providers via Universal LLM Client.
+    Default: Anthropic Claude Sonnet, but configurable for OpenRouter, OpenAI, etc.
     """
-    
-    def __init__(self, api_key: Optional[str] = None):
+
+    # Default provider settings
+    DEFAULT_PROVIDER = 'anthropic'
+    DEFAULT_MODEL = 'claude-sonnet-4-20250514'
+
+    # Provider-specific default models
+    PROVIDER_DEFAULT_MODELS = {
+        'anthropic': 'claude-sonnet-4-20250514',
+        'openrouter': 'anthropic/claude-3.5-sonnet',  # Can use free models like google/gemini-flash-1.5
+        'openai': 'gpt-4o-mini',
+        'gemini': 'gemini-1.5-pro',
+        'groq': 'llama-3.1-70b-versatile',
+        'mistral': 'mistral-large-latest',
+        'xai': 'grok-2-latest',
+        'fireworks': 'accounts/fireworks/models/llama-v3p1-70b-instruct',
+        'perplexity': 'llama-3.1-sonar-large-128k-online',
+    }
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None
+    ):
         """
         Initialize the AI Confidence Analyzer.
-        
+
         Args:
-            api_key (str, optional): Anthropic API key. If None, reads from environment.
+            api_key (str, optional): API key for the provider. If None, reads from environment.
+            provider (str, optional): LLM provider name. Defaults to 'anthropic'.
+                Supported: anthropic, openrouter, openai, gemini, groq, mistral, xai, fireworks, perplexity
+            model (str, optional): Model identifier. If None, uses provider default.
         """
+        # Set provider
+        self.provider = (provider or os.getenv('AI_CONFIDENCE_PROVIDER') or self.DEFAULT_PROVIDER).lower()
+
+        # Set model (use provider default if not specified)
+        self.model = model or os.getenv('AI_CONFIDENCE_MODEL') or self.PROVIDER_DEFAULT_MODELS.get(
+            self.provider,
+            self.DEFAULT_MODEL
+        )
+
         # Get API key from parameter or environment variable
-        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
+        env_key_names = {
+            'anthropic': 'ANTHROPIC_API_KEY',
+            'openrouter': 'OPENROUTER_API_KEY',
+            'openai': 'OPENAI_API_KEY',
+            'gemini': 'GOOGLE_API_KEY',
+            'groq': 'GROQ_API_KEY',
+            'mistral': 'MISTRAL_API_KEY',
+            'xai': 'XAI_API_KEY',
+            'fireworks': 'FIREWORKS_API_KEY',
+            'perplexity': 'PERPLEXITY_API_KEY',
+        }
+
+        env_key_name = env_key_names.get(self.provider, f'{self.provider.upper()}_API_KEY')
+        self.api_key = api_key or os.getenv(env_key_name)
+
         if not self.api_key:
-            raise ValueError("Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable or pass api_key parameter.")
-        
-        # Simple initialization without proxy configuration
+            raise ValueError(
+                f"API key required for provider '{self.provider}'. "
+                f"Set {env_key_name} environment variable or pass api_key parameter."
+            )
+
+        # Initialize the Universal LLM Client
         try:
-            self.client = AsyncAnthropic(api_key=self.api_key)
-            logger.info("AI Confidence Analyzer initialized successfully.")
+            self.client = UniversalLLMClient(
+                provider=self.provider,
+                api_key=self.api_key,
+                model=self.model
+            )
+            self.use_universal_client = True
+            logger.info(f"AI Confidence Analyzer initialized with {self.provider}/{self.model}")
         except Exception as e:
-            logger.error(f"Failed to initialize Anthropic client: {e}")
+            logger.error(f"Failed to initialize Universal LLM Client: {e}")
             raise e
     
     def analyze_input_parameters(self, profile_data: Dict[str, Any]) -> Dict[str, float]:
@@ -284,26 +357,29 @@ Focus on practical, evidence-based assessment. Be specific about potential issue
         return prompt
     
     async def _call_claude_api(self, prompt: str) -> str:
-        """Call Claude API with error handling and retries."""
+        """
+        Call LLM API with error handling.
+        Now uses Universal LLM Client to support multiple providers.
+        """
         try:
-            message = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1500,
+            messages = [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+
+            response = await self.client.chat_completion(
+                messages=messages,
                 temperature=0.3,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                max_tokens=1500
             )
-            return message.content[0].text
-            
-        except APIError as e:
-            logger.error(f"Anthropic API error: {e}")
-            raise
+
+            logger.info(f"AI response received from {self.provider}/{self.model}")
+            return response
+
         except Exception as e:
-            logger.error(f"Unexpected error calling Claude API: {e}")
+            logger.error(f"{self.provider} API error: {e}")
             raise
     
     def _parse_ai_response(self, ai_response: str, input_analysis: Dict[str, Any]) -> ConfidenceScore:
@@ -422,35 +498,95 @@ Focus on practical, evidence-based assessment. Be specific about potential issue
         return input_usage_report
 
 # Utility functions for integration
-def create_confidence_analyzer(api_key: Optional[str] = None) -> AIConfidenceAnalyzer:
-    """Factory function to create AI Confidence Analyzer instance."""
-    return AIConfidenceAnalyzer(api_key=api_key)
+def create_confidence_analyzer(
+    api_key: Optional[str] = None,
+    provider: Optional[str] = None,
+    model: Optional[str] = None
+) -> AIConfidenceAnalyzer:
+    """
+    Factory function to create AI Confidence Analyzer instance.
 
-async def test_api_connectivity_async(api_key: Optional[str] = None) -> bool:
-    """Test Anthropic API connectivity."""
-    try:
-        analyzer = AIConfidenceAnalyzer(api_key=api_key)
-        # Simple test call
-        test_message = await analyzer.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=50,
-            messages=[{"role": "user", "content": "Hello, respond with 'API test successful'"}]
+    Args:
+        api_key: API key for the provider
+        provider: LLM provider (anthropic, openrouter, openai, gemini, groq, etc.)
+        model: Model identifier
+
+    Returns:
+        AIConfidenceAnalyzer instance
+
+    Examples:
+        # Use Anthropic (default)
+        analyzer = create_confidence_analyzer()
+
+        # Use OpenRouter with a free model
+        analyzer = create_confidence_analyzer(
+            provider='openrouter',
+            model='google/gemini-flash-1.5-8b'  # Free tier
         )
-        return "API test successful" in test_message.content[0].text
+
+        # Use Groq (fast inference)
+        analyzer = create_confidence_analyzer(
+            provider='groq',
+            model='llama-3.1-70b-versatile'
+        )
+    """
+    return AIConfidenceAnalyzer(api_key=api_key, provider=provider, model=model)
+
+
+async def test_api_connectivity_async(
+    api_key: Optional[str] = None,
+    provider: Optional[str] = None,
+    model: Optional[str] = None
+) -> bool:
+    """
+    Test LLM API connectivity.
+
+    Args:
+        api_key: API key for the provider
+        provider: LLM provider to test
+        model: Model to test
+
+    Returns:
+        True if connection successful, False otherwise
+    """
+    try:
+        analyzer = AIConfidenceAnalyzer(api_key=api_key, provider=provider, model=model)
+
+        # Simple test call using Universal LLM Client
+        messages = [{"role": "user", "content": "Hello, respond with 'API test successful'"}]
+        response = await analyzer.client.chat_completion(messages=messages, max_tokens=50)
+
+        success = "API test successful" in response or "test successful" in response.lower()
+        logger.info(f"API connectivity test: {'PASSED' if success else 'FAILED'} ({analyzer.provider}/{analyzer.model})")
+        return success
+
     except Exception as e:
         logger.error(f"API connectivity test failed: {e}")
         return False
 
 if __name__ == "__main__":
-    # Test the module
+    import argparse
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='PRIME AI Confidence Analyzer Test')
+    parser.add_argument('--provider', type=str, default=None,
+                        help='LLM provider (anthropic, openrouter, openai, gemini, groq, etc.)')
+    parser.add_argument('--model', type=str, default=None,
+                        help='Model identifier (e.g., claude-sonnet-4-20250514, google/gemini-flash-1.5-8b)')
+    args = parser.parse_args()
+
     print("=== PRIME AI Confidence Analyzer Test ===")
-    
+    print(f"Provider: {args.provider or 'default (anthropic)'}")
+    print(f"Model: {args.model or 'default'}")
+    print()
+
     # Test API connectivity
-    if asyncio.run(test_api_connectivity_async()):
+    print("Testing API connectivity...")
+    if asyncio.run(test_api_connectivity_async(provider=args.provider, model=args.model)):
         print("+ API connectivity test passed")
     else:
         print("- API connectivity test failed")
-    
+
     # Test input validation
     test_profile = {
         'current_weight': 200,
@@ -463,17 +599,24 @@ if __name__ == "__main__":
         'goal_bf': 12,
         'current_bf': 20
     }
-    
+
     try:
-        analyzer = AIConfidenceAnalyzer()
+        analyzer = AIConfidenceAnalyzer(provider=args.provider, model=args.model)
+        print(f"\n+ Initialized with {analyzer.provider}/{analyzer.model}")
+
         input_analysis = analyzer.analyze_input_parameters(test_profile)
         print(f"+ Input analysis completed: {input_analysis}")
-        
+
         usage_report = analyzer.validate_input_usage_in_calculations(test_profile)
         used_count = sum(1 for used in usage_report.values() if used)
         print(f"+ Input usage validation: {used_count}/{len(usage_report)} parameters used")
-        
+
     except Exception as e:
         print(f"- Test failed: {e}")
-    
-    print("=== Test Complete ===")
+
+    print("\n=== Test Complete ===")
+    print("\nUsage examples:")
+    print("  python PRIME_AI_Confidence_Analyzer.py                              # Use default (Anthropic)")
+    print("  python PRIME_AI_Confidence_Analyzer.py --provider openrouter        # Use OpenRouter")
+    print("  python PRIME_AI_Confidence_Analyzer.py --provider openrouter --model google/gemini-flash-1.5-8b")
+    print("  python PRIME_AI_Confidence_Analyzer.py --provider groq --model llama-3.1-70b-versatile")

@@ -169,7 +169,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={() => router.push('/reports')}>
+          <Button variant="secondary" onClick={() => router.push('/reports')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Reports
           </Button>
@@ -187,15 +187,15 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
               View Full Report
             </Button>
           )}
-          <Button variant="outline" onClick={handleDownloadHTML}>
+          <Button variant="secondary" onClick={handleDownloadHTML}>
             <Download className="mr-2 h-4 w-4" />
             HTML
           </Button>
-          <Button variant="outline" onClick={handleDownloadMarkdown}>
+          <Button variant="secondary" onClick={handleDownloadMarkdown}>
             <FileDown className="mr-2 h-4 w-4" />
             Markdown
           </Button>
-          <Button variant="outline" onClick={handleDownloadPDF}>
+          <Button variant="secondary" onClick={handleDownloadPDF}>
             <FileText className="mr-2 h-4 w-4" />
             PDF
           </Button>

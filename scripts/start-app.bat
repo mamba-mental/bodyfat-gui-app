@@ -24,11 +24,11 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [INFO] Starting Python API on port 8001...
+echo [INFO] Starting Python API on port 8313...
 echo.
 
 REM Start Python API in a new window
-start "Python API - Port 8001" cmd /k "cd /d %PROJECT_DIR%\python-api && python -m uvicorn main:app --host 0.0.0.0 --port 8001"
+start "Python API - Port 8313" cmd /k "cd /d %PROJECT_DIR%\python-api && python -m uvicorn main:app --host 0.0.0.0 --port 8313"
 
 REM Wait for Python API to start
 echo [INFO] Waiting 5 seconds for Python API to initialize...
@@ -50,7 +50,7 @@ echo    Application Started Successfully
 echo ========================================
 echo.
 echo    Frontend:   http://localhost:3005
-echo    Python API: http://localhost:8001
+echo    Python API: http://localhost:8313
 echo.
 echo    Note: Redis at 172.23.89.12:6385 is optional.
 echo    The app will work using Python API data storage.

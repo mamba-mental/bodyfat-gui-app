@@ -20,6 +20,10 @@ import asyncio
 from data_endpoints import router as data_router
 from backup_endpoints import router as backup_router
 
+# Report output directory - must match data_endpoints.py REPORTS_DIR for ingestion
+REPORTS_OUTPUT_DIR = Path(__file__).parent.parent / "storage" / "reports"
+REPORTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 # Import performance optimizations (DISABLED - causes startup hang)
 # from performance_optimizations import (
 #     cached_calculation,
@@ -207,6 +211,41 @@ class EntryUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class AISettings(BaseModel):
+    """AI provider settings for confidence analysis and report generation."""
+    provider: Optional[str] = None  # anthropic, openrouter, openai, gemini, groq, etc.
+    model: Optional[str] = None  # Model identifier
+    api_key: Optional[str] = None  # Optional API key override
+
+
+class CalculationRequest(BaseModel):
+    """Request model for calculation with optional AI settings."""
+    user_data: UserData
+    ai_settings: Optional[AISettings] = None
+
+
+class ReportRequest(BaseModel):
+    """Request model for report generation with optional AI settings."""
+    user_data: UserData
+    ai_settings: Optional[AISettings] = None
+
+
+def get_ai_analyzer(ai_settings: Optional[AISettings] = None):
+    """
+    Create an AIConfidenceAnalyzer with the specified settings.
+    Falls back to environment variables if no settings provided.
+    """
+    if ai_settings:
+        return AIConfidenceAnalyzer(
+            api_key=ai_settings.api_key,
+            provider=ai_settings.provider,
+            model=ai_settings.model
+        )
+    else:
+        # Use default (reads from environment variables)
+        return AIConfidenceAnalyzer()
+
+
 def parse_date_string(date_str: str) -> datetime:
     """Parse date string in various formats to datetime object"""
     # Try different date formats
@@ -323,8 +362,18 @@ async def root():
 @app.post("/calculate", response_model=CalculationResult)
 # @cached_calculation  # DISABLED - performance_optimizations not imported
 # @performance_monitor  # DISABLED - performance_optimizations not imported
-async def calculate_progression(user_data: UserData):
-    """Calculate weight loss progression using PRIME engine"""
+async def calculate_progression(user_data: UserData, ai_settings: Optional[AISettings] = None):
+    """
+    Calculate weight loss progression using PRIME engine.
+
+    Optionally accepts AI settings for confidence analysis.
+    If not provided, uses environment variable defaults.
+
+    AI Settings (optional):
+    - provider: anthropic, openrouter, openai, gemini, groq, mistral, xai, fireworks, perplexity
+    - model: Model identifier (e.g., 'claude-sonnet-4-20250514', 'google/gemini-flash-1.5-8b')
+    - api_key: Override API key for the provider
+    """
     try:
         # Convert to PRIME format
         prime_data = convert_user_data_to_prime_format(user_data)
@@ -390,7 +439,7 @@ async def calculate_progression(user_data: UserData):
         confidence_score = None
         ai_analysis = None
         try:
-            ai_analyzer = AIConfidenceAnalyzer()
+            ai_analyzer = get_ai_analyzer(ai_settings)
 
             # Prepare calculation results for AI
             calc_results = {
@@ -499,8 +548,9 @@ async def generate_report(user_data: UserData):
 
         # Generate report using fast version (no AI analysis)
         # This skips the 20+ second AI API call for instant report generation
+        # Output to storage/reports/ to match data_endpoints.py ingestion path
         markdown_path, pdf_path = generate_prime_report_terminal_fast(
-            prime_data, progression
+            prime_data, progression, output_dir=str(REPORTS_OUTPUT_DIR)
         )
 
         # Read the generated HTML content
@@ -518,6 +568,15 @@ async def generate_report(user_data: UserData):
         }
 
     except Exception as e:
+        import traceback
+        print("=" * 60)
+        print("REPORT GENERATION ERROR - FULL TRACEBACK:")
+        print("=" * 60)
+        traceback.print_exc()
+        print("=" * 60)
+        import sys
+        sys.stdout.flush()
+        sys.stderr.flush()
         raise HTTPException(
             status_code=500, detail=f"Report generation failed: {str(e)}"
         )
@@ -547,14 +606,32 @@ async def calculate_tdee_endpoint(rmr: float, activity_level: int):
 
 @app.post("/ai/insights")
 async def generate_ai_insights(request: dict):
-    """Generate AI-powered insights based on user data and progress"""
+    """
+    Generate AI-powered insights based on user data and progress.
+
+    Request body can include optional ai_settings:
+    {
+        "user": {...},
+        "entries": [...],
+        "calculation": {...},
+        "ai_settings": {
+            "provider": "openrouter",  # optional
+            "model": "google/gemini-flash-1.5-8b",  # optional
+            "api_key": "..."  # optional
+        }
+    }
+    """
     try:
         user_data = request.get("user", {})
         entries = request.get("entries", [])
         calculation = request.get("calculation", {})
+        ai_settings_dict = request.get("ai_settings")
 
-        # Use AI analyzer for insights
-        ai_analyzer = AIConfidenceAnalyzer()
+        # Parse AI settings if provided
+        ai_settings = AISettings(**ai_settings_dict) if ai_settings_dict else None
+
+        # Use AI analyzer for insights (with configurable provider)
+        ai_analyzer = get_ai_analyzer(ai_settings)
 
         # Convert user data to PRIME format
         prime_data = convert_user_data_to_prime_format_for_ai(user_data)
@@ -628,14 +705,32 @@ async def generate_ai_insights(request: dict):
 
 @app.post("/ai/analyze-progress")
 async def analyze_progress_ai(request: dict):
-    """Analyze user progress with AI-powered feedback"""
+    """
+    Analyze user progress with AI-powered feedback.
+
+    Request body can include optional ai_settings:
+    {
+        "user": {...},
+        "entries": [...],
+        "calculation": {...},
+        "ai_settings": {
+            "provider": "openrouter",  # optional
+            "model": "google/gemini-flash-1.5-8b",  # optional
+            "api_key": "..."  # optional
+        }
+    }
+    """
     try:
         user_data = request.get("user", {})
         entries = request.get("entries", [])
         calculation = request.get("calculation", {})
+        ai_settings_dict = request.get("ai_settings")
 
-        # Use AI analyzer for detailed analysis
-        ai_analyzer = AIConfidenceAnalyzer()
+        # Parse AI settings if provided
+        ai_settings = AISettings(**ai_settings_dict) if ai_settings_dict else None
+
+        # Use AI analyzer for detailed analysis (with configurable provider)
+        ai_analyzer = get_ai_analyzer(ai_settings)
         prime_data = convert_user_data_to_prime_format_for_ai(user_data)
 
         # Calculate progress metrics
@@ -794,4 +889,6 @@ async def startup_event():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True, log_level="info")
+    # STANDARDIZED PORTS: Frontend 3713 | Backend/Python API 8313
+    uvicorn.run("main:app", host="127.0.0.1", port=8313, reload=True, log_level="info")
+# Debug trigger: chart fix 1

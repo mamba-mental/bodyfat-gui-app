@@ -54,7 +54,7 @@ export default function TestAPIPage() {
       setError("")
       
       // Test direct Python API
-      const response = await fetch("http://127.0.0.1:8000/calculate", {
+      const response = await fetch("http://127.0.0.1:8313/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(testData)

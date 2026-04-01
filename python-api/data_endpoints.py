@@ -81,6 +81,7 @@ class Entry(BaseModel):
     body_fat_percentage: Optional[float] = None
     notes: Optional[str] = None
     timestamp: Optional[str] = None
+    program_id: Optional[str] = None
 
 
 class Report(BaseModel):
@@ -328,7 +329,7 @@ async def delete_entry(entry_id: str):
 @router.get("/api/data/reports")
 async def get_reports():
     """Get all generated reports"""
-    reports = db.get_reports("1")  # Use user_id "1" to match existing database entries
+    reports = db.get_reports("default")  # Use user_id "default" to match existing database entries
     return reports
 
 
@@ -399,3 +400,266 @@ async def save_route_data(data: Dict[str, Any]):
     settings.update(data)
     save_json_file(SETTINGS_FILE, settings)
     return {"success": True, "message": "Settings saved"}
+
+
+# ==================== PROGRAM ARCHIVING ENDPOINTS ====================
+
+class ProgramSummary(BaseModel):
+    """Summary statistics for an archived program"""
+    total_weight_change: float
+    total_bf_change: float
+    duration_days: int
+    average_weekly_loss: float
+    entries_count: int
+    best_entry: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+
+
+class ArchivedProgram(BaseModel):
+    """Archived program data"""
+    id: str
+    name: str
+    status: str = "archived"
+    created_at: str
+    archived_at: Optional[str] = None
+    start_date: str
+    end_date: Optional[str] = None
+    initial_weight: float
+    initial_bf: float
+    final_weight: Optional[float] = None
+    final_bf: Optional[float] = None
+    entry_count: int = 0
+    summary: Optional[ProgramSummary] = None
+
+
+class ArchiveProgramRequest(BaseModel):
+    """Request to archive current program"""
+    name: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("/api/programs")
+async def get_programs():
+    """Get all programs (active + archived)"""
+    user_data = db.get_user("default")
+    if not user_data:
+        return {"active": None, "archived": []}
+
+    archived = user_data.get("archived_programs", [])
+
+    # Build active program info from current user data
+    active = None
+    if user_data.get("start_date"):
+        active = {
+            "id": user_data.get("current_program_id", f"program-{user_data.get('start_date', 'unknown')}"),
+            "name": "Current Program",
+            "status": "active",
+            "start_date": user_data.get("start_date"),
+            "initial_weight": user_data.get("program_reference", {}).get("initial_weight", user_data.get("current_weight")),
+            "initial_bf": user_data.get("program_reference", {}).get("initial_bf", user_data.get("current_bf")),
+        }
+
+    return {"active": active, "archived": archived}
+
+
+@router.post("/api/programs/archive")
+async def archive_program(request: ArchiveProgramRequest):
+    """Archive current program and start a new one"""
+    user_data = db.get_user("default")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="No user profile found")
+
+    # Get current program entries
+    entries = db.get_entries("1")
+    current_program_id = user_data.get("current_program_id")
+
+    # Filter entries for current program (include legacy entries with no program_id)
+    if current_program_id:
+        program_entries = [e for e in entries if e.get("program_id") == current_program_id or e.get("program_id") is None]
+    else:
+        program_entries = entries
+
+    if not program_entries:
+        raise HTTPException(status_code=400, detail="No entries to archive")
+
+    # Calculate summary
+    program_ref = user_data.get("program_reference", {})
+    initial_weight = program_ref.get("initial_weight", user_data.get("current_weight", 0))
+    initial_bf = program_ref.get("initial_bf", user_data.get("current_bf", 0))
+    start_date = user_data.get("start_date", program_entries[-1].get("date") if program_entries else datetime.now().isoformat())
+
+    # Get latest entry for final stats
+    latest_entry = program_entries[0] if program_entries else None
+    final_weight = latest_entry.get("weight", initial_weight) if latest_entry else initial_weight
+    final_bf = latest_entry.get("body_fat_percentage", initial_bf) if latest_entry else initial_bf
+    end_date = latest_entry.get("date", datetime.now().isoformat()) if latest_entry else datetime.now().isoformat()
+
+    # Calculate duration
+    try:
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00') if start_date else datetime.now().isoformat())
+        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00') if end_date else datetime.now().isoformat())
+        duration_days = (end_dt - start_dt).days
+    except:
+        duration_days = 0
+
+    # Find best entry (lowest body fat)
+    best_entry = None
+    if program_entries:
+        valid_entries = [e for e in program_entries if e.get("body_fat_percentage")]
+        if valid_entries:
+            best = min(valid_entries, key=lambda x: x.get("body_fat_percentage", 100))
+            best_entry = {
+                "date": best.get("date"),
+                "weight": best.get("weight"),
+                "bf": best.get("body_fat_percentage")
+            }
+
+    # Calculate average weekly loss
+    weeks = max(duration_days / 7, 1)
+    weight_change = final_weight - initial_weight
+    avg_weekly = weight_change / weeks
+
+    # Create archived program
+    now = datetime.now().isoformat()
+    archived_program = {
+        "id": current_program_id or f"program-{int(datetime.now().timestamp() * 1000)}",
+        "name": request.name or f"Program {start_date[:10]}",
+        "status": "archived",
+        "created_at": start_date,
+        "archived_at": now,
+        "start_date": start_date,
+        "end_date": end_date,
+        "initial_weight": initial_weight,
+        "initial_bf": initial_bf,
+        "final_weight": final_weight,
+        "final_bf": final_bf,
+        "entry_count": len(program_entries),
+        "summary": {
+            "total_weight_change": weight_change,
+            "total_bf_change": final_bf - initial_bf,
+            "duration_days": duration_days,
+            "average_weekly_loss": avg_weekly,
+            "entries_count": len(program_entries),
+            "best_entry": best_entry,
+            "notes": request.notes
+        }
+    }
+
+    # Update user data with archived program and new active program
+    archived_programs = user_data.get("archived_programs", [])
+    archived_programs.insert(0, archived_program)
+
+    # Create new program ID
+    new_program_id = f"program-{int(datetime.now().timestamp() * 1000)}"
+
+    updated_user = {
+        **user_data,
+        "archived_programs": archived_programs,
+        "current_program_id": new_program_id,
+        "start_date": now[:10],
+        "program_reference": {
+            "start_date": now[:10],
+            "initial_weight": final_weight,
+            "initial_bf": final_bf
+        }
+    }
+
+    db.save_user(updated_user, "default")
+
+    return {
+        "success": True,
+        "archived_program": archived_program,
+        "new_program_id": new_program_id,
+        "updated_user": updated_user
+    }
+
+
+@router.get("/api/programs/{program_id}")
+async def get_program(program_id: str):
+    """Get details of a specific program"""
+    user_data = db.get_user("default")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if it's the active program
+    if user_data.get("current_program_id") == program_id:
+        entries = db.get_entries("1")
+        program_entries = [e for e in entries if e.get("program_id") == program_id]
+        return {
+            "id": program_id,
+            "name": "Current Program",
+            "status": "active",
+            "start_date": user_data.get("start_date"),
+            "initial_weight": user_data.get("program_reference", {}).get("initial_weight"),
+            "initial_bf": user_data.get("program_reference", {}).get("initial_bf"),
+            "entries": program_entries
+        }
+
+    # Check archived programs
+    archived = user_data.get("archived_programs", [])
+    program = next((p for p in archived if p.get("id") == program_id), None)
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    # Get entries for this program
+    entries = db.get_entries("1")
+    program_entries = [e for e in entries if e.get("program_id") == program_id]
+
+    return {
+        **program,
+        "entries": program_entries
+    }
+
+
+@router.get("/api/programs/{program_id}/entries")
+async def get_program_entries(program_id: str):
+    """Get entries for a specific program"""
+    entries = db.get_entries("1")
+    program_entries = [e for e in entries if e.get("program_id") == program_id]
+    return program_entries
+
+
+@router.get("/api/programs/{program_id}/compare")
+async def compare_programs(program_id: str, compare_to: Optional[str] = None):
+    """Compare two programs"""
+    user_data = db.get_user("default")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get the first program
+    archived = user_data.get("archived_programs", [])
+    program1 = next((p for p in archived if p.get("id") == program_id), None)
+
+    if not program1:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    # If no compare_to specified, compare with current active program
+    if not compare_to:
+        # Use current stats
+        program2 = {
+            "id": user_data.get("current_program_id"),
+            "name": "Current Program",
+            "status": "active",
+            "start_date": user_data.get("start_date"),
+            "initial_weight": user_data.get("program_reference", {}).get("initial_weight"),
+            "initial_bf": user_data.get("program_reference", {}).get("initial_bf"),
+            "current_weight": user_data.get("current_weight"),
+            "current_bf": user_data.get("current_bf"),
+        }
+    else:
+        program2 = next((p for p in archived if p.get("id") == compare_to), None)
+        if not program2:
+            raise HTTPException(status_code=404, detail="Comparison program not found")
+
+    return {
+        "program1": program1,
+        "program2": program2,
+        "comparison": {
+            "weight_change_diff": (program1.get("summary", {}).get("total_weight_change", 0) or 0) -
+                                  (program2.get("summary", {}).get("total_weight_change", 0) or 0),
+            "bf_change_diff": (program1.get("summary", {}).get("total_bf_change", 0) or 0) -
+                             (program2.get("summary", {}).get("total_bf_change", 0) or 0),
+            "duration_diff": (program1.get("summary", {}).get("duration_days", 0) or 0) -
+                            (program2.get("summary", {}).get("duration_days", 0) or 0),
+        }
+    }

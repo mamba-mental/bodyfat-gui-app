@@ -180,7 +180,7 @@ export function ProgressSummary({
             </p>
             <p>
               <span className="font-semibold">Entry used:</span>{" "}
-              {reportGenerationEntryDate || "Not recorded"}
+              {reportGenerationEntryDate || reports[0]?.entry_date || "Not recorded"}
             </p>
             {reports[0] && (
               <p>

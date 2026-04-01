@@ -4,8 +4,8 @@
  */
 
 export const env = {
-  // Hardcoded to avoid environment variable caching issues - Python API runs on port 8001
-  API_BASE_URL: 'http://127.0.0.1:8001',
+  // Hardcoded to avoid environment variable caching issues - Python API runs on port 8313
+  API_BASE_URL: 'http://127.0.0.1:8313',
   NODE_ENV: process.env.NODE_ENV || 'development',
   BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '',
   IS_PRODUCTION: process.env.NODE_ENV === 'production',

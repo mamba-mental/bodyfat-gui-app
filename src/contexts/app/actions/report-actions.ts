@@ -55,11 +55,45 @@ export async function generateReport(
     return
   }
 
+  // Filter entries for current program (by program_id or start_date)
+  const today = new Date().toISOString().split('T')[0]
+  const programStartDate = userData.program_reference?.start_date || userData.start_date || today
+
+  let currentProgramEntriesForReport = entries
+  if (userData.current_program_id) {
+    // First try to filter by program_id
+    const byProgramId = entries.filter(e => e.program_id === userData.current_program_id)
+    if (byProgramId.length > 0) {
+      currentProgramEntriesForReport = byProgramId
+    } else {
+      // Fallback: filter by date >= program start
+      currentProgramEntriesForReport = entries.filter(e => {
+        try {
+          const dateObj = new Date(e.date)
+          if (isNaN(dateObj.getTime())) return false
+          const entryDate = dateObj.toISOString().split('T')[0]
+          return entryDate >= programStartDate
+        } catch {
+          return false
+        }
+      })
+    }
+  }
+
   // Determine which entry will be used and record its date for diagnostics
-  const latestEntryForReport = entries[0]
-  const entryDateForStatus = latestEntryForReport
-    ? new Date(latestEntryForReport.date).toISOString().split('T')[0]
-    : undefined
+  // Use filtered entries for current program, or show today's date if no entries
+  const latestEntryForReport = currentProgramEntriesForReport[0]
+  let entryDateForStatus = today
+  if (latestEntryForReport) {
+    try {
+      const dateObj = new Date(latestEntryForReport.date)
+      if (!isNaN(dateObj.getTime())) {
+        entryDateForStatus = dateObj.toISOString().split('T')[0]
+      }
+    } catch {
+      // Use today as fallback
+    }
+  }
 
   dispatch({
     type: 'SET_REPORT_GENERATION_STATUS',
@@ -93,8 +127,14 @@ export async function generateReport(
 
     if (entries.length > 0) {
       const currentProgramEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.date).toISOString().split('T')[0]
-        return entryDate >= programStartDate
+        try {
+          const dateObj = new Date(entry.date)
+          if (isNaN(dateObj.getTime())) return false
+          const entryDate = dateObj.toISOString().split('T')[0]
+          return entryDate >= programStartDate
+        } catch {
+          return false
+        }
       })
 
       if (currentProgramEntries.length > 0) {
@@ -155,6 +195,7 @@ export async function generateReport(
       user_id: updatedUserData.name,
       title: `Progress Report #${reportNumber} - ${now.toLocaleDateString()}`,
       generated_at: now,
+      entry_date: entryDateForStatus, // Store which entry was used for this report
       calculation_result: calculationToUse,
       html_content: "",
     }
@@ -165,15 +206,25 @@ export async function generateReport(
     })
 
     // Complete user data for Python API
+    // Safely calculate DOB from age, defaulting to 30 years old if age is invalid
+    const safeAge = typeof updatedUserData.age === 'number' && !isNaN(updatedUserData.age) ? updatedUserData.age : 30
+    const dobDate = new Date(Date.now() - (safeAge * 365.25 * 24 * 60 * 60 * 1000))
+    const safeDob = !isNaN(dobDate.getTime()) ? dobDate.toISOString().split('T')[0] : '1994-01-01'
+
+    const nowDate = new Date()
+    const safeStartDate = nowDate.toISOString().split('T')[0]
+    const endDate = new Date(Date.now() + (16 * 7 * 24 * 60 * 60 * 1000))
+    const safeEndDate = !isNaN(endDate.getTime()) ? endDate.toISOString().split('T')[0] : safeStartDate
+
     const completeUserData = {
       ...updatedUserData,
       gender: updatedUserData.gender || 'm',
       height_feet: updatedUserData.height_feet || 5,
       height_inches: updatedUserData.height_inches || 10,
       height_cm: updatedUserData.height_cm || 177.8,
-      dob: updatedUserData.dob || new Date(Date.now() - (updatedUserData.age * 365.25 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
-      start_date: updatedUserData.start_date || new Date().toISOString().split('T')[0],
-      end_date: updatedUserData.end_date || new Date(Date.now() + (16 * 7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+      dob: updatedUserData.dob || safeDob,
+      start_date: updatedUserData.start_date || safeStartDate,
+      end_date: updatedUserData.end_date || safeEndDate,
       activity_level: updatedUserData.activity_level ?? 2,
       resistance_training: updatedUserData.resistance_training ?? true,
       is_athlete: updatedUserData.is_athlete ?? false,

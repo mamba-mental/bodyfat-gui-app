@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Fat and Weight Loss Calculator Report - MJ PRIME</title>
+    <style>
+        /* Professional Report Styles - Embedded for PDF generation */
+        @page {
+            margin: 2cm;
+            size: letter;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        .page-break {
+            page-break-after: always;
+            padding: 15px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2c3e50;
+        }
+
+        h1 {
+            font-size: 16pt;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 13pt;
+            color: #2980b9;
+            border-bottom: 2px solid #2980b9;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 11pt;
+            color: #34495e;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }
+
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #ecf0f1;
+        }
+
+        .small-table {
+            font-size: 7pt;
+            margin-bottom: 8px;
+        }
+
+        .small-table th, .small-table td {
+            padding: 4px 6px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        ul {
+            padding-left: 25px;
+            margin: 10px 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .charts-container {
+            width: 100%;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .chart {
+            width: 90%;
+            margin: 0 auto 20px auto;
+            page-break-inside: avoid;
+        }
+
+        .chart img {
+            max-width: 100%;
+            height: auto;
+            margin: 10px auto;
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .supplemental-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 0 4px 4px 0;
+            page-break-inside: avoid;
+        }
+
+        .supplemental-info h3 {
+            color: #2980b9;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .combined-sections {
+            page-break-inside: avoid;
+        }
+
+        .data-container {
+            margin-top: 15px;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .data-section h3 {
+            background-color: #34495e;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 0;
+        }
+
+        .data-section table {
+            margin-top: 0;
+            border-top: none;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-style: italic;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            img {
+                page-break-inside: avoid;
+            }
+
+            section {
+                page-break-inside: avoid;
+            }
+
+            .supplemental-info {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page 1 -->
+    <header>
+        <h1>Body Fat and Weight Loss Calculator Report - MJ PRIME</h1>
+        <p>Report Date: January 09, 2026</p>
+    </header>
+
+    <section>
+        <h2>1. Current Profile</h2>
+        <table>
+            <tbody><tr><td>Height:</td><td>5'9"</td></tr>
+            <tr><td>Current Weight:</td><td>273.40 lbs</td></tr>
+            <tr><td>Current Body Fat:</td><td>36.10%</td></tr>
+            <tr><td>Current Lean Mass:</td><td>174.70 lbs</td></tr>
+            <tr><td>Current Fat Mass:</td><td>98.70 lbs</td></tr>
+            <tr><td>Age:</td><td>47 years</td></tr>
+            <tr><td>Gender:</td><td>Male</td></tr>
+        </tbody></table>
+    </section>
+
+    <section>
+        <h2>2. Target Goals</h2>
+        <table>
+            <tbody><tr><td>Goal Weight:</td><td>220.00 lbs</td></tr>
+            <tr><td>Goal Body Fat:</td><td>13.00%</td></tr>
+            <tr><td>Timeline:</td><td>010926 to 032726</td></tr>
+            <tr><td>Total Duration:</td><td>12 weeks</td></tr>
+        </tbody></table>
+    </section>
+
+    <section>
+        <h2>3. Current Activity Profile</h2>
+        <table>
+            <tbody><tr><td>Activity Level:</td><td>Sedentary (little or no exercise)</td></tr>
+            <tr><td>Training Experience:</td><td>Elite</td></tr>
+            <tr><td>Workout Type:</td><td>Bodybuilding</td></tr>
+            <tr><td>Weekly Workout Frequency:</td><td>3 days</td></tr>
+            <tr><td>Currently Using Resistance Training:</td><td>Yes</td></tr>
+            <tr><td>Athlete Status:</td><td>No</td></tr>
+        </tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Understanding Your Activity Profile:</h3>
+            <ul>
+                <li><strong>Activity Level:</strong> Your Sedentary (little or no exercise) lifestyle contributes significantly to your daily caloric expenditure.</li>
+                <li><strong>Training Experience:</strong> As a Elite trainee, this affects your potential muscle gain and recovery needs.</li>
+                <li><strong>Workout Frequency:</strong> Training 3 days per week helps optimize your metabolic rate and recovery periods.</li>
+                <li><strong>Resistance Training:</strong> Your use of resistance training enhances muscle preservation during weight loss.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 2 -->
+    <div class="page-break"></div>
+    
+    <section>
+        <h2>4. Current Metabolic Profile</h2>
+        <table>
+            <tbody><tr><td>Base Metabolic Rate (RMR):</td><td>2105.00 cal/day</td></tr>
+            <tr><td>Total Daily Energy Expenditure (TDEE):</td><td>3596.00 cal/day</td></tr>
+            <tr><td>Thermic Effect of Food (TEF):</td><td>359.60 cal/day</td></tr>
+            <tr><td>Non-Exercise Activity Thermogenesis (NEAT):</td><td>539.40 cal/day</td></tr>
+            <tr><td>Recommended Daily Calorie Intake:</td><td>951.88 cal/day</td></tr>
+        </tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Understanding Your Metabolic Profile:</h3>
+            <ul>
+                <li><strong>RMR (Resting Metabolic Rate):</strong> Your body burns 2105.00 calories daily at rest. This is calculated using the Mifflin-St Jeor equation, adjusted for your body composition.</li>
+                <li><strong>TDEE (Total Daily Energy Expenditure):</strong> Based on your activity level, you burn approximately 3596.00 calories per day.</li>
+                <li><strong>TEF (Thermic Effect of Food):</strong> You burn about 359.60 calories digesting food, particularly protein.</li>
+                <li><strong>NEAT:</strong> Your daily activities burn approximately 539.40 additional calories.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Additional Lifestyle Factors</h2>
+        <table>
+            <tbody><tr><td>Target Daily Protein Intake:</td><td>250.0 grams</td></tr>
+            <tr><td>Diet Type:</td><td>Keto</td></tr>
+            <tr><td>Reported PED Use:</td><td>Yes</td></tr>
+            <tr><td>Reported Sleep Quality:</td><td>Poor</td></tr>
+        </tbody></table>
+        <div class="supplemental-info">
+            <h3>Impact of These Factors:</h3>
+            <ul>
+                <li><strong>Protein Intake (250.0g):</strong> Adequate protein is crucial for muscle repair, growth, and satiety. Higher protein intake also increases TEF.</li>
+                <li><strong>Diet Type (Keto):</strong> Your chosen diet type influences macronutrient distribution, which can affect energy levels, satiety, and adherence. Specific diet types also have varying impacts on TEF and nutrient partitioning.</li>
+                <li><strong>PED Use (Yes):</strong> If PEDs are used, this can significantly alter metabolic rate, muscle protein synthesis, and nutrient partitioning, leading to faster changes than naturally achievable. Calculations are adjusted accordingly.</li>
+                <li><strong>Sleep Quality (Poor):</strong> Sleep is vital for recovery, hormone regulation (including those related to appetite and muscle growth), and overall well-being. Poor sleep can hinder progress.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>5. Workout Analysis</h2>
+        <table>
+            <tbody><tr><td>Type:</td><td>Bodybuilding</td></tr>
+            <tr><td>Frequency:</td><td>3 days/week</td></tr>
+            <tr><td>Volume Score:</td><td>0.43 - Fair</td></tr>
+            <tr><td>Intensity Score:</td><td>0.80 - Excellent</td></tr>
+            <tr><td>Frequency Score:</td><td>1.00 - Excellent</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Impact on Your Caloric Needs:</h3>
+            <ul>
+                <li><strong>Volume Score 0.43:</strong> Your training volume contributes approximately 214.29 additional calories to your daily expenditure.</li>
+                <li><strong>Intensity Score 0.80:</strong> Your training intensity increases your metabolic rate by about 12.00% for up to 48 hours post-workout.</li>
+                <li><strong>Frequency Score 1.00:</strong> Training 3 days per week optimizes your caloric burn and recovery periods.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 3 -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>6. Predicted Progress Charts</h2>
+        <div class="charts-container">
+            <div class="chart">
+                <h3>Predicted Weight Changes</h3>
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABC0AAAPdCAYAAACuuZKcAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjcsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvTLEjVAAAAAlwSFlzAAAPYQAAD2EBqD+naQAAGUFJREFUeJzt2rENgEAQA8ED0X/LR47If4OZChyvfO3uAAAAANTcpwcAAAAA/BEtAAAAgCTRAgAAAEgSLQAAAIAk0QIAAABIEi0AAACAJNECAAAASBItAAAAgCTRAgAAAEgSLQAAAIAk0QIAAABIEi0AAACAJNECAAAASHpmZk+PAAAAAPjytAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAAAgSbQAAAAAkkQLAAAAIEm0AAAAAJJECwAAACBJtAAAAACSRAsAAABgil5GFwu4ovvEBgAAAABJRU5ErkJggg==" alt="Weight Progress Chart">
+            </div>
+            <div class="chart">
+                <h3>Predicted Body Fat Changes</h3>
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA8EAAAPVCAYAAABGD+iNAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjcsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvTLEjVAAAAAlwSFlzAAAPYQAAD2EBqD+naQAAFqhJREFUeJzt2bERgDAQA8GHof+Wny7s4HYrUHqjZ3cHAAAACt7bAwAAAOAUEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZHwzs7dHAAAAwAmeYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAIEMEAwAAkCGCAQAAyBDBAAAAZIhgAAAAMkQwAAAAGSIYAACADBEMAABAhggGAAAgQwQDAACQIYIBAADIEMEAAABkiGAAAAAyRDAAAAAZIhgAAIAMEQwAAECGCAYAACBDBAMAAJAhggEAAMgQwQAAAGSIYAAAADJEMAAAABkiGAAAgAwRDAAAQIYIBgAAYCp+/S8LqOjzIFEAAAAASUVORK5CYII=" alt="Body Composition Chart">
+            </div>
+        </div>
+    </section>
+
+    <!-- Page 4 -->
+    <div class="page-break"></div>
+
+    <div class="combined-sections">
+        <section>
+            <h2>7. Weekly Progress Forecast</h2>
+
+        <table class="small-table">
+            <tbody><tr>
+                <th>Date</th>
+                <th>Weight (lbs)</th>
+                <th>Body Fat %</th>
+                <th>Daily Cal Intake</th>
+                <th>TDEE</th>
+                <th>Weekly Cal Output</th>
+                <th>Total Weight Lost (lbs)</th>
+                <th>Lean Mass (lbs)</th>
+                <th>Fat Mass (lbs)</th>
+                <th>Muscle Gain (lbs)</th>
+                <th>RMR</th>
+            </tr>
+            
+            <tr>
+                <td>010926</td>
+                <td>273.40</td>
+                <td>36.10</td>
+                <td>951.88</td>
+                <td>3596.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>174.70</td>
+                <td>98.70</td>
+                <td>0.00</td>
+                <td>2105.00</td>
+            </tr>
+            
+            <tr>
+                <td>011626</td>
+                <td>268.68</td>
+                <td>34.36</td>
+                <td>951.88</td>
+                <td>3596.00</td>
+                <td>18508.85</td>
+                <td>4.72</td>
+                <td>176.35</td>
+                <td>92.32</td>
+                <td>0.13</td>
+                <td>2105.00</td>
+            </tr>
+            
+            <tr>
+                <td>012326</td>
+                <td>263.94</td>
+                <td>32.56</td>
+                <td>914.13</td>
+                <td>3563.00</td>
+                <td>18542.08</td>
+                <td>9.46</td>
+                <td>177.99</td>
+                <td>85.95</td>
+                <td>0.13</td>
+                <td>2084.00</td>
+            </tr>
+            
+            <tr>
+                <td>013026</td>
+                <td>259.19</td>
+                <td>30.70</td>
+                <td>875.86</td>
+                <td>3530.00</td>
+                <td>18578.99</td>
+                <td>14.21</td>
+                <td>179.61</td>
+                <td>79.58</td>
+                <td>0.13</td>
+                <td>2063.00</td>
+            </tr>
+            
+            <tr>
+                <td>020626</td>
+                <td>254.43</td>
+                <td>28.77</td>
+                <td>835.93</td>
+                <td>3496.00</td>
+                <td>18620.52</td>
+                <td>18.97</td>
+                <td>181.22</td>
+                <td>73.21</td>
+                <td>0.13</td>
+                <td>2041.00</td>
+            </tr>
+            
+            <tr>
+                <td>021326</td>
+                <td>249.64</td>
+                <td>26.77</td>
+                <td>796.15</td>
+                <td>3463.00</td>
+                <td>18667.98</td>
+                <td>23.76</td>
+                <td>182.81</td>
+                <td>66.83</td>
+                <td>0.13</td>
+                <td>2019.00</td>
+            </tr>
+            
+            <tr>
+                <td>022026</td>
+                <td>244.83</td>
+                <td>24.70</td>
+                <td>754.24</td>
+                <td>3429.00</td>
+                <td>18723.35</td>
+                <td>28.57</td>
+                <td>184.37</td>
+                <td>60.46</td>
+                <td>0.13</td>
+                <td>1998.00</td>
+            </tr>
+            
+            <tr>
+                <td>022726</td>
+                <td>240.00</td>
+                <td>22.54</td>
+                <td>710.76</td>
+                <td>3395.00</td>
+                <td>18789.70</td>
+                <td>33.40</td>
+                <td>185.91</td>
+                <td>54.09</td>
+                <td>0.13</td>
+                <td>1976.00</td>
+            </tr>
+            
+            <tr>
+                <td>030626</td>
+                <td>235.13</td>
+                <td>20.29</td>
+                <td>665.14</td>
+                <td>3361.00</td>
+                <td>18871.04</td>
+                <td>38.27</td>
+                <td>187.41</td>
+                <td>47.72</td>
+                <td>0.13</td>
+                <td>1954.00</td>
+            </tr>
+            
+            <tr>
+                <td>031326</td>
+                <td>230.21</td>
+                <td>17.96</td>
+                <td>615.95</td>
+                <td>3327.00</td>
+                <td>18977.35</td>
+                <td>43.19</td>
+                <td>188.86</td>
+                <td>41.34</td>
+                <td>0.12</td>
+                <td>1932.00</td>
+            </tr>
+            
+            <tr>
+                <td>032026</td>
+                <td>225.23</td>
+                <td>15.53</td>
+                <td>558.63</td>
+                <td>3292.00</td>
+                <td>19133.58</td>
+                <td>48.17</td>
+                <td>190.25</td>
+                <td>34.97</td>
+                <td>0.12</td>
+                <td>1910.00</td>
+            </tr>
+            
+            <tr>
+                <td>032726</td>
+                <td>220.12</td>
+                <td>12.99</td>
+                <td>479.93</td>
+                <td>3257.00</td>
+                <td>19439.51</td>
+                <td>53.28</td>
+                <td>191.52</td>
+                <td>28.60</td>
+                <td>0.12</td>
+                <td>1887.00</td>
+            </tr>
+            
+            </tbody></table>
+    </section>
+
+        <section>
+            <h2>8. Body Composition Changes</h2>
+
+        <table class="small-table">
+            <tbody><tr>
+                <th>Body Fat Category</th>
+                <th>Body Fat %</th>
+                <th>Date Reached</th>
+                <th>Description</th>
+                <th>Est. Time to Six-Pack</th>
+            </tr>
+            
+            <tr>
+                <td>Current</td>
+                <td>36.10%</td>
+                <td>010926</td>
+                <td>Starting point</td>
+                <td>52 weeks</td>
+            </tr>
+            
+            <tr>
+                <td>Target</td>
+                <td>13.00%</td>
+                <td>032726</td>
+                <td>Goal achievement</td>
+                <td>6 weeks</td>
+            </tr>
+            
+            </tbody></table>
+        </section>
+    </div>
+
+    <!-- Page 5 -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>9. Expected Results</h2>
+        <table>
+            <tbody><tr><td>Total Weight Loss:</td><td>53.28 lbs</td></tr>
+            <tr><td>Fat Loss:</td><td>23.10%</td></tr>
+            <tr><td>Muscle Gain:</td><td>16.82 lbs</td></tr>
+        </tbody></table>
+        
+        <h3>Average Weekly Changes:</h3>
+        <table>
+            <tbody><tr><td>Weight Loss:</td><td>4.44 lbs</td></tr>
+            <tr><td>Muscle Gain:</td><td>1.40 lbs</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Your Results:</h3>
+            <ul>
+                <li><strong>Total Weight Loss:</strong> Your projected loss of 53.28 lbs is designed to be sustainable and preserve muscle mass.</li>
+                <li><strong>Fat Loss:</strong> A reduction of 23.10% body fat represents a healthy rate of fat loss.</li>
+                <li><strong>Muscle Changes:</strong> The program aims to gain/maintain 16.82 lbs of muscle while losing fat.</li>
+                <li><strong>Weekly Progress:</strong> Targeting 4.44 lbs per week ensures steady, sustainable progress.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>10. Metabolic Adaptation Forecast</h2>
+        <table>
+            <tbody><tr><td>Initial Week:</td><td>1.00 multiplier</td></tr>
+            <tr><td>Final Week:</td><td>0.85 multiplier</td></tr>
+            <tr><td>Expected Adaptation:</td><td>9.43% change</td></tr>
+            <tr><td>Lean Mass Preservation:</td><td>109.63%</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Metabolic Adaptation:</h3>
+            <ul>
+                <li><strong>Initial Response:</strong> Your metabolism starts at 1.00x baseline, reflecting your current activity level.</li>
+                <li><strong>Progressive Changes:</strong> A 9.43% adaptation is expected as your body becomes more efficient.</li>
+                <li><strong>Muscle Preservation:</strong> The program is designed to maintain 109.63% of your lean mass.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>11. Final Phase Targets</h2>
+        <table>
+            <tbody><tr><td>Maintenance Calories:</td><td>3257.00 calories/day</td></tr>
+            <tr><td>Weekly Energy Output:</td><td>19439.51 calories</td></tr>
+        </tbody></table>
+
+        <div class="supplemental-info">
+            <h3>Understanding Your Final Targets:</h3>
+            <ul>
+                <li><strong>Maintenance Level:</strong> Your final daily maintenance of 3257.00 calories reflects your new metabolic baseline.</li>
+                <li><strong>Weekly Output:</strong> Maintaining a weekly energy output of 19439.51 calories will help sustain your results.</li>
+                <li><strong>Long-term Success:</strong> These targets are designed to help you maintain your new weight and body composition.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Page 6+ -->
+    <div class="page-break"></div>
+
+    <section>
+        <h2>12. Input Parameter Analysis</h2>
+        <div class="supplemental-info">
+            <h3>All Input Parameters Used in Calculations:</h3>
+            <p>This section confirms that all provided input parameters are directly used in the body composition calculations.</p>
+        </div>
+
+
+        <table>
+            <tbody><tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Used in Calculation</th>
+                <th>Calculation Component</th>
+            </tr>
+            
+            <tr>
+                <td>Name</td>
+                <td>MJ PRIME</td>
+                <td>✓ Yes</td>
+                <td>User identification</td>
+            </tr>
+            
+            <tr>
+                <td>Age</td>
+                <td>47</td>
+                <td>✓ Yes</td>
+                <td>RMR calculation (Mifflin-St Jeor equation)</td>
+            </tr>
+            
+            <tr>
+                <td>Gender</td>
+                <td>Male</td>
+                <td>✓ Yes</td>
+                <td>RMR calculation gender-specific formula</td>
+            </tr>
+            
+            <tr>
+                <td>Height (feet)</td>
+                <td>5</td>
+                <td>✓ Yes</td>
+                <td>RMR calculation body surface area</td>
+            </tr>
+            
+            <tr>
+                <td>Height (inches)</td>
+                <td>9</td>
+                <td>✓ Yes</td>
+                <td>RMR calculation body surface area</td>
+            </tr>
+            
+            <tr>
+                <td>Current Weight</td>
+                <td>273.4</td>
+                <td>✓ Yes</td>
+                <td>Primary factor in all metabolic calculations</td>
+            </tr>
+            
+            <tr>
+                <td>Current Body Fat %</td>
+                <td>36.1</td>
+                <td>✓ Yes</td>
+                <td>Body composition and lean mass calculations</td>
+            </tr>
+            
+            <tr>
+                <td>Goal Weight</td>
+                <td>220.0</td>
+                <td>✓ Yes</td>
+                <td>Target calculations and timeline planning</td>
+            </tr>
+            
+            <tr>
+                <td>Goal Body Fat %</td>
+                <td>13.0</td>
+                <td>✓ Yes</td>
+                <td>Target body composition planning</td>
+            </tr>
+            
+            <tr>
+                <td>Activity Level</td>
+                <td>1</td>
+                <td>✓ Yes</td>
+                <td>TDEE multiplier calculation</td>
+            </tr>
+            
+            <tr>
+                <td>Workout Type</td>
+                <td>Bodybuilding</td>
+                <td>✓ Yes</td>
+                <td>Exercise-specific metabolic adjustments</td>
+            </tr>
+            
+            <tr>
+                <td>Workout Frequency</td>
+                <td>3</td>
+                <td>✓ Yes</td>
+                <td>Weekly activity and recovery planning</td>
+            </tr>
+            
+            <tr>
+                <td>Resistance Training</td>
+                <td>True</td>
+                <td>✓ Yes</td>
+                <td>Muscle preservation calculations</td>
+            </tr>
+            
+            <tr>
+                <td>Athlete Status</td>
+                <td>False</td>
+                <td>✓ Yes</td>
+                <td>Enhanced metabolic capacity adjustments</td>
+            </tr>
+            
+            <tr>
+                <td>PED Use</td>
+                <td>True</td>
+                <td>✓ Yes</td>
+                <td>Muscle gain and fat loss multipliers</td>
+            </tr>
+            
+            <tr>
+                <td>Protein Intake</td>
+                <td>250.0</td>
+                <td>✓ Yes</td>
+                <td>Thermic effect and muscle synthesis</td>
+            </tr>
+            
+            <tr>
+                <td>Diet Type</td>
+                <td>keto</td>
+                <td>✓ Yes</td>
+                <td>Macronutrient distribution and TEF</td>
+            </tr>
+            
+            <tr>
+                <td>Sleep Quality</td>
+                <td>poor</td>
+                <td>✓ Yes</td>
+                <td>Recovery and hormone regulation factors</td>
+            </tr>
+            
+            </tbody></table>
+        
+        <div class="supplemental-info">
+            <h3>Input Reliability Analysis:</h3>
+            
+                
+                
+                
+            <table>
+                <tbody><tr>
+                    <th>Category</th>
+                    <th>Score</th>
+                    <th>Assessment</th>
+                </tr><tr>
+                    <td>Anthropometric Data</td>
+                    <td>85.0/100</td>
+                    <td>Good</td>
+                </tr>
+                <tr>
+                    <td>Activity Data</td>
+                    <td>80.0/100</td>
+                    <td>Good</td>
+                </tr>
+                <tr>
+                    <td>Goal Data</td>
+                    <td>75.0/100</td>
+                    <td>Good</td>
+                </tr>
+                <tr>
+                    <td>Data Completeness</td>
+                    <td>90.0/100</td>
+                    <td>Nearly Complete</td>
+                </tr></tbody></table>
+        </div>
+    </section>
+    
+    <!-- Page Break before AI Confidence Analysis if it exists -->
+    
+    
+    <!-- Page Break before Comprehensive Parameter Reference Guide -->
+    <div class="page-break"></div>
+    <!-- Comprehensive Parameter Reference Guide -->
+    <section class="section">
+        <h2>13. Comprehensive Parameter Reference Guide</h2>
+        <p>This section details exactly how each input parameter affects your calculations and results:</p>
+        
+        <div class="supplemental-info">
+            <h3>🔢 Parameter Usage in Calculations:</h3>
+            <table>
+                <tbody><tr>
+                    <th>Parameter</th>
+                    <th>Your Value</th>
+                    <th>Usage Location</th>
+                    <th>Impact on Results</th>
+                </tr>
+                <tr>
+                    <td>Age</td>
+                    <td>47 years</td>
+                    <td>RMR Calculation (Mifflin-St Jeor)</td>
+                    <td>Base metabolic rate decreases ~1-2% per decade after age 30</td>
+                </tr>
+                <tr>
+                    <td>Weight</td>
+                    <td>273.4 lbs</td>
+                    <td>RMR, TDEE, Body Composition</td>
+                    <td>Primary factor in all metabolic calculations - higher weight = higher energy needs</td>
+                </tr>
+                <tr>
+                    <td>Height</td>
+                    <td>5'9"</td>
+                    <td>RMR Calculation, BMI</td>
+                    <td>Taller individuals have higher metabolic rates due to larger body surface area</td>
+                </tr>
+                <tr>
+                    <td>Gender</td>
+                    <td>Male</td>
+                    <td>RMR Calculation (different formulas)</td>
+                    <td>Males typically have 10-15% higher RMR than females due to muscle mass differences</td>
+                </tr>
+                <tr>
+                    <td>Activity Level</td>
+                    <td>Sedentary (little or no exercise)</td>
+                    <td>TDEE Multiplier</td>
+                    <td>Multiplies RMR by 1.2-1.9 based on activity level</td>
+                </tr>
+                <tr>
+                    <td>Body Fat %</td>
+                    <td>36.1%</td>
+                    <td>Lean Body Mass, Metabolic Calculations</td>
+                    <td>Lower body fat = higher lean mass = higher metabolic rate per pound</td>
+                </tr>
+                <tr>
+                    <td>Goal Weight</td>
+                    <td>220.0 lbs</td>
+                    <td>Calorie Adjustment, Macro Distribution</td>
+                    <td>Target weight determines caloric deficit/surplus needed</td>
+                </tr>
+                <tr>
+                    <td>Resistance Training</td>
+                    <td>Yes</td>
+                    <td>PRIME_Diet_Calculations_v2.py:161</td>
+                    <td>Increases protein needs and metabolic boost</td>
+                </tr>
+                <tr>
+                    <td>Athlete Status</td>
+                    <td>No</td>
+                    <td>PRIME_Utils.py:105-106</td>
+                    <td>Uses standard metabolic calculations</td>
+                </tr>
+                <tr>
+                    <td>Workout Type</td>
+                    <td>Bodybuilding</td>
+                    <td>Macro Distribution, TEF Calculations</td>
+                    <td>Bodybuilding training affects protein/carb/fat ratios and thermic effect</td>
+                </tr>
+                <tr>
+                    <td>Experience Level</td>
+                    <td>Elite</td>
+                    <td>NEAT Estimation, Performance Adjustments</td>
+                    <td>Elite affects recovery needs and energy expenditure patterns</td>
+                </tr>
+                <tr>
+                    <td>PED Use</td>
+                    <td>Yes</td>
+                    <td>PRIME_Calculations.py, PRIME_Diet_Calculations_v2.py</td>
+                    <td>Increases muscle gain by 50% (1.5x multiplier) and improves fat loss ratio by 20%</td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div class="supplemental-info">
+            <h3>🎯 Calculation Impact Summary:</h3>
+            <ul>
+                <li><strong>Your RMR:</strong> 2105 calories - calculated using age (47), weight (273.4lbs), height (5'9"), and gender (Male)</li>
+                <li><strong>Your TDEE:</strong> 3596 calories - RMR multiplied by activity factor for Sedentary (little or no exercise) activity level</li>
+                <li><strong>Your Goal Calories:</strong> 952 calories - TDEE adjusted for your goal</li>
+                <li><strong>Body Fat Impact:</strong> 36.1% body fat indicates 175lbs lean mass, affecting metabolic calculations</li>
+                
+                <li><strong>PED Enhancement:</strong> 50% muscle gain increase and 20% improved fat loss ratio applied</li>
+            </ul>
+        </div>
+
+        <div class="supplemental-info">
+            <h3>📍 Code References:</h3>
+            <ul>
+                <li><strong>Resistance Training Check:</strong> PRIME_Diet_Calculations_v2.py line 161 - Uses 0.05 baseline if False</li>
+                <li><strong>Athlete RMR Boost:</strong> PRIME_Utils.py lines 105-106 - Adds 10% if True</li>
+                <li><strong>Diet Type Multipliers:</strong> Multiple locations with fat loss/muscle gain adjustments</li>
+                <li><strong>Exercise Type NEAT:</strong> NEAT estimation and performance adjustment calculations</li>
+                <li><strong>Activity Level Multipliers:</strong> Standard TDEE calculation with activity-specific factors</li>
+                <li><strong>PED Use Multipliers:</strong> PRIME_Calculations.py line 81 - 1.5x muscle gain; PRIME_Diet_Calculations_v2.py lines 109-110, 166-167 - Enhanced fat loss and muscle gain</li>
+            </ul>
+        </div>
+    </section>
+
+    <div class="page-break"></div>
+
+    <section>
+        <h2>13. Comprehensive Reference Guide</h2>
+        
+        <div class="data-container">
+            
+            <div class="data-section">
+                <h3>Activity Levels and Caloric Impact</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            
+                                <th>Level</th>
+                            
+                                <th>Description</th>
+                            
+                                <th>TDEE Multiplier</th>
+                            
+                                <th>Daily Caloric Impact</th>
+                            
+                                <th>Example Activities</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                
+                                    <td>Sedentary</td>
+                                
+                                    <td>Little to no exercise, desk job</td>
+                                
+                                    <td>1.2</td>
+                                
+                                    <td>+20% above RMR</td>
+                                
+                                    <td>Office work, driving, watching TV</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Lightly Active</td>
+                                
+                                    <td>Light exercise 1-3 days/week</td>
+                                
+                                    <td>1.375</td>
+                                
+                                    <td>+37.5% above RMR</td>
+                                
+                                    <td>Walking, light gardening, yoga</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Moderately Active</td>
+                                
+                                    <td>Moderate exercise 3-5 days/week</td>
+                                
+                                    <td>1.55</td>
+                                
+                                    <td>+55% above RMR</td>
+                                
+                                    <td>Jogging, cycling, recreational sports</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Very Active</td>
+                                
+                                    <td>Heavy exercise 6-7 days/week</td>
+                                
+                                    <td>1.725</td>
+                                
+                                    <td>+72.5% above RMR</td>
+                                
+                                    <td>Construction work, competitive sports</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Extremely Active</td>
+                                
+                                    <td>Very heavy exercise, physical job</td>
+                                
+                                    <td>1.9</td>
+                                
+                                    <td>+90% above RMR</td>
+                                
+                                    <td>Professional athletes, heavy manual labor</td>
+                                
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="data-section">
+                <h3>Training Experience and Muscle Gain Potential</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            
+                                <th>Level</th>
+                            
+                                <th>Years of Training</th>
+                            
+                                <th>Monthly Muscle Gain</th>
+                            
+                                <th>Caloric Requirements</th>
+                            
+                                <th>Recovery Needs</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                
+                                    <td>Beginner</td>
+                                
+                                    <td>0-2 years</td>
+                                
+                                    <td>0.5-1% body weight</td>
+                                
+                                    <td>+500 cal/day surplus</td>
+                                
+                                    <td>24-36 hours between sessions</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Intermediate</td>
+                                
+                                    <td>2-4 years</td>
+                                
+                                    <td>0.25-0.5% body weight</td>
+                                
+                                    <td>+300-400 cal/day surplus</td>
+                                
+                                    <td>36-48 hours between sessions</td>
+                                
+                            </tr>
+                        
+                            <tr>
+                                
+                                    <td>Advanced</td>
+                                
+                                    <td>4+ years</td>
+                                
+                                    <td>0.125-0.25% body weight</td>
+                                
+                                    <td>+200-300 cal/day surplus</td>
+                                
+                                    <td>48-72 hours between sessions</td>
+                                
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+
+            <div class="data-section">
+                <h3>Workout Types and Metabolic Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Type</th>
+                        <th>Primary Focus</th>
+                        <th>Caloric Burn</th>
+                        <th>EPOC Effect</th>
+                        <th>Recovery Demand</th>
+                    </tr>
+                    <tr>
+                        <td>Bodybuilding</td>
+                        <td>Muscle growth and aesthetics</td>
+                        <td>600-800 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>High protein needs (1g/lb)</td>
+                    </tr>
+                    <tr>
+                        <td>Strength Training</td>
+                        <td>Maximal strength</td>
+                        <td>400-600 cal/session</td>
+                        <td>24-48 hours</td>
+                        <td>High CNS recovery needs</td>
+                    </tr>
+                    <tr>
+                        <td>Powerlifting</td>
+                        <td>Specific lift performance</td>
+                        <td>500-700 cal/session</td>
+                        <td>36-48 hours</td>
+                        <td>Very high CNS demands</td>
+                    </tr>
+                    <tr>
+                        <td>Olympic Weightlifting</td>
+                        <td>Power and technique</td>
+                        <td>600-800 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>Technical recovery focus</td>
+                    </tr>
+                    <tr>
+                        <td>CrossFit</td>
+                        <td>Overall fitness</td>
+                        <td>800-1000 cal/session</td>
+                        <td>36-48 hours</td>
+                        <td>High systemic demands</td>
+                    </tr>
+                    <tr>
+                        <td>Calisthenics</td>
+                        <td>Bodyweight control</td>
+                        <td>400-600 cal/session</td>
+                        <td>24-36 hours</td>
+                        <td>Joint/tendon focus</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Resistance Training Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Status</th>
+                        <th>Muscle Preservation</th>
+                        <th>Metabolic Impact</th>
+                    </tr>
+                    <tr>
+                        <td>With RT</td>
+                        <td>90-100%</td>
+                        <td>+100-300 cal/day</td>
+                    </tr>
+                    <tr>
+                        <td>Without RT</td>
+                        <td>60-80%</td>
+                        <td>No additional benefit</td>
+                    </tr>
+                </tbody></table>
+                <p><strong>Impact on Calculations:</strong> Resistance training increases your daily caloric needs by 100-300 calories through increased muscle mass and EPOC (Excess Post-exercise Oxygen Consumption).</p>
+            </div>
+
+            <div class="data-section">
+                <h3>Athlete Status Effects</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Status</th>
+                        <th>Metabolic Rate</th>
+                        <th>Nutrient Partitioning</th>
+                    </tr>
+                    <tr>
+                        <td>Athlete</td>
+                        <td>+10-15% higher</td>
+                        <td>Enhanced efficiency</td>
+                    </tr>
+                    <tr>
+                        <td>Non-Athlete</td>
+                        <td>Standard</td>
+                        <td>Normal efficiency</td>
+                    </tr>
+                </tbody></table>
+                <p><strong>Impact on Calculations:</strong> Athletic status can increase your TDEE by 10-15% due to enhanced metabolic efficiency and muscle mass.</p>
+            </div>
+
+            <div class="data-section">
+                <h3>Volume Score Components</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>Sets per Muscle</th>
+                        <th>Weekly Volume</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>1-5 sets</td>
+                        <td>Low stimulus</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>6-10 sets</td>
+                        <td>Maintenance</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>10-15 sets</td>
+                        <td>Growth stimulus</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>15-20 sets</td>
+                        <td>Optimal growth</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>20+ sets</td>
+                        <td>Maximum stimulus</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Intensity Score Impact</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>% of 1RM</th>
+                        <th>Rep Range</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>30-50%</td>
+                        <td>15+ reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>50-65%</td>
+                        <td>12-15 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>65-75%</td>
+                        <td>8-12 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>75-85%</td>
+                        <td>5-8 reps</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>85%+</td>
+                        <td>1-5 reps</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Frequency Score Effects</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Score Range</th>
+                        <th>Sessions/Week</th>
+                        <th>Recovery Time</th>
+                    </tr>
+                    <tr>
+                        <td>0.0-0.2</td>
+                        <td>1x/week</td>
+                        <td>7 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.2-0.4</td>
+                        <td>2x/week</td>
+                        <td>3-4 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.4-0.6</td>
+                        <td>3x/week</td>
+                        <td>2-3 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.6-0.8</td>
+                        <td>4x/week</td>
+                        <td>1-2 days</td>
+                    </tr>
+                    <tr>
+                        <td>0.8-1.0</td>
+                        <td>5+x/week</td>
+                        <td>&lt;1 day</td>
+                    </tr>
+                </tbody></table>
+            </div>
+
+            <div class="data-section">
+                <h3>Calculation Formulas and Methodology</h3>
+                <table>
+                    <tbody><tr>
+                        <th>Component</th>
+                        <th>Formula</th>
+                        <th>Variables</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td>RMR (Male)</td>
+                        <td>(10 × weight kg) + (6.25 × height cm) - (5 × age) + 5</td>
+                        <td>Weight, Height, Age</td>
+                        <td>70kg man: 1,745 cal</td>
+                    </tr>
+                    <tr>
+                        <td>RMR (Female)</td>
+                        <td>(10 × weight kg) + (6.25 × height cm) - (5 × age) - 161</td>
+                        <td>Weight, Height, Age</td>
+                        <td>60kg woman: 1,374 cal</td>
+                    </tr>
+                    <tr>
+                        <td>TDEE</td>
+                        <td>RMR × Activity Multiplier + Exercise Calories</td>
+                        <td>RMR, Activity Level</td>
+                        <td>1,745 × 1.55 = 2,705 cal</td>
+                    </tr>
+                    <tr>
+                        <td>Caloric Deficit</td>
+                        <td>TDEE - Daily Intake</td>
+                        <td>TDEE, Target Loss</td>
+                        <td>2,705 - 2,205 = 500 cal</td>
+                    </tr>
+                    <tr>
+                        <td>Weekly Fat Loss</td>
+                        <td>(Weekly Deficit) ÷ 3,500</td>
+                        <td>Daily Deficit × 7</td>
+                        <td>(500 × 7) ÷ 3,500 = 1 lb</td>
+                    </tr>
+                    <tr>
+                        <td>Muscle Gain</td>
+                        <td>(Body Weight × Experience Factor)</td>
+                        <td>Weight, Training Level</td>
+                        <td>70kg × 0.01 = 0.7kg/month</td>
+                    </tr>
+                </tbody></table>
+            </div>
+        </div>
+    </section>
+
+
+</body></html>

@@ -103,6 +103,73 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ---
 
+# Standardized Port Configuration
+
+## CRITICAL: DO NOT CHANGE THESE PORTS WITHOUT UPDATING ALL REFERENCES
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **Frontend (Next.js)** | `3713` | Web application UI |
+| **Backend (Python API)** | `8313` | PRIME calculator, data persistence |
+
+## Port Configuration Locations
+
+These ports are defined in multiple locations - **ALL must be updated together**:
+
+1. **Environment Variables**: `.env.local`
+   - `NEXT_PUBLIC_PYTHON_API_URL=http://localhost:8313`
+   - `NEXT_PUBLIC_APP_URL=http://localhost:3713`
+   - `PORT=3713`
+
+2. **Centralized Config**: `src/lib/config.ts`
+   - `pythonApiConfig.url` default: `http://127.0.0.1:8313`
+   - `corsConfig.allowedOrigins`: includes port 3713
+
+3. **API Route Files** (hardcoded fallbacks):
+   - `src/app/api/data/user/route.ts`
+   - `src/app/api/data/entries/route.ts`
+   - `src/app/api/data/calculation/route.ts`
+   - `src/app/api/data/reports/route.ts`
+
+4. **Python API**: `python-api/main.py`
+   - Uvicorn host/port configuration
+
+## Troubleshooting API Connection Issues
+
+**ALWAYS START HERE when diagnosing API errors:**
+
+1. **First: Restart both servers**
+   ```bash
+   # Kill any existing processes
+   # Then restart frontend on port 3713
+   npm run dev -- --port 3713
+
+   # In python-api directory, restart backend on port 8313
+   uvicorn main:app --host 0.0.0.0 --port 8313 --reload
+   ```
+
+2. **Verify both servers are running**
+   ```bash
+   curl http://localhost:3713  # Frontend health check
+   curl http://localhost:8313/api/health  # Backend health check
+   ```
+
+3. **Check port conflicts**
+   ```powershell
+   netstat -ano | findstr "3713"
+   netstat -ano | findstr "8313"
+   ```
+
+4. **Only after restarting fails** should you investigate port configuration changes
+
+## Why These Specific Ports?
+
+- **3713**: Chosen to avoid conflicts with common dev server ports (3000, 3001, 8080)
+- **8313**: Pairs naturally with frontend, avoids common Python API ports (8000, 8001, 8002)
+- Both are memorable and unlikely to conflict with other local services
+
+---
+
 # Task Master AI - Agent Integration Guide
 
 ## Essential Commands
@@ -374,4 +441,73 @@ Based on detected agent archive (see AI Team Configuration above):
 - **Issue #3 (Dashboard)**: `frontend-developer` (React component restoration + E2E tests)
 - **Issue #7 (Changelog)**: `documentation-expert` (Manual changelog generation from git history)
 - **Regression Tests (2,4,5,6,8)**: `test-automator` + `qa-expert` (Comprehensive test suite)
-- ensure the use tts-mcp server for all notification for this and all sessions. if tts-mcp-server isnt avail, use voice-mode or voice-mode-docker
+
+---
+
+## TTS Notification Requirements (MANDATORY)
+
+**YOU MUST** use tts-mcp-server proactively for all notifications and status updates:
+
+### When to Use TTS
+- Task completions and milestones
+- Error notifications that need attention
+- Status updates during long-running operations
+- Workflow transitions (starting/completing phases)
+- Any significant progress updates
+
+### Configuration
+```javascript
+// Use ElevenLabs voices ONLY - never the robot/Microsoft default
+mcp__tts-mcp-server__speak_text({
+  text: "Your message here",
+  service: "elevenlabs",
+  voice: "default"  // Uses configured ElevenLabs voice
+})
+```
+
+### Fallback Chain
+1. **Primary**: tts-mcp-server with ElevenLabs
+2. **Fallback**: voice-mode
+3. **Last resort**: voice-mode-docker
+
+**CRITICAL**: Only use ElevenLabs voices. NEVER use the robot/Microsoft default voice.
+
+---
+
+## Ralph Loop Python Plugin
+
+Cross-platform self-referential AI development loop that works on Windows/PowerShell.
+
+### Installation
+```bash
+# Add local marketplace
+claude plugin marketplace add "~/.claude/plugins/local"
+
+# Install the Python version
+claude plugin install ralph-loop-py@local-plugins
+```
+
+### Usage
+```bash
+# Start a loop with max iterations
+/ralph-loop Build a REST API --max-iterations 10
+
+# Start with completion promise
+/ralph-loop Fix all bugs --completion-promise 'All tests passing'
+
+# Cancel active loop
+/cancel-ralph
+
+# Get help
+/ralph-loop --help
+```
+
+### How It Works
+1. Creates state file at `.claude/ralph-loop.local.md`
+2. Stop hook intercepts exit attempts
+3. Feeds same prompt back with iteration count
+4. Continues until max iterations or completion promise detected
+
+### Repository
+- **GitHub**: https://github.com/mamba-mental/ralph-wiggum-loop-python
+- **Local Files**: `~/.claude/plugins/local/ralph-loop-py/`

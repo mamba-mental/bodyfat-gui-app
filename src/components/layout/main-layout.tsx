@@ -139,7 +139,10 @@ function AppSidebar() {
                     <SidebarMenuButton
                       asChild={!isDisabled}
                       isActive={pathname === item.url}
-                      className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                      className={cn(
+                        "bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50",
+                        isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                      )}
                       aria-current={pathname === item.url ? "page" : undefined}
                       aria-disabled={isDisabled ? "true" : undefined}
                     >
@@ -178,6 +181,7 @@ function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
+                    className="bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50"
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
                     <Link
@@ -203,6 +207,7 @@ function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
+                    className="bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50"
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
                     <Link

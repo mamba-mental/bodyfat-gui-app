@@ -1,0 +1,131 @@
+{
+  "globalShortcut": "Ctrl+Space",
+  "mcpServers": {
+    "better-thinking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--force",
+        "better-thinking-mcp@latest"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--force",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "exa-global": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--force",
+        "exa-mcp-server"
+      ],
+      "env": {
+        "EXA_API_KEY": "821b0361-5ffe-4a29-b6d0-9fdc15a157d8",
+        "PRIMARY_LANGUAGE": "python"
+      }
+    },
+    "filesystem-npx": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\",
+        "B:\\",
+        "H:\\",
+        "K:\\",
+        "P:\\",
+        "S:\\",
+        "V:\\",
+        "W:\\",
+        "Z:\\"
+      ]
+    },
+    "memory-global-npx": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--force",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": "C:\\GitHub_Projects\\MCP_Servers\\claude_memory_global.json",
+        "PRIMARY_LANGUAGE": "python"
+      }
+    },
+    "sequential-thinking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "tts-mcp-server": {
+      "command": "node",
+      "args": [
+        "C:\\MCP\\tts-mcp-server\\index.js"
+      ],
+      "env": {
+        "ELEVENLABS_API_KEY": "258af9d6d4d207d9be5edb7f9e17de5a2361221c7a0866fe90a6030c894335d1",
+        "DEFAULT_VOICE_ID": "zZ7KtV7SXU6rz5wRS4y3",
+        "VOICE_STABILITY": "0.5",
+        "VOICE_SIMILARITY": "0.75",
+        "VOICE_STYLE": "0.30",
+        "USE_SPEAKER_BOOST": "true",
+        "DEFAULT_MODEL": "eleven_v3",
+        "AUDIO_FORMAT": "mp3_44100_128",
+        "OPTIMIZE_STREAMING_LATENCY": "1",
+        "CACHE_ENABLED": "true",
+        "CACHE_DIR": "C:\\MCP\\tts-mcp-server\\cache",
+        "CACHE_TTL": "86400",
+        "LOG_LEVEL": "info",
+        "LOG_DIR": "C:\\MCP\\tts-mcp-server\\logs",
+        "AUDIO_OUTPUT_DIR": "C:\\MCP\\tts-mcp-server\\output",
+        "RATE_LIMIT_ENABLED": "true",
+        "RATE_LIMIT_MAX_REQUESTS": "100",
+        "RATE_LIMIT_WINDOW_MS": "60000",
+        "CACHE_STRATEGY": "lru",
+        "CACHE_MAX_SIZE": "1GB",
+        "CACHE_COMPRESSION": "true",
+        "CACHE_CLEANUP_INTERVAL": "3600000",
+        "CACHE_STALE_TIME": "604800000"
+      }
+    },
+    "serena": {
+      "command": "C:\\Users\\tiran\\.local\\bin\\uv.exe",
+      "args": [
+        "run",
+        "--directory",
+        "C:\\MCP\\serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "desktop-app"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  },
+  "preferences": {
+    "chromeExtensionEnabled": true,
+    "legacyQuickEntryEnabled": false
+  }
+}
