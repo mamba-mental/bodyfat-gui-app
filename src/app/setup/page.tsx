@@ -230,11 +230,11 @@ export default function SetupPage() {
                 <Button
                   variant="secondary"
                   className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
-                  onClick={() => router.push('/setup/custom')}
+                  onClick={() => router.push('/setup/wizard')}
                 >
                   Create Personal Profile
                 </Button>
-                
+
                 <p className="text-xs text-emerald-600 text-center">
                   Recommended for your actual transformation journey
                 </p>
