@@ -63,8 +63,8 @@ export function Dashboard() {
           {/* Left column — welcome CTA */}
           <Card className="flex flex-col items-center text-center py-12 md:py-16 lg:items-start lg:text-left">
             <CardContent className="flex flex-col items-center gap-6 lg:items-start">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <ClientIcon icon={Activity} className="h-8 w-8 text-primary" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-950">
+                <ClientIcon icon={Activity} className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
 
               <div className="space-y-2">
@@ -79,7 +79,7 @@ export function Dashboard() {
 
               <div className="flex flex-col items-center gap-2 lg:items-start">
                 <Link href="/setup">
-                  <Button size="lg" className="gap-2">
+                  <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                     Set Up Profile
                     <ClientIcon icon={ArrowRight} className="h-4 w-4" />
                   </Button>
