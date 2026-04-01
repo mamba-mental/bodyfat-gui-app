@@ -143,25 +143,29 @@ export default function EntriesPage() {
 
   const calculateProgress = () => {
     if (!current_user || entries.length === 0) return null
-    
-    const latestEntry = entries[0]
-    const startWeight = current_user.current_weight
-    const goalWeight = current_user.goal_weight
-    const currentWeight = latestEntry.weight
-    
-    const weightProgress = calculateProgressPercentage(startWeight, currentWeight, goalWeight)
-    
-    const startBF = current_user.current_bf
-    const goalBF = current_user.goal_bf
-    const currentBF = latestEntry.body_fat_percentage || startBF
-    
-    const bfProgress = calculateProgressPercentage(startBF, currentBF, goalBF)
-    
-    return {
-      weightProgress: Math.max(0, weightProgress),
-      bfProgress: Math.max(0, bfProgress),
-      weightChange: currentWeight - startWeight,
-      bfChange: currentBF - startBF
+
+    try {
+      const latestEntry = entries[0]
+      const startWeight = Number(current_user.current_weight)
+      const goalWeight = Number(current_user.goal_weight)
+      const currentWeight = Number(latestEntry.weight)
+
+      const weightProgress = calculateProgressPercentage(startWeight, currentWeight, goalWeight)
+
+      const startBF = Number(current_user.current_bf)
+      const goalBF = Number(current_user.goal_bf)
+      const currentBF = Number(latestEntry.body_fat_percentage || startBF)
+
+      const bfProgress = calculateProgressPercentage(startBF, currentBF, goalBF)
+
+      return {
+        weightProgress: Math.max(0, isNaN(weightProgress) ? 0 : weightProgress),
+        bfProgress: Math.max(0, isNaN(bfProgress) ? 0 : bfProgress),
+        weightChange: isNaN(currentWeight - startWeight) ? 0 : currentWeight - startWeight,
+        bfChange: isNaN(currentBF - startBF) ? 0 : currentBF - startBF
+      }
+    } catch {
+      return null
     }
   }
 
@@ -297,13 +301,13 @@ export default function EntriesPage() {
                           </div>
                           
                           <div className="text-center">
-                            <div className="text-lg font-bold">{entry.weight.toFixed(1)} lbs</div>
+                            <div className="text-lg font-bold">{Number(entry.weight).toFixed(1)} lbs</div>
                             <div className="text-xs text-muted-foreground">Weight</div>
                           </div>
-                          
+
                           {entry.body_fat_percentage && (
                             <div className="text-center">
-                              <div className="text-lg font-bold">{entry.body_fat_percentage.toFixed(1)}%</div>
+                              <div className="text-lg font-bold">{Number(entry.body_fat_percentage).toFixed(1)}%</div>
                               <div className="text-xs text-muted-foreground">Body Fat</div>
                             </div>
                           )}
