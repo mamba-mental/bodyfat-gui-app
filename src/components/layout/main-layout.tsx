@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import ClientWrapper from "@/components/ui/client-wrapper"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { ProfileHeader } from "@/components/profile/profile-header"
 
 import { cn } from "@/lib/utils"
@@ -289,6 +290,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 >
                   Export Data
                 </Button>
+                <ThemeToggle />
               </nav>
             </div>
           </header>
