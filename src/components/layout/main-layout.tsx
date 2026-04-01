@@ -36,6 +36,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
+const DESKTOP_BREAKPOINT = 1024
+
 const navigationItems = [
   {
     title: "Dashboard",
@@ -234,8 +236,25 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = React.useState(true)
+  const [hasMounted, setHasMounted] = React.useState(false)
+
+  // Set initial sidebar state based on viewport and respond to resize across the breakpoint
+  React.useEffect(() => {
+    const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT
+    setSidebarOpen(isDesktop)
+    setHasMounted(true)
+
+    const mql = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`)
+    const onChange = (e: MediaQueryListEvent) => {
+      setSidebarOpen(e.matches)
+    }
+    mql.addEventListener("change", onChange)
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+
   return (
-    <SidebarProvider>
+    <SidebarProvider open={hasMounted ? sidebarOpen : true} onOpenChange={setSidebarOpen}>
       <div className="flex min-h-screen w-full" role="application" aria-label="ApexFit AI Fitness Tracker">
         {/* Screen reader announcements region */}
         <div
