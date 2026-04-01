@@ -209,15 +209,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (userResult.status === 'fulfilled' && userResult.value) {
           dispatch({ type: 'SET_USER_DATA', payload: ensureEatingPattern(userResult.value)! })
           didUpdate = true
-        } else if (userResult.status === 'rejected') {
-          console.warn('Failed to load user profile:', userResult.reason)
+        } else {
+          // DataSync returned null or rejected — try direct API fallback
+          console.warn('DataSync user load failed, trying direct API fallback')
+          try {
+            const fallbackRes = await fetch('/api/data/user')
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json()
+              if (fallbackData && fallbackData.name) {
+                dispatch({ type: 'SET_USER_DATA', payload: ensureEatingPattern(fallbackData)! })
+                didUpdate = true
+                console.log('[AppContext] Loaded user from direct API fallback:', fallbackData.name)
+              }
+            }
+          } catch (e) {
+            console.warn('Direct API fallback also failed:', e)
+          }
         }
 
-        if (entriesResult.status === 'fulfilled') {
+        if (entriesResult.status === 'fulfilled' && entriesResult.value && entriesResult.value.length > 0) {
           dispatch({ type: 'SET_ENTRIES', payload: entriesResult.value })
           didUpdate = true
-        } else if (entriesResult.status === 'rejected') {
-          console.warn('Failed to load entries:', entriesResult.reason)
+        } else {
+          // Entries fallback
+          try {
+            const fallbackRes = await fetch('/api/data/entries')
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json()
+              if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                dispatch({ type: 'SET_ENTRIES', payload: fallbackData })
+                didUpdate = true
+                console.log('[AppContext] Loaded entries from direct API fallback:', fallbackData.length)
+              }
+            }
+          } catch (e) {
+            console.warn('Direct entries API fallback failed:', e)
+          }
         }
 
         if (reportsResult.status === 'fulfilled') {
