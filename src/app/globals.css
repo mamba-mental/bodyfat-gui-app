@@ -57,8 +57,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 12.5%;
   /* Enhanced contrast */
-  --primary: 0 0% 18%;
-  /* Enhanced contrast */
+  --primary: 221.2 83.2% 53.3%;
+  /* Brand blue-600 */
   --primary-foreground: 0 0% 98.5%;
   --secondary: 0 0% 95%;
   /* Enhanced contrast */
@@ -68,10 +68,10 @@
   /* Enhanced contrast */
   --muted-foreground: 0 0% 35%;
   /* Enhanced contrast */
-  --accent: 0 0% 95%;
-  /* Enhanced contrast */
-  --accent-foreground: 0 0% 18%;
-  /* Enhanced contrast */
+  --accent: 142.1 76.2% 36.3%;
+  /* Brand green-600 */
+  --accent-foreground: 0 0% 98%;
+  /* White text on green */
   --destructive: 10 80% 55%;
   /* Slightly enhanced for better contrast */
   --destructive-foreground: 0 0% 98%;
@@ -129,10 +129,10 @@
   --popover: 0 0% 18%;
   /* Enhanced contrast */
   --popover-foreground: 0 0% 98.5%;
-  --primary: 0 0% 85%;
-  /* Enhanced contrast */
-  --primary-foreground: 0 0% 12%;
-  /* Enhanced contrast */
+  --primary: 217.2 91.2% 59.8%;
+  /* Brand blue-500 for dark mode */
+  --primary-foreground: 0 0% 98%;
+  /* White text on blue */
   --secondary: 0 0% 25%;
   /* Enhanced contrast */
   --secondary-foreground: 0 0% 98.5%;
@@ -140,9 +140,9 @@
   /* Enhanced contrast */
   --muted-foreground: 0 0% 65%;
   /* Enhanced contrast */
-  --accent: 0 0% 25%;
-  /* Enhanced contrast */
-  --accent-foreground: 0 0% 98.5%;
+  --accent: 142.1 70.6% 45.3%;
+  /* Brand green-500 for dark mode */
+  --accent-foreground: 0 0% 98%;
   --destructive: 10 60% 65%;
   /* Enhanced contrast */
   --destructive-foreground: 0 0% 98%;
@@ -197,6 +197,22 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Consistent heading scale (FR-006) */
+  h1 {
+    font-size: 2rem; /* 32px */
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 500;
   }
 
   /* Screen reader only utility */

@@ -66,7 +66,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <Link href="/setup">
-              <Button>
+              <Button className="min-h-[44px]">
                 <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
                 Set Up Profile
               </Button>
