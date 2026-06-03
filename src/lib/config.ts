@@ -57,7 +57,7 @@ export const redisConfig = {
   url: getServerEnv('REDIS_URL', 'redis://172.23.89.12:6385'),
 
   /** Enable/disable Redis caching */
-  enabled: getServerEnv('REDIS_ENABLED', 'true') === 'true',
+  enabled: getServerEnv('REDIS_ENABLED', 'false') === 'true',
 
   /** Maximum reconnection attempts */
   maxReconnectAttempts: parseInt(

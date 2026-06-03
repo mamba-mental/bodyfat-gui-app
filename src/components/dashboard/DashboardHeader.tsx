@@ -4,7 +4,6 @@ import { Plus } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArchiveModal, StartNewProgramModal } from "@/components/programs"
 import type { UserData, BodyFatEntry, ProgramReferenceSnapshot } from "@/types"
 
 interface DashboardHeaderProps {
@@ -30,15 +29,6 @@ export function DashboardHeader({
     <div className="flex items-center justify-between space-y-2">
       <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       <div className="flex items-center space-x-2">
-        <ArchiveModal
-          currentUser={currentUser}
-          entries={entries}
-          programReference={programReference}
-          onArchive={onArchiveProgram}
-          disabled={loading}
-        />
-        <StartNewProgramModal />
-
         <Link href="/setup/custom">
           <Button variant="secondary">
             Update Profile

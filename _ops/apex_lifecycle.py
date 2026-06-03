@@ -113,7 +113,14 @@ def start(open_browser: bool = True, wait: float = 45.0) -> dict[int, bool]:
     if not port_up(API_PORT):
         _spawn_detached("python main.py", API_DIR)
     if not port_up(WEB_PORT):
-        _spawn_detached(f"npx next start -H 0.0.0.0 -p {WEB_PORT}", APP_DIR)
+        # Dev mode, NOT `next start`: this app sets `output: 'standalone'` in
+        # next.config, which `next start` does not support — it warns and can serve a
+        # STALE bundle from the last build (the exact trap that made cycle edits appear
+        # to "do nothing"). `next dev` always serves current code. For production perf
+        # instead, build once and run the standalone server:
+        #   npx next build && node .next/standalone/server.js
+        # (after copying .next/static and public/ into .next/standalone/).
+        _spawn_detached(f"npx next dev -H 0.0.0.0 -p {WEB_PORT}", APP_DIR)
 
     deadline = time.time() + wait
     while time.time() < deadline:

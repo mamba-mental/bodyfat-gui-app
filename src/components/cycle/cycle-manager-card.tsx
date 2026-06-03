@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { RefreshCw, Square, Archive, Repeat } from "lucide-react"
 import { currentCycleWeek } from "@/lib/cycleWeek"
+import { useCycles } from "@/hooks/use-cycles"
 
 /**
  * ReComp Cycle manager (P3). Surfaces the active cycle on the dashboard and wires
@@ -62,22 +63,11 @@ function todayLocalISO(): string {
 }
 
 export function CycleManagerCard({ latestWeight, latestBf }: CycleManagerCardProps) {
-  const [cycles, setCycles] = React.useState<Cycle[]>([])
+  // Shared reactive source — notifyChanged() bumps the app-wide refreshKey so
+  // this card AND the dashboard banner both re-fetch after any transition.
+  const { active, notifyChanged } = useCycles()
   const [busy, setBusy] = React.useState(false)
   const [startOpen, setStartOpen] = React.useState(false)
-
-  const active = cycles.find((c) => c.status === "active") ?? null
-
-  const load = React.useCallback(() => {
-    fetch("/api/data/cycles")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((cs) => setCycles(Array.isArray(cs) ? cs : []))
-      .catch(() => {})
-  }, [])
-
-  React.useEffect(() => {
-    load()
-  }, [load])
 
   const postCycle = async (cycle: Cycle) => {
     setBusy(true)
@@ -87,7 +77,7 @@ export function CycleManagerCard({ latestWeight, latestBf }: CycleManagerCardPro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cycle),
       })
-      if (res.ok) load()
+      if (res.ok) notifyChanged()
     } finally {
       setBusy(false)
     }

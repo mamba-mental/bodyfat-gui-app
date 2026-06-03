@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { CalendarClock, AlertTriangle, Target } from "lucide-react"
 import { currentCycleWeek, nextWeighIn, missedWeighIns } from "@/lib/cycleWeek"
+import { useCycles } from "@/hooks/use-cycles"
 
 /**
  * Shows "where am I in my ReComp Cycle" context: active cycle name, current week,
@@ -46,26 +47,9 @@ interface CycleContextBannerProps {
 }
 
 export function CycleContextBanner({ entryDates = [], className }: CycleContextBannerProps) {
-  const [cycle, setCycle] = React.useState<Cycle | null>(null)
-  const [loaded, setLoaded] = React.useState(false)
-
-  React.useEffect(() => {
-    let alive = true
-    fetch("/api/data/cycles")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((cs: Cycle[]) => {
-        if (!alive) return
-        const list = Array.isArray(cs) ? cs : []
-        setCycle(list.find((c) => c.status === "active") ?? null)
-        setLoaded(true)
-      })
-      .catch(() => {
-        if (alive) setLoaded(true)
-      })
-    return () => {
-      alive = false
-    }
-  }, [])
+  // Shared reactive source — re-fetches whenever any cycle transition fires
+  // refreshWidgets() (the old empty-deps useEffect never refetched: stale banner).
+  const { active: cycle, loaded } = useCycles()
 
   // No active cycle (or still loading first paint) — render nothing rather than a stub.
   if (!loaded || !cycle) return null

@@ -28,14 +28,22 @@ redis.on('error', (err) => {
 redis.on('connect', () => { console.log('Redis Client Connected'); redisErrorLogged = false; });
 redis.on('ready', () => console.log('Redis Client Ready'));
 
-// Connect to Redis (best-effort, app falls back to Python API if unavailable)
-(async () => {
-  try {
-    await redis.connect();
-  } catch (err) {
-    console.warn('Redis unavailable, all redis.ts calls will no-op:', (err as Error)?.message ?? err);
-  }
-})();
+// Connect to Redis only when explicitly enabled (ReComp Cycle plan P2:
+// single source of truth). When disabled we never connect — every exported fn
+// no-ops via redisReady() and SQLite/Python is the SOLE store. This is permanent:
+// even if the Redis box comes back up, the app will not dual-write unless
+// REDIS_ENABLED=true is explicitly set, so the legacy drift can never recur.
+if (redisConfig.enabled) {
+  (async () => {
+    try {
+      await redis.connect();
+    } catch (err) {
+      console.warn('Redis unavailable, all redis.ts calls will no-op:', (err as Error)?.message ?? err);
+    }
+  })();
+} else {
+  console.log('[redis] disabled (REDIS_ENABLED=false) — SQLite/Python is the single source of truth');
+}
 
 // Guard: every public function should early-exit when Redis isn't ready,
 // so we don't pay per-call latency hitting a dead client.
