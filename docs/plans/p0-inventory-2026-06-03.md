@@ -49,6 +49,18 @@ Both live DBs have `-wal` sidecar files → the P0b backup MUST `PRAGMA wal_chec
 - **PRE-EXISTING FAILURES (NOT from this work — do not treat as regressions):** `tests/unit/changelog-parser.test.ts` (8 failing) and `tests/unit/dashboard-reset.test.tsx` (program_reference cases) were already red before any change this session. Running the whole `tests/unit/` dir is therefore not green for reasons unrelated to the ReComp Cycle work.
 - Build session: wire these into `/entries/new` (week + missed badges), the Reports cycle-selector (P4 default+filter), and the Generate-Report button (gate + UPDATE path); they are the pure cores those UI steps need.
 
+## REDIS RECONCILIATION + RECOVERY (EXECUTED 2026-06-03)
+WSL Ubuntu was running; Redis = docker container **`apex-fit-redis`** (redis:7.2-alpine, `6385->6379`), **161 keys**. The app could not reach it because **`config.ts:57` IP `172.23.89.12` is STALE** — current WSL IP is `192.168.222.35` (reach via `wsl docker exec apex-fit-redis redis-cli`).
+- **Four fragmented user-ids in Redis:** entries under `1` (19) + `test-user` (12); reports under `1` (74) + `default` (28) + `MJ Prime` (18); plus `user`/index/`ping` keys.
+- **Entry reconciliation (vs canonical 14):** 11 were duplicates of SQLite (`hist_*`,`mcskpjzv`,`cz4aki77` under id `1`); `test-user`(12) + `test-123/456` + `entry:1:undefined` = test/junk (discard); **3 were REAL weigh-ins missing from SQLite** (logged to Redis, never persisted = the cache-only-write bug).
+- **RECOVERED + MERGED (PRIME approved):** backup gate passed (`bodyfat_p0_20260603_071114.db`, RESTORABLE), then inserted under `default`, idempotent:
+  - `2025-11-15` 266 lb / 38%
+  - `2025-11-22` 270.5 lb / 39.1%
+  - `2026-01-20` 278.2 lb / 38.2% (notes: "logging my weight again and getting back in the mix")
+  Canonical entries **14 -> 17**; live API (:8313) confirms 17; the 4-month gap (7/2025->1/2026) is filled.
+- **Reports NOT merged:** 120 Redis reports across 3 ids are duplicate/test-heavy; reports are derived/regenerable and merging them would worsen the reports-without-entries problem. Regenerate from the now-complete 17 entries in the build session instead.
+- **Redis left intact** (non-destructive). Decommission (delete the frontend Redis layer) happens in the build session once readers point at the unified canonical store; the test/dup keys are then dropped with it.
+
 ## Next actions (for the build session)
 - PRIME: start WSL → re-run `p0_reconcile.py` so Redis `172.23.89.12:6385` is included; confirm conflicts still = 0 (or quarantine).
 - Run `p0_backup.py` immediately before any migration (its restore-drill is the abort gate).
