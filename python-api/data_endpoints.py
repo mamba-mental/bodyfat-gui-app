@@ -82,6 +82,10 @@ class Entry(BaseModel):
     notes: Optional[str] = None
     timestamp: Optional[str] = None
     program_id: Optional[str] = None
+    # cycle_id must be a model field or Pydantic drops it on POST, which made
+    # save_entry fall back to the active cycle and silently re-tag every entry
+    # (ReComp Cycle data-drift bug). Explicit cycle_id now survives the round-trip.
+    cycle_id: Optional[str] = None
 
 
 class Report(BaseModel):

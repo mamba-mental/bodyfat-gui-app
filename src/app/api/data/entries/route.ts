@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveEntry, deleteEntry, getUserEntries } from '@/lib/redis';
+import { saveEntry, deleteEntry } from '@/lib/redis';
 import { fetchWithTimeout } from '@/lib/server/fetch-with-timeout';
 import type { BodyFatEntry } from '@/types';
-import { normaliseEntry, reconcileEntries } from '@/lib/data-reconciliation';
+import { normaliseEntry } from '@/lib/data-reconciliation';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,57 +19,40 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
+// GET is a thin proxy to the Python canonical store (ReComp Cycle plan, P2).
+// Reading Redis-first and reconciling with "local wins" silently dropped
+// `cycle_id` (and any field normaliseEntry didn't whitelist) and let stale
+// Redis copies overwrite Python's correct rows. Python is the single source of
+// truth, so we return its rows verbatim — every field, including cycle_id,
+// survives. The 3 Redis-only weigh-ins were already merged into SQLite (P0),
+// so dropping the Redis merge on read loses nothing.
 export async function GET() {
-  let pythonError: string | null = null;
-  let remoteEntries: BodyFatEntry[] | null = null;
-
   try {
     const response = await fetchWithTimeout(
       `${PYTHON_API_URL}/api/data/entries`,
-      {
-        cache: 'no-store',
-      },
+      { cache: 'no-store' },
       PYTHON_TIMEOUT_MS,
     );
 
-    if (response.ok) {
-      const rawEntries = await response.json();
-      if (Array.isArray(rawEntries)) {
-        remoteEntries = rawEntries
-          .map(normaliseEntry)
-          .filter((entry): entry is BodyFatEntry => entry !== null)
-          .map((entry) => ({ ...entry, user_id: '1' }));
-      }
-    } else {
-      pythonError = `Python API returned ${response.status}`;
+    if (!response.ok) {
+      const headers: Record<string, string> = { ...corsHeaders };
+      headers['x-python-warning'] = `Python API returned ${response.status}`;
+      console.warn('Python API entries warning:', headers['x-python-warning']);
+      return NextResponse.json([], { headers });
     }
+
+    const rawEntries = await response.json();
+    return NextResponse.json(Array.isArray(rawEntries) ? rawEntries : [], {
+      headers: corsHeaders,
+    });
   } catch (error) {
-    pythonError = error instanceof Error ? error.message : 'Failed to reach Python API';
+    const message =
+      error instanceof Error ? error.message : 'Failed to reach Python API';
+    console.warn('Python API entries warning:', message);
+    return NextResponse.json([], {
+      headers: { ...corsHeaders, 'x-python-warning': message },
+    });
   }
-
-  const localEntries = (await getUserEntries(String(USER_ID))).filter((e) => e !== null) as BodyFatEntry[];
-  let entries = localEntries;
-
-  if (remoteEntries && remoteEntries.length > 0) {
-    const { merged, toPersist } = reconcileEntries(localEntries, remoteEntries);
-    entries = merged;
-
-    for (const entry of toPersist) {
-      try {
-        await saveEntry(String(USER_ID), entry);
-      } catch (error) {
-        console.warn('Failed to persist entry locally:', error);
-      }
-    }
-  }
-
-  const headers: Record<string, string> = { ...corsHeaders };
-  if (pythonError) {
-    headers['x-python-warning'] = pythonError;
-    console.warn('Python API entries warning:', pythonError);
-  }
-
-  return NextResponse.json(entries ?? [], { headers });
 }
 
 export async function POST(request: NextRequest) {

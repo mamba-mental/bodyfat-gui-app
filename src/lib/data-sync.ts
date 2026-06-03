@@ -66,12 +66,9 @@ export class DataSync {
 
       if (sqliteResponse.ok) {
         const sqliteEntries = await sqliteResponse.json();
-
-        // Warm Redis cache with SQLite data
-        if (sqliteEntries && sqliteEntries.length > 0) {
-          await this.warmEntriesCache(sqliteEntries);
-        }
-
+        // Do NOT warm-write back to /api/data/entries here: that round-trip
+        // strips cycle_id and re-tags entries to the active cycle (P2). Python
+        // is canonical; just return what it served.
         return sqliteEntries || [];
       }
     } catch (error) {
@@ -294,12 +291,8 @@ export class DataSync {
 
       if (sqliteResponse.ok) {
         const reports = await sqliteResponse.json();
-
-        // Warm Redis cache with SQLite data
-        if (reports && reports.length > 0) {
-          await this.warmReportsCache(reports);
-        }
-
+        // Do NOT warm-write back to /api/data/reports here: that round-trip
+        // nulls report cycle_ids (P2). Python is canonical; return as-is.
         return reports || [];
       }
     } catch (error) {
@@ -540,14 +533,16 @@ export class DataSync {
 // Export singleton instance for convenience
 export const dataSync = new DataSync();
 
-// Export helper function for sync on startup
+// Export helper function for sync on startup.
+//
+// DISABLED (ReComp Cycle plan, P2): this used to call syncFromSQLite(), which
+// re-POSTed every entry and report back through /api/data/* on each page load to
+// "warm" the Redis cache. Those POSTs round-trip through Python's Pydantic models
+// (and the JS normaliseEntry), neither of which carried `cycle_id` — so on every
+// load all entries got re-tagged to the ACTIVE cycle and report cycle_ids were
+// nulled (the data corruption PRIME saw: "stats won't stay correct"). Python is
+// the single source of truth and reads come straight from it, so there is nothing
+// to warm. Kept as a no-op so existing call sites stay valid until P2 removes them.
 export async function initializeDataSync(): Promise<void> {
-  console.log('[DataSync] Initializing data sync...');
-  const result = await dataSync.syncFromSQLite();
-
-  if (result.success) {
-    console.log(`[DataSync] Sync complete: ${result.syncedEntries} entries, ${result.syncedReports} reports`);
-  } else {
-    console.error('[DataSync] Sync failed:', result.error);
-  }
+  // Intentionally a no-op. Do NOT re-introduce a load-time write-back loop.
 }

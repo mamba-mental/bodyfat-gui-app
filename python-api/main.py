@@ -895,5 +895,11 @@ async def startup_event():
 
 if __name__ == "__main__":
     # STANDARDIZED PORTS: Frontend 3713 | Backend/Python API 8313
-    uvicorn.run("main:app", host="127.0.0.1", port=8313, reload=True, log_level="info")
+    # reload=True (uvicorn's WatchFiles) spawns a reloader parent + worker child on
+    # Windows. A killed parent can orphan a worker that keeps the port + DB handle
+    # alive, producing TWO servers on :8313 racing over different bodyfat.db files
+    # (the "data drift" PRIME saw). Default to a single production process; opt into
+    # reload only for local dev via BODYFAT_DEV_RELOAD=1.
+    dev_reload = os.environ.get("BODYFAT_DEV_RELOAD") == "1"
+    uvicorn.run("main:app", host="127.0.0.1", port=8313, reload=dev_reload, log_level="info")
 # Debug trigger: chart fix 1

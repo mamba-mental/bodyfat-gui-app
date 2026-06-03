@@ -143,8 +143,23 @@ class Database:
             return entries
     
     def save_entry(self, entry: Dict[str, Any], user_id: str = "default"):
-        """Save a new entry"""
+        """Save (insert or update) an entry.
+
+        cycle_id resolution is deliberately non-clobbering:
+          1. explicit cycle_id on the payload wins;
+          2. else, if this entry id already exists, keep its current cycle_id
+             (so an idempotent re-save that omits cycle_id can NOT re-tag it -
+             this was the ReComp Cycle data-drift bug: load-time re-saves kept
+             moving historical entries into the active cycle);
+          3. else (a genuinely new entry) fall back to the active cycle.
+        """
         with sqlite3.connect(self.db_path) as conn:
+            cycle_id = entry.get('cycle_id')
+            if not cycle_id:
+                existing = conn.execute(
+                    'SELECT cycle_id FROM entries WHERE id = ?', (entry['id'],)
+                ).fetchone()
+                cycle_id = (existing[0] if existing and existing[0] else None)                     or self.get_active_cycle_id(user_id)
             conn.execute('''
                 INSERT OR REPLACE INTO entries
                 (id, user_id, date, weight, body_fat_percentage, notes, program_id, cycle_id, updated_at)
@@ -157,7 +172,7 @@ class Database:
                 entry.get('body_fat_percentage'),
                 entry.get('notes'),
                 entry.get('program_id'),
-                entry.get('cycle_id') or self.get_active_cycle_id(user_id)
+                cycle_id
             ))
             conn.commit()
     
@@ -279,15 +294,18 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO reports 
-                (id, user_id, title, date, data, file_path)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id, user_id, title, date, data, file_path, cycle_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
                 report['id'],
                 user_id,
                 report.get('title', 'Report'),
                 report.get('date', datetime.now().isoformat()),
                 data_json,
-                report.get('file_path') or report.get('pdf_path')
+                report.get('file_path') or report.get('pdf_path'),
+                # Tag the report with its cycle so the Reports page can scope it.
+                # Falls back to the active cycle when the caller doesn't specify one.
+                report.get('cycle_id') or self.get_active_cycle_id(user_id)
             ))
             conn.commit()
     

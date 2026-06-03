@@ -16,21 +16,43 @@ import { ProgressTrendChart } from "@/components/charts/progress-trend-chart"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
 import { Report } from "@/types"
 import TurndownService from 'turndown'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { defaultSelectedCycle, scopeByCycle, ALL_CYCLES } from "@/lib/cycleScope"
 
 export default function ReportsPage() {
   const { state, generateNewReport, deleteReport } = useApp()
   const {
     current_user,
     current_calculation,
-    entries,
-    reports,
+    entries: allEntries,
+    reports: allReports,
     loading,
     error,
     report_generation_status,
     report_generation_entry_date,
   } = state
 
-  console.log('[ReportsPage] render', { loading, report_generation_status, reportsCount: reports.length })
+  // ReComp Cycle scoping (P4): load cycles, default to the CURRENT (active) cycle,
+  // let the user pick a specific cycle or aggregate "All ReComp Cycles".
+  const [cycles, setCycles] = React.useState<any[]>([])
+  const [selectedCycleId, setSelectedCycleId] = React.useState<string>(ALL_CYCLES)
+  React.useEffect(() => {
+    let alive = true
+    fetch('/api/data/cycles')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((cs) => {
+        if (!alive) return
+        const list = Array.isArray(cs) ? cs : []
+        setCycles(list)
+        setSelectedCycleId(
+          defaultSelectedCycle(list.map((c: any) => ({ id: c.id, status: c.status, startDate: c.start_date })))
+        )
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+  const entries = scopeByCycle(allEntries as any[], selectedCycleId)
+  const reports = scopeByCycle(allReports as any[], selectedCycleId)
 
   // Real elapsed weeks between two entry dates (floored at 1/7 wk to avoid divide-by-zero).
   // Fixes "per week" stats that previously assumed every entry was exactly one week apart.
@@ -185,6 +207,17 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <Select value={selectedCycleId} onValueChange={setSelectedCycleId}>
+            <SelectTrigger className="w-[210px]"><SelectValue placeholder="Cycle" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CYCLES}>All ReComp Cycles</SelectItem>
+              {cycles.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {(c.name || c.id)}{c.status === 'active' ? ' (current)' : c.status === 'archived' ? ' (archived)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="default" onClick={handleGenerateReport} disabled={loading}>
             <ClientIcon icon={FileText} className="mr-2 h-4 w-4" />
             {loading ? "Generating..." : "Generate New Report"}
