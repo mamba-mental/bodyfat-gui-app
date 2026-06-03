@@ -45,14 +45,44 @@ interface EditingEntry {
   notes: string
 }
 
+interface CycleMeta {
+  id: string
+  name: string
+  status: string
+  start_date: string
+}
+
 export default function EntriesPage() {
   const { state, addEntry, updateEntry, deleteEntry } = useApp()
   const { current_user, entries, loading } = state
-  
+
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [filterPeriod, setFilterPeriod] = useState<"all" | "week" | "month" | "quarter">("all")
+
+  // ReComp Cycle metadata (P5): group the history by the cycle each entry belongs to.
+  const [cycles, setCycles] = React.useState<CycleMeta[]>([])
+  React.useEffect(() => {
+    let alive = true
+    fetch("/api/data/cycles")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((cs) => {
+        if (alive) setCycles(Array.isArray(cs) ? cs : [])
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+  const cycleById = React.useMemo(
+    () => new Map(cycles.map((c) => [c.id, c])),
+    [cycles]
+  )
+  const activeCycle = React.useMemo(
+    () => cycles.find((c) => c.status === "active") ?? null,
+    [cycles]
+  )
 
   const filteredEntries = React.useMemo(() => {
     if (filterPeriod === "all") return entries
@@ -74,6 +104,31 @@ export default function EntriesPage() {
     
     return entries.filter(entry => new Date(entry.date) >= cutoffDate)
   }, [entries, filterPeriod])
+
+  // Group filtered entries by their cycle, newest cycle first. Entries without a
+  // known cycle fall into an "Unassigned" group so every entry stays reachable (P5).
+  const cycleGroups = React.useMemo(() => {
+    const byCycle = new Map<string, BodyFatEntry[]>()
+    for (const entry of filteredEntries) {
+      const key = (entry as any).cycle_id ?? "__none__"
+      const list = byCycle.get(key) ?? []
+      list.push(entry)
+      byCycle.set(key, list)
+    }
+    const groups = Array.from(byCycle.entries()).map(([cycleId, items]) => {
+      const meta = cycleById.get(cycleId)
+      return {
+        cycleId,
+        name: meta?.name ?? (cycleId === "__none__" ? "Unassigned" : "Unknown cycle"),
+        status: meta?.status ?? null,
+        startDate: meta?.start_date ?? "",
+        entries: items,
+      }
+    })
+    // Newest cycle first; "Unassigned" (no start date) sinks to the bottom.
+    groups.sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""))
+    return groups
+  }, [filteredEntries, cycleById])
 
   const handleEditEntry = (entry: any) => {
     setEditingEntry({
@@ -170,6 +225,74 @@ export default function EntriesPage() {
   }
 
   const progress = calculateProgress()
+
+  // Extracted so the same card renders inside each cycle group (P5) without duplicating JSX.
+  const renderEntryCard = (entry: BodyFatEntry) => (
+    <Card key={entry.id}>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-4">
+              <div>
+                <div className="font-medium">{new Date(entry.date).toLocaleDateString()}</div>
+                <div className="text-sm text-muted-foreground">
+                  {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long' })}
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-lg font-bold">{Number(entry.weight).toFixed(1)} lbs</div>
+                <div className="text-xs text-muted-foreground">Weight</div>
+              </div>
+
+              {entry.body_fat_percentage && (
+                <div className="text-center">
+                  <div className="text-lg font-bold">{Number(entry.body_fat_percentage).toFixed(1)}%</div>
+                  <div className="text-xs text-muted-foreground">Body Fat</div>
+                </div>
+              )}
+
+              {entry.notes && (
+                <div className="max-w-xs">
+                  <div className="text-sm">{entry.notes}</div>
+                  <div className="text-xs text-muted-foreground">Notes</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button variant="secondary" size="sm" onClick={() => handleEditEntry(entry)}>
+              <ClientIcon icon={Edit} className="h-4 w-4" />
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <ClientIcon icon={Trash2} className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Entry</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this entry from {new Date(entry.date).toLocaleDateString()}?
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleDeleteEntry(entry.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   if (!current_user) {
     return (
@@ -285,80 +408,53 @@ export default function EntriesPage() {
         </div>
 
         <TabsContent value={filterPeriod}>
-          {filteredEntries.length > 0 ? (
-            <div className="space-y-4">
-              {filteredEntries.map((entry) => (
-                <Card key={entry.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-4">
-                          <div>
-                            <div className="font-medium">{new Date(entry.date).toLocaleDateString()}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                            </div>
-                          </div>
-                          
-                          <div className="text-center">
-                            <div className="text-lg font-bold">{Number(entry.weight).toFixed(1)} lbs</div>
-                            <div className="text-xs text-muted-foreground">Weight</div>
-                          </div>
+          {/* Active cycle has no entries in view → nudge the user to log one (P5). */}
+          {activeCycle && !cycleGroups.some((g) => g.cycleId === activeCycle.id) && (
+            <Card className="mb-4 border-primary/30 bg-primary/5">
+              <CardContent className="flex items-center justify-between py-4">
+                <div>
+                  <div className="font-medium">{activeCycle.name} <span className="text-xs uppercase tracking-wide text-muted-foreground">current cycle</span></div>
+                  <div className="text-sm text-muted-foreground">No entries logged in this cycle yet.</div>
+                </div>
+                <Link href="/entries/new">
+                  <Button variant="default" size="sm">
+                    <ClientIcon icon={Plus} className="mr-2 h-4 w-4" />
+                    Log this cycle
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
 
-                          {entry.body_fat_percentage && (
-                            <div className="text-center">
-                              <div className="text-lg font-bold">{Number(entry.body_fat_percentage).toFixed(1)}%</div>
-                              <div className="text-xs text-muted-foreground">Body Fat</div>
-                            </div>
-                          )}
-                          
-                          {entry.notes && (
-                            <div className="max-w-xs">
-                              <div className="text-sm">{entry.notes}</div>
-                              <div className="text-xs text-muted-foreground">Notes</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button variant="secondary" size="sm" onClick={() => handleEditEntry(entry)}>
-                          <ClientIcon icon={Edit} className="h-4 w-4" />
-                        </Button>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <ClientIcon icon={Trash2} className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Entry</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this entry from {new Date(entry.date).toLocaleDateString()}?
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteEntry(entry.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+          {cycleGroups.length > 0 ? (
+            <div className="space-y-8">
+              {cycleGroups.map((group) => (
+                <section key={group.cycleId} className="space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold">{group.name}</h2>
+                      {group.status === "active" && (
+                        <Badge variant="default" className="text-xs">current</Badge>
+                      )}
+                      {group.status === "stopped" && (
+                        <Badge variant="secondary" className="text-xs">archived</Badge>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    <Badge variant="secondary">
+                      {group.entries.length} {group.entries.length === 1 ? "entry" : "entries"}
+                    </Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {group.entries.map(renderEntryCard)}
+                  </div>
+                </section>
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
-                  {filterPeriod === "all" 
+                  {filterPeriod === "all"
                     ? "No entries found. Start tracking your progress!"
                     : `No entries found in the selected time period.`
                   }

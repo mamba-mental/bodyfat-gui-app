@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { useDashboardData } from "./hooks/useDashboardData"
 import { DashboardHeader } from "./DashboardHeader"
+import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
+import { CycleManagerCard } from "@/components/cycle/cycle-manager-card"
 import { OverviewTab } from "./tabs/OverviewTab"
 import { ProgressTab } from "./tabs/ProgressTab"
 import { NutritionTab } from "./tabs/NutritionTab"
@@ -129,6 +131,13 @@ export function Dashboard() {
         reportGenerationStatus={report_generation_status}
         onArchiveProgram={handleArchiveProgram}
         onGenerateReport={handleGenerateReport}
+      />
+
+      {/* ReComp Cycle context + lifecycle controls (P3) */}
+      <CycleContextBanner entryDates={(entries ?? []).map((e: any) => e.date)} />
+      <CycleManagerCard
+        latestWeight={entries?.[0]?.weight ?? null}
+        latestBf={entries?.[0]?.body_fat_percentage ?? null}
       />
 
       {error && (

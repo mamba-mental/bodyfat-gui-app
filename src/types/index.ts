@@ -145,6 +145,7 @@ export interface BodyFatEntry {
   photo?: string; // Base64-encoded progress photo (optional)
   user_id: string;
   program_id?: string; // Links entry to a specific program for tracking
+  cycle_id?: string | null; // ReComp Cycle this entry belongs to (P3-P6)
   created_at: Date | string;
   updated_at: Date | string;
 }
@@ -175,6 +176,8 @@ export interface Report {
   html_path?: string;
   file_path?: string;
   file_base?: string;
+  cycle_id?: string | null; // ReComp Cycle this report belongs to (P3/P4)
+  source_fingerprint?: string | null; // P7 report-gating fingerprint of the source data
 }
 
 export interface AppState {

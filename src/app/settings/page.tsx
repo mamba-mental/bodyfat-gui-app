@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { WeighInScheduleCard } from "@/components/cycle/weighin-schedule-card"
+import { WeighInWebhookCard } from "@/components/cycle/weighin-webhook-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -23,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain, Sparkles, Calendar, Apple } from "lucide-react"
+import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain, Sparkles, Calendar, Apple, Database } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/contexts/theme-context"
@@ -274,6 +276,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="checkins">Check-ins</TabsTrigger>
           <TabsTrigger value="ai">AI Settings</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
@@ -726,6 +729,11 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="checkins" className="space-y-4">
+          <WeighInScheduleCard />
+          <WeighInWebhookCard />
+        </TabsContent>
+
         <TabsContent value="coming-soon" className="space-y-4">
           <Card>
             <CardHeader>
@@ -736,6 +744,42 @@ export default function SettingsPage() {
               <CardDescription>Exciting features we're working on for future releases</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+
+              {/* Managed Postgres + multi-user cloud sync (roadmap) */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ClientIcon icon={Database} className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">Managed Postgres + Multi-User Cloud Sync</h3>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Planned
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your data lives in a single local SQLite database today. Cloud sync will move it to
+                      managed Postgres so you can access the same history across devices and share coaching
+                      access — without changing how the app works.
+                    </p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Cross-device access to entries, reports, and cycles</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Multi-user accounts (coach + athlete) on one workspace</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <span>Automatic encrypted backups</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* MyFitnessPal Integration */}
               <div className="border rounded-lg p-4 space-y-3">

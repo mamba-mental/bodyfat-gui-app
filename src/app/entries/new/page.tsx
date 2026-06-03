@@ -10,12 +10,19 @@ import { useApp } from "@/contexts/app-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { AIInsightsPanel } from "@/components/ai/ai-insights-panel"
+import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
 
 export default function NewEntryPage() {
   const router = useRouter()
   const { state, addEntry } = useApp()
-  const { error } = state
+  const { error, entries } = state
   const [isSaving, setIsSaving] = React.useState(false)
+
+  // Entry dates feed missed-weigh-in detection in the cycle banner.
+  const entryDates = React.useMemo(
+    () => (entries ?? []).map((e: { date: string }) => e.date),
+    [entries]
+  )
 
   const handleSubmit = async (data: { date: Date; weight: number; body_fat_percentage?: number; notes?: string }) => {
     setIsSaving(true)
@@ -60,7 +67,9 @@ export default function NewEntryPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
+      <CycleContextBanner entryDates={entryDates} />
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <EntryForm onSubmit={handleSubmit} isLoading={isSaving} />

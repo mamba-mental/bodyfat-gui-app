@@ -13,6 +13,7 @@ import {
   fetchCalculation
 } from '@/lib/storage-api'
 import { getEatingWindowHours } from '@/lib/eating-patterns'
+import { fireWeighInWebhook } from '@/lib/weighinWebhook'
 
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 const REPORT_GENERATION_TIMEOUT_BUFFER_MS = REPORT_GENERATION_TIMEOUT_MS + 5000
@@ -35,13 +36,17 @@ interface ReportGenerationDeps {
   announceInfo: (message: string) => void
   announceSuccess: (message: string) => void
   announceError: (message: string) => void
+  // P7: caller (reports page) computes the source fingerprint + cycle so the gate's
+  // comparison and the stored value are identical. Optional for legacy callers.
+  sourceFingerprint?: string
+  cycleId?: string
 }
 
 export async function generateReport(
   userData: UserData | null,
   deps: ReportGenerationDeps
 ): Promise<void> {
-  const { dispatch, entries, reports, announceInfo, announceSuccess, announceError } = deps
+  const { dispatch, entries, reports, announceInfo, announceSuccess, announceError, sourceFingerprint, cycleId } = deps
 
   console.log('[ReportActions] generateReport invoked')
 
@@ -198,7 +203,12 @@ export async function generateReport(
       entry_date: entryDateForStatus, // Store which entry was used for this report
       calculation_result: calculationToUse,
       html_content: "",
-    }
+      // P7 gate inputs: the cycle this report belongs to + the fingerprint of the
+      // source data it was derived from. Persisted so the next generation can detect
+      // "no new data" (block) vs an edited entry (allow as update).
+      ...(cycleId ? { cycle_id: cycleId } : {}),
+      ...(sourceFingerprint ? { source_fingerprint: sourceFingerprint } : {}),
+    } as Report
 
     dispatch({
       type: 'SET_REPORT_GENERATION_STATUS',
@@ -280,6 +290,18 @@ export async function generateReport(
     console.log('[ReportActions] Report saved successfully with id:', persistedReport.id)
     dispatch({ type: 'ADD_REPORT', payload: persistedReport })
     announceSuccess('Report generated successfully.')
+
+    // P9: fire the next-weigh-in webhook (non-fatal — never block report success).
+    try {
+      const hook = await fireWeighInWebhook({ reportTitle: persistedReport.title })
+      if (hook.attempted && !hook.ok) {
+        announceInfo('Report saved. Weigh-in reminder webhook did not deliver (check the URL in Settings → Check-ins).')
+      } else if (hook.attempted && hook.ok) {
+        announceInfo('Weigh-in reminder sent to your n8n flow.')
+      }
+    } catch {
+      /* webhook is best-effort; swallow */
+    }
     dispatch({
       type: 'SET_REPORT_GENERATION_STATUS',
       payload: { status: 'Report generated and saved successfully.', entryDate: entryDateForStatus },

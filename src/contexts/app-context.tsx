@@ -44,7 +44,7 @@ interface AppContextType {
   updateEntry: (entry: BodyFatEntry) => Promise<void>
   deleteEntry: (entryId: string) => Promise<void>
   calculateAndUpdateProgression: (userData?: UserData) => Promise<void>
-  generateNewReport: (userData?: UserData) => Promise<void>
+  generateNewReport: (userData?: UserData, opts?: { sourceFingerprint?: string; cycleId?: string }) => Promise<void>
   deleteReport: (reportId: string) => Promise<void>
   clearAllData: () => void
   refreshWidgets: () => void
@@ -316,7 +316,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_USER_DATA', payload: normalized })
   }, [])
 
-  const generateNewReport = React.useCallback(async (userData?: UserData) => {
+  const generateNewReport = React.useCallback(async (
+    userData?: UserData,
+    opts?: { sourceFingerprint?: string; cycleId?: string }
+  ) => {
     const userToReport = userData || state.current_user
     await generateReportAction(userToReport, {
       dispatch,
@@ -325,6 +328,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       announceInfo,
       announceSuccess,
       announceError,
+      sourceFingerprint: opts?.sourceFingerprint,
+      cycleId: opts?.cycleId,
     })
   }, [state.current_user, state.entries, state.reports, announceInfo, announceSuccess, announceError])
 

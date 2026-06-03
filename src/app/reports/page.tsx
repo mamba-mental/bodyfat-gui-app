@@ -18,6 +18,20 @@ import { Report } from "@/types"
 import TurndownService from 'turndown'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { defaultSelectedCycle, scopeByCycle, ALL_CYCLES } from "@/lib/cycleScope"
+import { sourceFingerprint, canGenerateReport } from "@/lib/reportGate"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
+
+const CALC_VERSION = "calc-v1"
+const GENERATOR_VERSION = "gen-v3"
 
 export default function ReportsPage() {
   const { state, generateNewReport, deleteReport } = useApp()
@@ -80,8 +94,43 @@ export default function ReportsPage() {
     return undefined
   }
 
+  // P7: block generating a report when there's no NEW data since the last one.
+  // reason 'no-entries' = the target cycle has nothing to report on yet;
+  // 'no-new-data' = the latest entry is unchanged since the last report.
+  const [gateDialog, setGateDialog] = useState<{ open: boolean; reason: "no-entries" | "no-new-data" }>(
+    { open: false, reason: "no-new-data" }
+  )
+
+  // The cycle a new report belongs to: the selected one, or the active cycle when
+  // viewing "All ReComp Cycles".
+  const targetCycleId = React.useMemo(() => {
+    if (selectedCycleId !== ALL_CYCLES) return selectedCycleId
+    return cycles.find((c: any) => c.status === "active")?.id ?? ""
+  }, [selectedCycleId, cycles])
+
   const handleGenerateReport = async () => {
-    await generateNewReport()
+    const targetEntries = scopeByCycle(allEntries as any[], targetCycleId || ALL_CYCLES)
+    const latest = targetEntries[0]
+    if (!latest) {
+      setGateDialog({ open: true, reason: "no-entries" })
+      return
+    }
+    const currentFp = sourceFingerprint({
+      cycleId: targetCycleId,
+      entryId: String(latest.id),
+      entryDate: String(latest.date).slice(0, 10),
+      entryUpdatedAt: String(latest.updated_at ?? ""),
+      calcVersion: CALC_VERSION,
+      generatorVersion: GENERATOR_VERSION,
+    })
+    const targetReports = scopeByCycle(allReports as any[], targetCycleId || ALL_CYCLES)
+    const lastFp = (targetReports[0] as any)?.source_fingerprint ?? null
+    const gate = canGenerateReport(lastFp, currentFp)
+    if (!gate.allowed) {
+      setGateDialog({ open: true, reason: "no-new-data" })
+      return
+    }
+    await generateNewReport(undefined, { sourceFingerprint: currentFp, cycleId: targetCycleId })
   }
 
   // Lazy-fetch html_content on demand. List response strips html_content for speed,
@@ -224,6 +273,9 @@ export default function ReportsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Cycle context + next scheduled check-in (P8) */}
+      <CycleContextBanner entryDates={(allEntries as any[]).map((e) => e.date)} />
 
       {error && (
         <Alert variant="destructive">
@@ -886,6 +938,36 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* P7: report-gating dialog — no new data since the last report */}
+      <Dialog open={gateDialog.open} onOpenChange={(open) => setGateDialog((g) => ({ ...g, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {gateDialog.reason === "no-entries" ? "No entries in this cycle yet" : "No new data to report"}
+            </DialogTitle>
+            <DialogDescription>
+              {gateDialog.reason === "no-entries"
+                ? "This cycle has no weigh-ins yet, so there's nothing to generate a report from. Log this week's entry first."
+                : "Your latest report already reflects the most recent entry. Log a new weigh-in, or edit your last entry to generate an updated report."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            {gateDialog.reason === "no-new-data" && (
+              <Link href="/entries" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full">
+                  Edit last entry
+                </Button>
+              </Link>
+            )}
+            <Link href="/entries/new" className="w-full sm:w-auto">
+              <Button variant="default" className="w-full">
+                Log this week&apos;s entry
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
