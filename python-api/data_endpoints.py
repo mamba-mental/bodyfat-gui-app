@@ -329,6 +329,19 @@ async def delete_entry(entry_id: str):
     return {"success": True, "message": "Entry deleted"}
 
 
+@router.get("/api/data/cycles")
+async def get_cycles():
+    """Get all ReComp cycles for the user (newest first)."""
+    return db.get_cycles("default")
+
+
+@router.post("/api/data/cycles")
+async def save_cycle(cycle: dict):
+    """Create/update a ReComp cycle (demotes any other active cycle)."""
+    db.save_cycle(cycle, "default")
+    return {"success": True, "cycle": cycle}
+
+
 @router.get("/api/data/reports")
 async def get_reports():
     """Get all generated reports — list view, heavy fields stripped.

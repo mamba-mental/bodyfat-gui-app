@@ -134,6 +134,7 @@ class Database:
                     'body_fat_percentage': row['body_fat_percentage'],
                     'notes': row['notes'],
                     'program_id': row['program_id'],
+                    'cycle_id': row['cycle_id'] if 'cycle_id' in row.keys() else None,
                     'created_at': row['created_at'],
                     'updated_at': row['updated_at']
                 }
@@ -146,8 +147,8 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO entries
-                (id, user_id, date, weight, body_fat_percentage, notes, program_id, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                (id, user_id, date, weight, body_fat_percentage, notes, program_id, cycle_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ''', (
                 entry['id'],
                 user_id,
@@ -155,7 +156,8 @@ class Database:
                 entry['weight'],
                 entry.get('body_fat_percentage'),
                 entry.get('notes'),
-                entry.get('program_id')
+                entry.get('program_id'),
+                entry.get('cycle_id') or self.get_active_cycle_id(user_id)
             ))
             conn.commit()
     
@@ -164,7 +166,66 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('DELETE FROM entries WHERE id = ?', (entry_id,))
             conn.commit()
-    
+
+    # ---- ReComp Cycles ----
+    def get_cycles(self, user_id: str = "default") -> List[Dict[str, Any]]:
+        """All cycles for a user, newest first. weighin_days returned as a list."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            try:
+                cursor = conn.execute(
+                    'SELECT * FROM cycles WHERE user_id = ? ORDER BY start_date DESC', (user_id,)
+                )
+            except sqlite3.OperationalError:
+                return []  # cycles table not migrated yet
+            out = []
+            for row in cursor:
+                c = dict(row)
+                try:
+                    c['weighin_days'] = json.loads(c.get('weighin_days') or '[]')
+                except Exception:
+                    c['weighin_days'] = []
+                out.append(c)
+            return out
+
+    def get_active_cycle_id(self, user_id: str = "default") -> Optional[str]:
+        with sqlite3.connect(self.db_path) as conn:
+            try:
+                row = conn.execute(
+                    "SELECT id FROM cycles WHERE user_id = ? AND status = 'active' LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+                return row[0] if row else None
+            except sqlite3.OperationalError:
+                return None
+
+    def save_cycle(self, cycle: Dict[str, Any], user_id: str = "default"):
+        """Insert/update a cycle. Demotes any other active cycle first (one-active)."""
+        with sqlite3.connect(self.db_path) as conn:
+            if cycle.get('status', 'active') == 'active':
+                conn.execute(
+                    "UPDATE cycles SET status='stopped', updated_at=CURRENT_TIMESTAMP "
+                    "WHERE user_id=? AND status='active' AND id<>?",
+                    (user_id, cycle['id']),
+                )
+            wd = cycle.get('weighin_days')
+            conn.execute('''
+                INSERT OR REPLACE INTO cycles
+                (id,user_id,name,start_date,end_date,status,start_weight,start_bf,goal_weight,
+                 goal_bf,timeline_weeks,weighin_days,weighin_per_week,legacy_program_id,
+                 created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                 COALESCE((SELECT created_at FROM cycles WHERE id=?),CURRENT_TIMESTAMP),
+                 CURRENT_TIMESTAMP)
+            ''', (
+                cycle['id'], user_id, cycle.get('name'), cycle['start_date'], cycle.get('end_date'),
+                cycle.get('status', 'active'), cycle.get('start_weight'), cycle.get('start_bf'),
+                cycle.get('goal_weight'), cycle.get('goal_bf'), cycle.get('timeline_weeks'),
+                json.dumps(wd if isinstance(wd, list) else []), cycle.get('weighin_per_week', 0),
+                cycle.get('legacy_program_id'), cycle['id'],
+            ))
+            conn.commit()
+
     def get_reports(self, user_id: str = "default") -> List[Dict[str, Any]]:
         """Get all reports for a user"""
         with sqlite3.connect(self.db_path) as conn:
@@ -179,6 +240,7 @@ class Database:
             for row in cursor:
                 report_data = json.loads(row['data'])
                 report_data['id'] = row['id']
+                report_data['cycle_id'] = row['cycle_id'] if 'cycle_id' in row.keys() else None
                 if row['file_path'] and not report_data.get('file_path'):
                     report_data['file_path'] = row['file_path']
                 if not report_data.get('pdf_path') and row['file_path']:
