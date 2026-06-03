@@ -32,6 +32,14 @@ export default function ReportsPage() {
 
   console.log('[ReportsPage] render', { loading, report_generation_status, reportsCount: reports.length })
 
+  // Real elapsed weeks between two entry dates (floored at 1/7 wk to avoid divide-by-zero).
+  // Fixes "per week" stats that previously assumed every entry was exactly one week apart.
+  const weeksBetween = (laterISO?: string, earlierISO?: string): number => {
+    if (!laterISO || !earlierISO) return 1
+    const ms = new Date(laterISO).getTime() - new Date(earlierISO).getTime()
+    return Math.max(1 / 7, ms / (7 * 24 * 60 * 60 * 1000))
+  }
+
   const buildFileApiPath = (report: Report, ext: string): string | undefined => {
     if (report.file_base) {
       return `/api/reports/files/${report.file_base}.${ext}`
@@ -54,57 +62,70 @@ export default function ReportsPage() {
     await generateNewReport()
   }
 
-  const handleDownloadHTML = (report: any) => {
-    // Always use in-memory html_content for consistency
-    if (report?.html_content) {
-      const blob = new Blob([report.html_content], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.html`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+  // Lazy-fetch html_content on demand. List response strips html_content for speed,
+  // so we hit /api/data/reports/{id} only when the user clicks an action that needs it.
+  const ensureHtmlContent = async (report: any): Promise<string | null> => {
+    if (report?.html_content) return report.html_content as string
+    if (!report?.id) return null
+    try {
+      const res = await fetch(`/api/data/reports/${encodeURIComponent(report.id)}`)
+      if (!res.ok) return null
+      const full = await res.json()
+      return full?.html_content ?? null
+    } catch (err) {
+      console.error('Failed to fetch full report:', err)
+      return null
     }
   }
 
-  const handleDownloadMarkdown = (report: any) => {
-    // Convert the Python-generated HTML to markdown using Turndown
-    if (report?.html_content) {
-      const turndownService = new TurndownService({
-        headingStyle: 'atx',
-        codeBlockStyle: 'fenced',
-        emDelimiter: '*',
-        bulletListMarker: '-'
-      })
-      
-      // Add custom rule for tables to preserve formatting
-      turndownService.addRule('tables', {
-        filter: 'table',
-        replacement: function(content) {
-          return '\n\n' + content + '\n\n'
-        }
-      })
+  const handleDownloadHTML = async (report: any) => {
+    const html = await ensureHtmlContent(report)
+    if (!html) return
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
-      const markdown = turndownService.turndown(report.html_content)
+  const handleDownloadMarkdown = async (report: any) => {
+    const html = await ensureHtmlContent(report)
+    if (!html) return
+    const turndownService = new TurndownService({
+      headingStyle: 'atx',
+      codeBlockStyle: 'fenced',
+      emDelimiter: '*',
+      bulletListMarker: '-'
+    })
 
-      const blob = new Blob([markdown], { type: 'text/markdown' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.md`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    }
+    turndownService.addRule('tables', {
+      filter: 'table',
+      replacement: function(content) {
+        return '\n\n' + content + '\n\n'
+      }
+    })
+
+    const markdown = turndownService.turndown(html)
+
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handleDownloadPDF = async (report: Report) => {
-    // Use the Python-generated HTML as the source for PDF
-    if (report.html_content) {
-      await generatePDFFromHTML(report.html_content, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
+    const html = await ensureHtmlContent(report)
+    if (html) {
+      await generatePDFFromHTML(html, `${report.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
       return
     }
 
@@ -123,14 +144,14 @@ export default function ReportsPage() {
     }
   }
 
-  const handleViewFullReport = (report: any) => {
-    if (report?.html_content) {
-      const win = window.open("", "_blank")
-      if (win) {
-        win.document.write(report.html_content)
-        win.document.close()
-        win.document.title = report.title
-      }
+  const handleViewFullReport = async (report: any) => {
+    const html = await ensureHtmlContent(report)
+    if (!html) return
+    const win = window.open("", "_blank")
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+      win.document.title = report.title
     }
   }
 
@@ -332,8 +353,8 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {entries && entries.length >= 2 && entries[0] && entries[entries.length - 1] ? 
-                      (((entries[entries.length - 1].weight - entries[0].weight) / (entries.length - 1)) * -1).toFixed(1)
+                    {entries && entries.length >= 2 && entries[0] && entries[entries.length - 1]
+                      ? ((entries[entries.length - 1].weight - entries[0].weight) * -1 / weeksBetween(entries[0].date, entries[entries.length - 1].date)).toFixed(1)
                       : '0.0'
                     } lbs
                   </div>
@@ -367,7 +388,14 @@ export default function ReportsPage() {
                                   <div className="font-medium">{entry.body_fat_percentage.toFixed(1)}% BF</div>
                                 )}
                                 <div className="text-muted-foreground text-xs">
-                                  {index === 0 ? 'Latest' : `${index + 1} weeks ago`}
+                                  {index === 0
+                                    ? 'Latest'
+                                    : (() => {
+                                        const days = Math.round((new Date(entries[0].date).getTime() - new Date(entry.date).getTime()) / 86400000)
+                                        if (days < 7) return `${days}d ago`
+                                        const wks = Math.round(days / 7)
+                                        return `${wks} wk${wks === 1 ? '' : 's'} ago`
+                                      })()}
                                 </div>
                               </div>
                             </div>
@@ -475,10 +503,10 @@ export default function ReportsPage() {
                             {entries.length >= 3 ? (
                               <div className="space-y-1">
                                 <div className="flex justify-between">
-                                  <span>Last 2 weeks avg:</span>
+                                  <span>Most recent rate:</span>
                                   <span className="font-medium">
                                     {entries && entries.length >= 2 && entries[0] && entries[1]
-                                      ? (((entries[1].weight - entries[0].weight) / 1) * -1).toFixed(1)
+                                      ? ((entries[1].weight - entries[0].weight) * -1 / weeksBetween(entries[0].date, entries[1].date)).toFixed(1)
                                       : '0.0'
                                     } lbs/week
                                   </span>
@@ -487,7 +515,7 @@ export default function ReportsPage() {
                                   <span>Overall avg:</span>
                                   <span className="font-medium">
                                     {entries && entries.length >= 2 && entries[0] && entries[entries.length - 1]
-                                      ? (((entries[entries.length - 1].weight - entries[0].weight) / (entries.length - 1)) * -1).toFixed(1)
+                                      ? ((entries[entries.length - 1].weight - entries[0].weight) * -1 / weeksBetween(entries[0].date, entries[entries.length - 1].date)).toFixed(1)
                                       : '0.0'
                                     } lbs/week
                                   </span>
@@ -686,7 +714,7 @@ export default function ReportsPage() {
                     <div className="text-center p-4 border rounded-lg">
                       <div className="text-lg font-bold text-green-600">
                         {entries && entries.length >= 2 && entries[0] && entries[entries.length - 1]
-                          ? ((entries[entries.length - 1].weight - entries[0].weight) / (entries.length - 1) * -1 * 4).toFixed(1)
+                          ? ((entries[entries.length - 1].weight - entries[0].weight) * -1 / weeksBetween(entries[0].date, entries[entries.length - 1].date) * 4).toFixed(1)
                           : '0.0'
                         } lbs
                       </div>
@@ -752,17 +780,15 @@ export default function ReportsPage() {
                               View
                             </Button>
                           </Link>
-                          {report.html_content && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleViewFullReport(report)}
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                            >
-                              <ClientIcon icon={FileText} className="mr-1 h-3 w-3" />
-                              Full Report
-                            </Button>
-                          )}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleViewFullReport(report)}
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                          >
+                            <ClientIcon icon={FileText} className="mr-1 h-3 w-3" />
+                            Full Report
+                          </Button>
                           <Button
                             variant="secondary"
                             size="sm"

@@ -134,3 +134,4 @@ setup-*-mcp-servers*.sh
 setup-mcp-servers.sh
 ai-settings.json
 claude-code-mcp-servers.json
+.gstack/

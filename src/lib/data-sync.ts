@@ -41,9 +41,16 @@ export class DataSync {
       });
 
       if (redisResponse.ok) {
+        // If the wrapper couldn't reach the Python source it sets x-python-warning
+        // and returns cache-only data — which may be a stale subset. In that case
+        // fall through to the Python source of truth instead of trusting the cache.
+        const warning = redisResponse.headers.get('x-python-warning');
         const redisEntries = await redisResponse.json();
-        if (redisEntries && redisEntries.length > 0) {
+        if (!warning && redisEntries && redisEntries.length > 0) {
           return redisEntries;
+        }
+        if (warning) {
+          console.warn('[DataSync] /api/data/entries served cache-only data (x-python-warning):', warning);
         }
       }
     } catch (error) {

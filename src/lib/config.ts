@@ -88,7 +88,7 @@ export const corsConfig = {
   /** Allowed origins for CORS */
   allowedOrigins: getServerEnv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3713,http://127.0.0.1:3713,http://localhost:3000,http://127.0.0.1:3000'
+    'http://localhost:3713,http://127.0.0.1:3713,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3010,http://127.0.0.1:3010'
   ).split(','),
 } as const;
 

@@ -14,6 +14,21 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "2.0.0",
+    date: "2026-06-03",
+    type: "fix",
+    changes: [
+      "Performance: app now runs as a production build — page navigation is instant (~0.2s) instead of multi-second dev-server route compiles",
+      "Fixed Settings page crash ('Cannot read properties of undefined (reading weeklyReports)') by deep-merging stored settings onto defaults so older saved shapes can no longer drop required keys",
+      "Fixed Reports weekly stats: 'X weeks ago' labels and per-week rates now use real elapsed dates instead of entry index ('Last 2 weeks avg' relabeled to 'Most recent rate')",
+      "Fixed viewing previous reports: legacy reports without stored calculation data now render their saved HTML inline in a sandboxed iframe instead of showing 'Report Data Unavailable'",
+      "Fixed report HTML/Markdown/PDF downloads: now generated client-side from the rendered report HTML, fixing the PDF that returned a 404 JSON error and the stub Markdown summary",
+      "Added the missing /api/data/reports/[id] route (previously returned the app shell), so report detail and download actions resolve correctly",
+      "Fixed AI Insights tab flashing: removed an infinite re-render/refetch loop caused by an unstable default categories array",
+      "Hardened /api/data/entries so a stale cache subset can no longer mask the full backend entry list"
+    ]
+  },
+  {
     version: "1.7.1",
     date: "2026-01-09",
     type: "fix",

@@ -87,7 +87,10 @@ class Entry(BaseModel):
 class Report(BaseModel):
     id: str
     title: str
-    date: str
+    # date is optional — frontend sometimes sends `generated_at` instead.
+    # save_report() endpoint normalises both to a single `date` field.
+    date: Optional[str] = None
+    generated_at: Optional[str] = None
     summary: Optional[Dict[str, Any]] = None
     filepath: Optional[str] = None
     html_content: Optional[str] = None
@@ -300,7 +303,7 @@ async def save_user_data(user: UserProfile):
 @router.get("/api/data/entries")
 async def get_entries():
     """Get all body fat entries"""
-    entries = db.get_entries("1")  # Use user_id "1" to match existing database entries
+    entries = db.get_entries("default")  # Unified user_id (post 2026-05-04 data unification)
     return entries
 
 
@@ -315,7 +318,7 @@ async def save_entry(entry: Entry):
         entry_dict["created_at"] = datetime.now().isoformat()
         entry_dict["updated_at"] = datetime.now().isoformat()
 
-    db.save_entry(entry_dict, "1")  # Use user_id "1" to match existing database entries
+    db.save_entry(entry_dict, "default")  # Unified user_id (post 2026-05-04 data unification)
     return {"success": True, "message": "Entry saved", "entry": entry_dict}
 
 
@@ -328,16 +331,41 @@ async def delete_entry(entry_id: str):
 
 @router.get("/api/data/reports")
 async def get_reports():
-    """Get all generated reports"""
-    reports = db.get_reports("default")  # Use user_id "default" to match existing database entries
-    return reports
+    """Get all generated reports — list view, heavy fields stripped.
+
+    Strips html_content + nested chart_images so the list response stays small
+    (was 22MB for 58 reports, now ~50-100KB). Detail view at
+    /api/data/reports/{id} returns the full report.
+    """
+    reports = db.get_reports("default")
+    HEAVY_FIELDS = (
+        "html_content",
+        "chart_images",
+        "chart_image_data",
+        "calculation_result",  # one bad row had 13MB nested user_data; not needed for list view
+    )
+    light = []
+    for r in reports:
+        if isinstance(r, dict):
+            light.append({k: v for k, v in r.items() if k not in HEAVY_FIELDS})
+        else:
+            light.append(r)
+    return light
 
 
 @router.post("/api/data/report")
 async def save_report(report: Report):
-    """Save a generated report"""
-    # Convert to dict
+    """Save a generated report.
+
+    Accepts either `date` or `generated_at` from the client (frontend has
+    historically sent both depending on iteration). Normalises so SQLite
+    always has a populated `date` column.
+    """
     report_dict = report.dict()
+
+    # Normalise: prefer explicit `date`, fall back to `generated_at`, finally now.
+    if not report_dict.get("date"):
+        report_dict["date"] = report_dict.get("generated_at") or datetime.now().isoformat()
 
     db.save_report(report_dict, "default")
     return {"success": True, "message": "Report saved", "report": report_dict}

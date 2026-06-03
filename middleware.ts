@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001', 
+  'http://localhost:3001',
   'http://localhost:3002',
   'http://localhost:3005',
+  'http://localhost:3010',
   'http://localhost:4000',
   'http://localhost:5000',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://127.0.0.1:3002',
   'http://127.0.0.1:3005',
+  'http://127.0.0.1:3010',
   'http://127.0.0.1:4000',
   'http://127.0.0.1:5000',
 ]

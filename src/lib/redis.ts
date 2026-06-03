@@ -17,21 +17,35 @@ export const redis = createClient({
   }
 });
 
-redis.on('error', (err) => console.error('Redis Client Error', err));
-redis.on('connect', () => console.log('Redis Client Connected'));
+// Suppress repeat error logging when Redis is unavailable (dev environment)
+let redisErrorLogged = false;
+redis.on('error', (err) => {
+  if (!redisErrorLogged) {
+    console.error('Redis Client Error (suppressing further errors):', err?.message ?? err);
+    redisErrorLogged = true;
+  }
+});
+redis.on('connect', () => { console.log('Redis Client Connected'); redisErrorLogged = false; });
 redis.on('ready', () => console.log('Redis Client Ready'));
 
-// Connect to Redis
+// Connect to Redis (best-effort, app falls back to Python API if unavailable)
 (async () => {
   try {
     await redis.connect();
   } catch (err) {
-    console.error('Failed to connect to Redis:', err);
+    console.warn('Redis unavailable, all redis.ts calls will no-op:', (err as Error)?.message ?? err);
   }
 })();
 
+// Guard: every public function should early-exit when Redis isn't ready,
+// so we don't pay per-call latency hitting a dead client.
+function redisReady(): boolean {
+  return redis.isOpen && redis.isReady;
+}
+
 // User data management
 export async function saveUserData(userId: string, userData: any) {
+  if (!redisReady()) return false;
   try {
     await redis.set(`user:${userId}`, JSON.stringify(userData));
     return true;
@@ -42,6 +56,7 @@ export async function saveUserData(userId: string, userData: any) {
 }
 
 export async function getUserData(userId: string) {
+  if (!redisReady()) return null;
   try {
     const data = await redis.get(`user:${userId}`);
     return data ? JSON.parse(data) : null;
@@ -53,6 +68,7 @@ export async function getUserData(userId: string) {
 
 // Body fat entries management (aligned with migrate_to_redis.py)
 export async function saveEntry(userId: string, entry: any) {
+  if (!redisReady()) return false;
   try {
     const entryKey = `entry:${userId}:${entry.id}`;
 
@@ -86,6 +102,7 @@ export async function saveEntry(userId: string, entry: any) {
 }
 
 export async function getUserEntries(userId: string) {
+  if (!redisReady()) return [];
   try {
     // Get all entry IDs sorted by date (most recent first)
     const entryIds = await redis.zRange(`entries:${userId}`, 0, -1, { REV: true });
@@ -133,6 +150,7 @@ export async function getUserEntries(userId: string) {
 }
 
 export async function deleteEntry(userId: string, entryId: string) {
+  if (!redisReady()) return false;
   try {
     const key = `entry:${userId}:${entryId}`;
 
@@ -149,6 +167,7 @@ export async function deleteEntry(userId: string, entryId: string) {
 
 // Reports management (aligned with migrate_to_redis.py)
 export async function saveReport(userId: string, report: any) {
+  if (!redisReady()) return false;
   try {
     const reportKey = `report:${userId}:${report.id}`;
 
@@ -180,6 +199,7 @@ export async function saveReport(userId: string, report: any) {
 }
 
 export async function getUserReports(userId: string) {
+  if (!redisReady()) return [];
   try {
     const reportIds = await redis.zRange(`reports:${userId}`, 0, -1, { REV: true });
 
@@ -232,6 +252,7 @@ export async function getUserReports(userId: string) {
 }
 
 export async function deleteReport(userId: string, reportId: string) {
+  if (!redisReady()) return false;
   try {
     const key = `report:${userId}:${reportId}`;
 
@@ -248,6 +269,7 @@ export async function deleteReport(userId: string, reportId: string) {
 
 // Last calculation storage
 export async function saveLastCalculation(userId: string, calculation: any) {
+  if (!redisReady()) return false;
   try {
     // Simple string storage for last calculation
     await redis.set(`user:${userId}:lastCalculation`, JSON.stringify(calculation));
@@ -259,6 +281,7 @@ export async function saveLastCalculation(userId: string, calculation: any) {
 }
 
 export async function getLastCalculation(userId: string) {
+  if (!redisReady()) return null;
   try {
     const data = await redis.get(`user:${userId}:lastCalculation`);
     return data ? JSON.parse(data) : null;
@@ -270,6 +293,7 @@ export async function getLastCalculation(userId: string) {
 
 // Clear all data for a user
 export async function clearAllUserData(userId: string) {
+  if (!redisReady()) return true;
   try {
     const id = String(userId);
 
@@ -363,6 +387,7 @@ export async function importUserData(userId: string, data: any) {
 
 // Clear all user data
 export async function clearUserData(userId: string) {
+  if (!redisReady()) return true;
   try {
     // Get all entries and reports to delete
     const entryIds = await redis.sMembers(`user:${userId}:entries`);

@@ -12,6 +12,13 @@ import { useApp } from "@/contexts/app-context"
 import { AIService, AIInsight } from "@/lib/ai-service"
 import { useAISettings } from "@/hooks/use-ai-settings"
 
+// Module-level constant: a STABLE reference. Previously this default array was
+// inlined in the parameter list, so it was recreated on every render -> loadInsights
+// (which lists `categories` in its deps) got a new identity each render -> the
+// effect depending on loadInsights re-fired -> setState -> render -> repeat. That
+// infinite refetch loop is the "flashing" AI Insights screen.
+const DEFAULT_CATEGORIES = ['progress', 'nutrition', 'workout', 'goal', 'health']
+
 interface AIInsightsPanelProps {
   title?: string
   showHeader?: boolean
@@ -19,11 +26,11 @@ interface AIInsightsPanelProps {
   categories?: string[]
 }
 
-export function AIInsightsPanel({ 
+export function AIInsightsPanel({
   title = "AI Insights & Guidance",
   showHeader = true,
   maxInsights = 5,
-  categories = ['progress', 'nutrition', 'workout', 'goal', 'health']
+  categories = DEFAULT_CATEGORIES
 }: AIInsightsPanelProps) {
   const { state } = useApp()
   const { current_user, current_calculation, entries, loading } = state
@@ -35,42 +42,46 @@ export function AIInsightsPanel({
 
   const aiService = AIService.getInstance()
   const { settings: aiSettings, loading: settingsLoading } = useAISettings()
-  
-  // Define loadInsights before using it in useEffect
+  const inFlightRef = React.useRef(false)
 
   const loadInsights = React.useCallback(async () => {
     if (!current_user) return
-    
+
     // Don't try to load insights until settings are ready
     if (settingsLoading) {
       console.log('AI settings still loading, skipping insights generation')
       return
     }
-    
+    // Guard against overlapping/looping loads (belt-and-suspenders with stable deps).
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const newInsights = await aiService.generateInsights(
         current_user,
         entries,
         current_calculation || undefined
       )
-      
-      // Filter by categories and limit
+
+      // Filter by categories + limit. Dismissals are applied at RENDER time
+      // (visibleInsights), NOT here — so dismissing never triggers a reload and
+      // dismissedInsights is not a dependency of this callback.
       const filteredInsights = newInsights
         .filter(insight => categories.includes(insight.category))
-        .filter(insight => !dismissedInsights.has(insight.id))
         .slice(0, maxInsights)
-      
+
       setInsights(filteredInsights)
     } catch (err) {
       console.error('Error loading AI insights:', err)
       setError('Unable to load AI insights at this time')
     } finally {
       setIsLoading(false)
+      inFlightRef.current = false
     }
-  }, [current_user, entries, current_calculation, categories, maxInsights, dismissedInsights, aiService, settingsLoading])
+  }, [current_user, entries, current_calculation, categories, maxInsights, aiService, settingsLoading])
   
   // Force re-render when AI settings are loaded
   React.useEffect(() => {
@@ -94,8 +105,11 @@ export function AIInsightsPanel({
 
   const dismissInsight = (insightId: string) => {
     setDismissedInsights(prev => new Set([...prev, insightId]))
-    setInsights(prev => prev.filter(insight => insight.id !== insightId))
   }
+
+  // Dismissals are applied at render time so they survive reloads and never
+  // feed back into loadInsights' dependencies (which would re-loop).
+  const visibleInsights = insights.filter(insight => !dismissedInsights.has(insight.id))
 
   const getInsightIcon = (type: AIInsight['type']) => {
     switch (type) {
@@ -187,7 +201,7 @@ export function AIInsightsPanel({
               </div>
             ))}
           </div>
-        ) : insights.length === 0 ? (
+        ) : visibleInsights.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg font-medium">No insights available</p>
@@ -196,9 +210,9 @@ export function AIInsightsPanel({
         ) : (
           <div className="space-y-4" role="feed" aria-live="polite" aria-label="AI insights and recommendations">
             <div className="sr-announcer" aria-live="polite">
-              {insights.length > 0 ? `${insights.length} AI insights loaded` : ''}
+              {visibleInsights.length > 0 ? `${visibleInsights.length} AI insights loaded` : ''}
             </div>
-            {insights.map((insight, index) => (
+            {visibleInsights.map((insight, index) => (
               <div key={insight.id}>
                 <article 
                   className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
@@ -283,11 +297,11 @@ export function AIInsightsPanel({
                   </div>
                 </article>
                 
-                {index < insights.length - 1 && <Separator className="my-2" aria-hidden="true" />}
+                {index < visibleInsights.length - 1 && <Separator className="my-2" aria-hidden="true" />}
               </div>
             ))}
             
-            {insights.length > 0 && (
+            {visibleInsights.length > 0 && (
               <div className="text-center pt-2">
                 <Button
                   variant="secondary"

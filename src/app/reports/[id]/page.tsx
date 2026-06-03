@@ -39,6 +39,65 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
     calc.summary &&
     calc.user_data
 
+  // Legacy reports (pre-structured era) have calculation_result === null but a
+  // rendered HTML/MD/PDF file on disk. Derive the file base so we can serve it.
+  const fileBaseForReport = React.useMemo(() => {
+    if (!report) return null
+    if ((report as any).file_base) return (report as any).file_base as string
+    const p = (report as any).html_path || (report as any).markdown_path || (report as any).pdf_path
+    if (typeof p === 'string' && p) {
+      return p.split(/[\\/]/).pop()?.replace(/\.(html?|md|markdown|pdf)$/i, '') ?? null
+    }
+    return null
+  }, [report])
+
+  const [legacyHtml, setLegacyHtml] = React.useState<string | null>(null)
+  const [legacyLoading, setLegacyLoading] = React.useState(false)
+
+  React.useEffect(() => {
+    let alive = true
+    if (!report || hasValidCalculation) return
+    // Inline html_content wins; otherwise pull the rendered file from disk.
+    if ((report as any).html_content) {
+      setLegacyHtml((report as any).html_content as string)
+      return
+    }
+    if (!fileBaseForReport) return
+    setLegacyLoading(true)
+    fetch(`/api/reports/files/${encodeURIComponent(fileBaseForReport)}.html`)
+      .then((r) => (r.ok ? r.text() : null))
+      .then((t) => { if (alive) setLegacyHtml(t) })
+      .catch(() => { if (alive) setLegacyHtml(null) })
+      .finally(() => { if (alive) setLegacyLoading(false) })
+    return () => { alive = false }
+  }, [report, hasValidCalculation, fileBaseForReport])
+
+  // Legacy downloads are generated client-side from the rendered HTML we already
+  // fetched (legacyHtml) — NOT from on-disk .md/.pdf files, which may not exist
+  // (a missing .pdf made the file route 404 with JSON, shown as a "pretty-printed
+  // API endpoint"). The HTML is the single source of truth for legacy reports.
+  const downloadLegacyBlob = (content: string, mime: string, ext: string) => {
+    const blob = new Blob([content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${(report?.title || 'report').replace(/[^a-zA-Z0-9]/g, '-')}.${ext}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+  const handleLegacyHtml = () => { if (legacyHtml) downloadLegacyBlob(legacyHtml, 'text/html', 'html') }
+  const handleLegacyMarkdown = () => {
+    if (!legacyHtml) return
+    const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', emDelimiter: '*', bulletListMarker: '-' })
+    td.addRule('images', { filter: 'img', replacement: (_c: string, node: any) => `\n\n*[Image: ${(node as HTMLElement).getAttribute('alt') || 'Chart'} - see HTML/PDF]*\n\n` })
+    downloadLegacyBlob(td.turndown(legacyHtml), 'text/markdown', 'md')
+  }
+  const handleLegacyPdf = async () => {
+    if (legacyHtml) await generatePDFFromHTML(legacyHtml, `${(report?.title || 'report').replace(/[^a-zA-Z0-9]/g, '-')}.pdf`)
+  }
+
   if (!report) {
     return (
       <div className="container max-w-4xl mx-auto space-y-6 p-6">
@@ -56,14 +115,60 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
 
   if (!hasValidCalculation) {
     return (
-      <div className="container max-w-4xl mx-auto space-y-6 p-6">
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold">{report.title}</h1>
+      <div className="container max-w-7xl mx-auto space-y-6 p-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center space-x-4">
+            <Button variant="secondary" onClick={() => router.push('/reports')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Reports
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">{report.title}</h1>
+              <p className="text-muted-foreground">
+                Generated on {new Date(report.generated_at).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          {legacyHtml && (
+            <div className="flex items-center space-x-2">
+              <Button variant="secondary" onClick={handleLegacyHtml}><Download className="mr-2 h-4 w-4" />HTML</Button>
+              <Button variant="secondary" onClick={handleLegacyMarkdown}><FileDown className="mr-2 h-4 w-4" />Markdown</Button>
+              <Button variant="secondary" onClick={handleLegacyPdf}><FileText className="mr-2 h-4 w-4" />PDF</Button>
+            </div>
+          )}
+        </div>
+
+        {legacyLoading && (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              Loading rendered report…
+            </CardContent>
+          </Card>
+        )}
+
+        {!legacyLoading && legacyHtml && (
+          <Card>
+            <CardContent className="p-0">
+              {/* sandbox="" denies scripts + same-origin: stored report HTML is
+                  rendered as inert content (charts are inline images, no JS needed),
+                  closing the trust-boundary hole of injecting disk HTML via srcDoc. */}
+              <iframe
+                title={report.title}
+                srcDoc={legacyHtml}
+                sandbox=""
+                className="w-full rounded-md"
+                style={{ height: "80vh", border: "none", background: "white" }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {!legacyLoading && !legacyHtml && (
           <Card>
             <CardHeader>
               <CardTitle>Report Data Unavailable</CardTitle>
               <CardDescription>
-                This report does not include calculation details. Regenerate the report to view full metrics.
+                This report has no stored calculation data or rendered file on disk. Regenerate it to view full metrics.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -73,7 +178,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     )
   }

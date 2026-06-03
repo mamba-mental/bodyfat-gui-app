@@ -208,12 +208,20 @@ export default function SettingsPage() {
       const savedSettings = localStorage.getItem('userSettings')
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings)
-        setSettings(parsed)
-        // Sync theme with current theme context
-        if (parsed.display?.theme && parsed.display.theme !== theme) {
-          parsed.display.theme = theme
-          setSettings(parsed)
-        }
+        // Deep-merge onto defaults so older/partial stored shapes (e.g. missing
+        // `notifications`) never drop required keys and crash the render.
+        setSettings(prev => ({
+          ...prev,
+          ...parsed,
+          notifications: { ...prev.notifications, ...(parsed?.notifications ?? {}) },
+          privacy: { ...prev.privacy, ...(parsed?.privacy ?? {}) },
+          display: {
+            ...prev.display,
+            ...(parsed?.display ?? {}),
+            // Live theme context wins over whatever was persisted.
+            theme,
+          },
+        }))
       } else {
         // Initialize with current theme and font
         setSettings(prev => ({
