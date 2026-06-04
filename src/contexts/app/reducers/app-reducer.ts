@@ -6,6 +6,28 @@
 
 import { AppState, AppAction } from '@/types'
 
+// F11: a finite millisecond timestamp, or 0 when the value is missing/unparseable.
+// new Date(undefined|'').getTime() is NaN, and Array.sort with NaN comparisons is
+// implementation-defined (rows land in arbitrary positions). Coalescing to 0 makes
+// missing-timestamp rows sort last deterministically.
+const safeTime = (value: unknown): number => {
+  if (value == null) return 0
+  const t = new Date(value as string).getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
+// Newest-first by entry date.
+const byEntryDateDesc = <T extends { date?: unknown }>(a: T, b: T) =>
+  safeTime(b.date) - safeTime(a.date)
+
+// Newest-first by report timestamp, coalescing the fields a report may carry.
+const byReportDateDesc = <T extends { generated_at?: unknown; date?: unknown; created_at?: unknown }>(
+  a: T,
+  b: T,
+) =>
+  safeTime(b.generated_at ?? b.date ?? b.created_at) -
+  safeTime(a.generated_at ?? a.date ?? a.created_at)
+
 export const initialState: AppState = {
   current_user: null,
   program_reference: null,
@@ -30,8 +52,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_ENTRIES':
       return {
         ...state,
-        entries: [...action.payload]
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        entries: [...action.payload].sort(byEntryDateDesc),
         error: null,
       }
 
@@ -39,14 +60,19 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         entries: [action.payload, ...state.entries.filter(e => e.id !== action.payload.id)]
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          .sort(byEntryDateDesc),
         error: null,
       }
 
     case 'UPDATE_ENTRY':
+      // HIGH-8: re-sort after an in-place edit. A date change can move the entry,
+      // and many widgets read entries[0] as "latest" — without this re-sort an
+      // edited date silently corrupts current-weight + every progress metric.
       return {
         ...state,
-        entries: state.entries.map(e => e.id === action.payload.id ? action.payload : e),
+        entries: state.entries
+          .map(e => e.id === action.payload.id ? action.payload : e)
+          .sort(byEntryDateDesc),
         error: null,
       }
 
@@ -67,8 +93,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_REPORTS':
       return {
         ...state,
-        reports: [...action.payload]
-          .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime()),
+        reports: [...action.payload].sort(byReportDateDesc),
         error: null,
       }
 
@@ -76,7 +101,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         reports: [action.payload, ...state.reports.filter(r => r.id !== action.payload.id)]
-          .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime()),
+          .sort(byReportDateDesc),
         error: null,
       }
 

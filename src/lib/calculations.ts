@@ -228,6 +228,12 @@ export function calculateProgressPercentage(
   current: number,
   goal: number
 ): number {
+  // F11: NaN-safe. A missing weigh-in / empty cycle can pass NaN here; without
+  // this guard the Progress cards render "NaN%". Treat any non-finite input as
+  // no measurable progress.
+  if (!Number.isFinite(initial) || !Number.isFinite(current) || !Number.isFinite(goal)) {
+    return 0
+  }
   if (initial === goal) return 100
   const totalChange = goal - initial
   const currentChange = current - initial

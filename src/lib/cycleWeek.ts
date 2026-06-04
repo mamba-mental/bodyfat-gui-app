@@ -9,7 +9,10 @@
 const DAY = 86_400_000
 
 function toUTC(date: string): number {
-  const [y, m, d] = date.split('-').map(Number)
+  // F11/MEDIUM-14: tolerate a full ISO string. '2026-06-01T00:00:00Z'.split('-')
+  // would put 'T00:00:00Z' in the day segment -> Number(...) = NaN -> NaN week.
+  // Take the date-only prefix so the math is the canonical YYYY-MM-DD form.
+  const [y, m, d] = date.slice(0, 10).split('-').map(Number)
   return Date.UTC(y, m - 1, d)
 }
 

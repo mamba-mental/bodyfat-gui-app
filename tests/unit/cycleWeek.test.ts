@@ -51,3 +51,20 @@ describe('missedWeighIns', () => {
     ).toEqual([])
   })
 })
+
+// F11 / MEDIUM-14 — toUTC must tolerate full ISO strings (a T/Z suffix). A cycle
+// start_date stored as '2026-06-01T00:00:00.000Z' used to make Number('01T00...')
+// = NaN, so currentCycleWeek returned NaN and missedWeighIns silently found none.
+describe('ISO datetime suffix tolerance', () => {
+  it('currentCycleWeek handles a start_date with a time/Z suffix', () => {
+    const week = currentCycleWeek('2026-06-01T00:00:00.000Z', '2026-06-15', 16)
+    expect(Number.isNaN(week)).toBe(false)
+    expect(week).toBe(3) // same as the date-only '2026-06-01'
+  })
+
+  it('missedWeighIns handles ISO start + entry dates with suffixes', () => {
+    expect(
+      missedWeighIns('2026-06-01T12:00:00Z', '2026-06-10', [1, 4], ['2026-06-01T08:00:00Z'])
+    ).toEqual(['2026-06-04', '2026-06-08'])
+  })
+})

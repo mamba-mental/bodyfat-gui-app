@@ -60,6 +60,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // F10 (HIGH-9): unblock the app render NOW, after the synchronous
+      // localStorage read. ThemeProvider gates children on `mounted`, so deferring
+      // this until after the /api/theme fetch meant a slow/hung server blanked the
+      // entire app. The server load below still applies cross-session prefs — it
+      // just no longer holds the first paint hostage.
+      if (mountedRef.current) {
+        setMounted(true)
+      }
+
       // Then try to load from theme API for cross-session persistence
       try {
         const query = userIdRef.current ? `?user_id=${encodeURIComponent(userIdRef.current)}` : ''
