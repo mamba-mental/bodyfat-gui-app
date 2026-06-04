@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     trace: 'on-first-retry',
-    baseURL: 'http://localhost:3000', // Adjust to match your dev server
+    baseURL: 'http://localhost:3010', // App runs on :3010 (Windows reserves :3000)
     headless: true
   },
   projects: [
@@ -28,7 +28,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3010',
     reuseExistingServer: !process.env.CI,
     timeout: 180000, // 3 minutes
   }
