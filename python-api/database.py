@@ -87,6 +87,53 @@ class Database:
             if 'program_id' not in columns:
                 conn.execute('ALTER TABLE entries ADD COLUMN program_id TEXT')
 
+            # --- ReComp Cycle schema (F1: idempotent; was previously Alembic-only) ---
+            # Guarantees a fresh / non-migrated DB has the cycle schema so save_entry,
+            # save_cycle, and report save never 500 on a missing column or table. This
+            # makes the API self-migrating at startup (the launcher does not run Alembic).
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS cycles (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT,
+                    status TEXT NOT NULL DEFAULT 'active',
+                    start_weight REAL,
+                    start_bf REAL,
+                    goal_weight REAL,
+                    goal_bf REAL,
+                    timeline_weeks INTEGER,
+                    weighin_days TEXT,
+                    weighin_per_week INTEGER,
+                    legacy_program_id TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_cycles_one_active "
+                "ON cycles(user_id) WHERE status='active'"
+            )
+
+            entry_cols = [r[1] for r in conn.execute("PRAGMA table_info(entries)")]
+            if 'cycle_id' not in entry_cols:
+                conn.execute('ALTER TABLE entries ADD COLUMN cycle_id TEXT')
+
+            report_cols = [r[1] for r in conn.execute("PRAGMA table_info(reports)")]
+            if 'cycle_id' not in report_cols:
+                conn.execute('ALTER TABLE reports ADD COLUMN cycle_id TEXT')
+            if 'source_fingerprint' not in report_cols:
+                conn.execute('ALTER TABLE reports ADD COLUMN source_fingerprint TEXT')
+            if 'updated_at' not in report_cols:
+                conn.execute('ALTER TABLE reports ADD COLUMN updated_at TIMESTAMP')
+
+            # Stamp alembic_version to head so `alembic upgrade head` is a no-op on a
+            # DB this code already migrated (prevents double-apply if Alembic is run).
+            conn.execute('CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)')
+            if not conn.execute("SELECT 1 FROM alembic_version LIMIT 1").fetchone():
+                conn.execute("INSERT INTO alembic_version (version_num) VALUES ('f3c461796ba2')")
+
             conn.commit()
     
     def get_user(self, user_id: str = "default") -> Optional[Dict[str, Any]]:
