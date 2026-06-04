@@ -25,7 +25,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Entry Form Auto-Populate', () => {
-  const ENTRY_FORM_URL = 'http://localhost:3000/entries/new';
+  const ENTRY_FORM_URL = 'http://localhost:3010/entries/new';
   const TEST_USER_ID = 'test-user';
 
   test.beforeEach(async ({ page }) => {
@@ -353,7 +353,7 @@ test.describe('Entry Form Auto-Populate', () => {
     const initialValue = await weightInput.inputValue();
 
     // Navigate away
-    await page.goto('http://localhost:3000/entries');
+    await page.goto('http://localhost:3010/entries');
 
     // Navigate back
     await page.goto(ENTRY_FORM_URL);

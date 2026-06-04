@@ -20,7 +20,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Banner Aspect Ratio Preservation', () => {
-  const PROFILE_URL = 'http://localhost:3000/profile';
+  const PROFILE_URL = 'http://localhost:3010/profile';
 
   test('should navigate to /profile page', async ({ page }) => {
     await page.goto(PROFILE_URL);

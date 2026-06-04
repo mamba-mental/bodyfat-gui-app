@@ -25,7 +25,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Entry History Regression', () => {
   const TEST_USER_ID = '550e8400-e29b-41d4-a716-446655440000';
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
 
   test('should preserve all 12 historical entries (Constitution Article II)', async ({ request }) => {
     const response = await request.get(`${API_BASE}/entries?userId=${TEST_USER_ID}`);

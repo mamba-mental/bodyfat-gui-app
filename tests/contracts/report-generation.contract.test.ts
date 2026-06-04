@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 
 describe('Report Generation API Contract', () => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
 
   describe('POST /api/reports/generate', () => {
     it('should accept valid ReportRequest schema', async () => {

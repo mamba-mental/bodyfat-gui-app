@@ -81,7 +81,7 @@ describe('generate-report route timeout', () => {
       headers: { 'Content-Type': 'application/json' },
       duplex: 'half'
     }
-    const request = new Request('http://localhost:3000/api/generate-report', requestInit)
+    const request = new Request('http://localhost:3010/api/generate-report', requestInit)
 
     const response = await POST(request as unknown as import('next/server').NextRequest)
 

@@ -21,7 +21,7 @@ import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 
 describe('Report Form Auto-Populate Flow', () => {
-  const API_URL = 'http://localhost:3000';
+  const API_URL = 'http://localhost:3010';
   const TEST_USER_ID = 'test-user';
   const DB_PATH = 'data/bodyfat.db';
 

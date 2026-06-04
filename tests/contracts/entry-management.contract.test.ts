@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Entry Management API Contract', () => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
 
   describe('GET /api/entries', () => {
     it('should return EntryListResponse schema', async () => {

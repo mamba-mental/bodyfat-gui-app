@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 
 describe('Dashboard Production State Flow (T009)', () => {
-  const API_URL = 'http://localhost:3000';
+  const API_URL = 'http://localhost:3010';
   const PAGE_SOURCE_PATH = 'src/app/page.tsx';
 
   // Debugging text to search for

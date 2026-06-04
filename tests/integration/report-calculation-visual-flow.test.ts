@@ -19,7 +19,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 describe('Report Calculation + Visual Verification Flow', () => {
   const PYTHON_API_URL = 'http://localhost:8000';
-  const NEXT_API_URL = 'http://localhost:3000';
+  const NEXT_API_URL = 'http://localhost:3010';
   const TERMINAL_REFERENCE_PATH = 'Z:/2024.0917 - Bf-estimator-v2/122924_bf-estimator-terminal/results/Master_Journey_Prime_Prime_20250916_164621.pdf';
 
   let generatedReportId: string;

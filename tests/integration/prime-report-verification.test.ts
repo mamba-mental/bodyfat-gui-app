@@ -24,7 +24,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 describe('PRIME Report Numerical Verification', () => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
   const PYTHON_API_BASE = process.env.PYTHON_API_URL || 'http://localhost:5000';
   const TOLERANCE = 0.0001; // Constitution Article V requirement
 

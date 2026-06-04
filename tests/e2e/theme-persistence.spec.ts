@@ -24,8 +24,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Theme Persistence', () => {
-  const SETTINGS_URL = 'http://localhost:3000/settings';
-  const HOME_URL = 'http://localhost:3000';
+  const SETTINGS_URL = 'http://localhost:3010/settings';
+  const HOME_URL = 'http://localhost:3010';
 
   test.beforeEach(async ({ page }) => {
     // Clear localStorage before each test to ensure clean state
@@ -207,7 +207,7 @@ test.describe('Theme Persistence', () => {
     expect(htmlClass).toContain('dark');
 
     // Navigate to reports page
-    await page.goto('http://localhost:3000/reports');
+    await page.goto('http://localhost:3010/reports');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(300);
 

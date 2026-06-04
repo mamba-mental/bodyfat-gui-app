@@ -19,7 +19,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('AI Settings Route Accessibility', () => {
-  const AI_SETTINGS_URL = 'http://localhost:3000/settings/ai';
+  const AI_SETTINGS_URL = 'http://localhost:3010/settings/ai';
 
   test('should navigate to /settings/ai page and return HTTP 200', async ({ page }) => {
     // Navigate to AI settings page
@@ -261,7 +261,7 @@ test.describe('AI Settings Route Accessibility', () => {
     await expect(page.locator('text=Assign different AI models')).toBeVisible();
 
     // Navigate away and back
-    await page.goto('http://localhost:3000/settings');
+    await page.goto('http://localhost:3010/settings');
     await page.goBack();
 
     // Verify page is still accessible

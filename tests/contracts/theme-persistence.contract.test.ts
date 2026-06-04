@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Theme Persistence API Contract', () => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
 
   describe('GET /api/theme', () => {
     it('should return ThemePreference schema', async () => {

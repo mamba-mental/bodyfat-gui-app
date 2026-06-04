@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest';
 
 describe('AI Settings API Contract', () => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api';
 
   describe('GET /api/settings/ai', () => {
     it('should return AISettings schema', async () => {
@@ -229,7 +229,7 @@ describe('AI Settings API Contract', () => {
   describe('AI Settings Page Routing (FR-009, FR-010)', () => {
     it('should access /settings/ai without 404', async () => {
       // This is a Next.js page route test
-      const response = await fetch('http://localhost:3000/settings/ai');
+      const response = await fetch('http://localhost:3010/settings/ai');
 
       // Contract: Page must be accessible (not 404)
       expect(response.status).not.toBe(404);

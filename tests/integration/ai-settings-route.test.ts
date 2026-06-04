@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 
 describe('AI Settings Route Accessibility', () => {
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'http://localhost:3010';
   const AI_SETTINGS_PATH = 'src/app/settings/ai/page.tsx';
 
   it('should return HTTP 200 for /settings/ai route (not 404)', async () => {
