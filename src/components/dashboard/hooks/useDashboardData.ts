@@ -5,7 +5,7 @@ import { useApp } from "@/contexts/app-context"
 import { calculateProgressPercentage, estimateTimeToGoal } from "@/lib/calculations"
 import { archiveProgram as archiveProgramAction } from "@/contexts/app/actions"
 import { useCycles } from "@/hooks/use-cycles"
-import { activeCycleMetrics } from "@/lib/cycleMetrics"
+import { activeCycleMetrics, cycleScopedCalcUser } from "@/lib/cycleMetrics"
 import { currentCycleWeek } from "@/lib/cycleWeek"
 
 export interface ProgramData {
@@ -175,12 +175,16 @@ export function useDashboardData() {
     }
   }, [current_calculation, goalWeight, goalBF, programData.totalWeeks, current_user])
 
-  // Handle initial calculation if needed
+  // Handle initial calculation if needed.
+  // F7: feed the SAME cycle-scoped input the report uses, so the dashboard's
+  // progression (calories, time-to-goal) and the report never disagree.
   React.useEffect(() => {
     if (current_user && !current_calculation && !loading) {
-      calculateAndUpdateProgression()
+      calculateAndUpdateProgression(
+        activeCycle ? cycleScopedCalcUser(current_user, entries, activeCycle) : undefined,
+      )
     }
-  }, [current_user, current_calculation, loading, calculateAndUpdateProgression])
+  }, [current_user, current_calculation, loading, calculateAndUpdateProgression, activeCycle, entries])
 
   const metrics: DashboardMetrics = {
     currentWeight,

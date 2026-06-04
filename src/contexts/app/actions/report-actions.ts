@@ -14,6 +14,27 @@ import {
 } from '@/lib/storage-api'
 import { getEatingWindowHours } from '@/lib/eating-patterns'
 import { fireWeighInWebhook } from '@/lib/weighinWebhook'
+import { activeCycleMetrics, cycleScopedCalcUser, type ActiveCycleLike } from '@/lib/cycleMetrics'
+
+/**
+ * Resolve the cycle a report belongs to: the explicit cycleId when provided
+ * (reports page), else the active cycle (auto-report after a weigh-in). Returns
+ * null when offline / no cycles — callers then fall back to legacy scoping.
+ */
+async function resolveReportCycle(cycleId?: string): Promise<ActiveCycleLike | null> {
+  try {
+    const res = await fetch('/api/data/cycles', { cache: 'no-store' })
+    if (!res.ok) return null
+    const cycles = await res.json()
+    if (!Array.isArray(cycles)) return null
+    const match = cycleId
+      ? cycles.find((c: ActiveCycleLike) => c.id === cycleId)
+      : cycles.find((c: { status?: string }) => c.status === 'active')
+    return (match as ActiveCycleLike) ?? null
+  } catch {
+    return null
+  }
+}
 
 const REPORT_GENERATION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 const REPORT_GENERATION_TIMEOUT_BUFFER_MS = REPORT_GENERATION_TIMEOUT_MS + 5000
@@ -60,28 +81,32 @@ export async function generateReport(
     return
   }
 
-  // Filter entries for current program (by program_id or start_date)
+  // F4: scope the report to the ACTIVE CYCLE (same aggregate the dashboard uses),
+  // not legacy program_id/start_date. When no cycle resolves (offline/pre-cycle),
+  // fall back to the legacy program filter so old profiles still generate.
   const today = new Date().toISOString().split('T')[0]
-  const programStartDate = userData.program_reference?.start_date || userData.start_date || today
+  const reportCycle = await resolveReportCycle(cycleId)
 
-  let currentProgramEntriesForReport = entries
-  if (userData.current_program_id) {
-    // First try to filter by program_id
-    const byProgramId = entries.filter(e => e.program_id === userData.current_program_id)
-    if (byProgramId.length > 0) {
-      currentProgramEntriesForReport = byProgramId
+  let currentProgramEntriesForReport: BodyFatEntry[]
+  if (reportCycle) {
+    currentProgramEntriesForReport = activeCycleMetrics(entries, reportCycle, userData).cycleEntries
+  } else {
+    const programStartDate = userData.program_reference?.start_date || userData.start_date || today
+    if (userData.current_program_id) {
+      const byProgramId = entries.filter(e => e.program_id === userData.current_program_id)
+      currentProgramEntriesForReport = byProgramId.length > 0
+        ? byProgramId
+        : entries.filter(e => {
+            try {
+              const dateObj = new Date(e.date)
+              if (isNaN(dateObj.getTime())) return false
+              return dateObj.toISOString().split('T')[0] >= programStartDate
+            } catch {
+              return false
+            }
+          })
     } else {
-      // Fallback: filter by date >= program start
-      currentProgramEntriesForReport = entries.filter(e => {
-        try {
-          const dateObj = new Date(e.date)
-          if (isNaN(dateObj.getTime())) return false
-          const entryDate = dateObj.toISOString().split('T')[0]
-          return entryDate >= programStartDate
-        } catch {
-          return false
-        }
-      })
+      currentProgramEntriesForReport = entries
     }
   }
 
@@ -123,38 +148,34 @@ export async function generateReport(
       payload: { status: 'Calculating progression for report...', entryDate: entryDateForStatus },
     })
 
-    // Prepare user data for report
+    // F7: build the calculation input via the SAME cycle-scoped builder the
+    // dashboard /calculate uses, so the report and the dashboard never disagree.
+    // current_weight = the active cycle's latest weigh-in; start_date = the
+    // cycle's start (NOT clobbered to today, which broke the timeline + parity).
+    // No active cycle -> legacy: latest in-program entry overrides current_weight.
     let updatedUserData = { ...userData }
-    const today = new Date().toISOString().split('T')[0]
-    const programStartDate = userData.start_date || today
-
-    console.log('[ReportActions] entries available:', entries.length, 'program start:', programStartDate)
-
-    if (entries.length > 0) {
-      const currentProgramEntries = entries.filter(entry => {
+    if (reportCycle) {
+      updatedUserData = cycleScopedCalcUser(updatedUserData, entries, reportCycle)
+    } else {
+      const programStartDate = userData.start_date || today
+      const legacyEntries = entries.filter(entry => {
         try {
           const dateObj = new Date(entry.date)
           if (isNaN(dateObj.getTime())) return false
-          const entryDate = dateObj.toISOString().split('T')[0]
-          return entryDate >= programStartDate
+          return dateObj.toISOString().split('T')[0] >= programStartDate
         } catch {
           return false
         }
       })
-
-      if (currentProgramEntries.length > 0) {
-        const latestEntry = currentProgramEntries[0]
-        console.log('[ReportActions] Using entry from current program:', latestEntry.date, latestEntry.weight)
+      const latestEntry = legacyEntries[0]
+      if (latestEntry) {
         updatedUserData.current_weight = latestEntry.weight
         if (latestEntry.body_fat_percentage) {
           updatedUserData.current_bf = latestEntry.body_fat_percentage
         }
-      } else {
-        console.log('[ReportActions] No entries in current program, using profile data:', updatedUserData.current_weight)
       }
+      updatedUserData.start_date = today
     }
-
-    updatedUserData.start_date = today
     updatedUserData = ensureEatingPattern(updatedUserData)!
     console.log('[ReportActions] Using updated user data for report:', updatedUserData)
 
@@ -206,7 +227,7 @@ export async function generateReport(
       // P7 gate inputs: the cycle this report belongs to + the fingerprint of the
       // source data it was derived from. Persisted so the next generation can detect
       // "no new data" (block) vs an edited entry (allow as update).
-      ...(cycleId ? { cycle_id: cycleId } : {}),
+      ...((reportCycle?.id || cycleId) ? { cycle_id: reportCycle?.id || cycleId } : {}),
       ...(sourceFingerprint ? { source_fingerprint: sourceFingerprint } : {}),
     } as Report
 

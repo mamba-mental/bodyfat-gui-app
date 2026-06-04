@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeCycleMetrics } from '@/lib/cycleMetrics';
+import { activeCycleMetrics, cycleScopedCalcUser } from '@/lib/cycleMetrics';
 import type { Cycle } from '@/hooks/use-cycles';
 
 /**
@@ -95,5 +95,42 @@ describe('activeCycleMetrics', () => {
     expect(m.startWeight).toBe(200);
     expect(m.goalWeight).toBe(180);
     expect(m.cycleEntries).toHaveLength(0);
+  });
+});
+
+/**
+ * F4+F7 — the report and the dashboard /calculate must feed fetchCalculation the
+ * SAME inputs. cycleScopedCalcUser is the one builder both call, so the report's
+ * numbers can never diverge from the dashboard's again.
+ */
+describe('cycleScopedCalcUser', () => {
+  const user = {
+    name: 'PRIME', current_weight: 200, current_bf: 25, // profile blob
+    goal_weight: 180, goal_bf: 12, start_date: '2025-01-01',
+  } as any;
+
+  it('injects the active cycle latest weigh-in + cycle baseline as calc inputs', () => {
+    const entries = [
+      mk('e2', '2026-06-10', 264.0, 38.5, 'cyc-0626'),
+      mk('e1', '2026-06-03', 266.8, 39.2, 'cyc-0626'),
+    ];
+    const out = cycleScopedCalcUser(user, entries, activeCycle);
+
+    expect(out.current_weight).toBe(264.0);     // cycle latest, NOT 200 profile
+    expect(out.current_bf).toBe(38.5);
+    expect(out.goal_weight).toBe(217);          // cycle goal
+    expect(out.start_date).toBe('2026-06-03');  // cycle start, NOT clobbered to today
+  });
+
+  it('is identity when there is no active cycle (legacy unaffected)', () => {
+    const out = cycleScopedCalcUser(user, [], null);
+    expect(out.current_weight).toBe(200);
+    expect(out.start_date).toBe('2025-01-01');
+  });
+
+  it('does not mutate the input userData (immutability)', () => {
+    const entries = [mk('e1', '2026-06-03', 266.8, 39.2, 'cyc-0626')];
+    cycleScopedCalcUser(user, entries, activeCycle);
+    expect(user.current_weight).toBe(200); // original untouched
   });
 });

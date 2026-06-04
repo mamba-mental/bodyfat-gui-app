@@ -24,6 +24,7 @@ export interface ScopedEntry {
 
 export interface ActiveCycleLike {
   id: string
+  start_date?: string | null
   start_weight?: number | null
   start_bf?: number | null
   goal_weight?: number | null
@@ -112,5 +113,31 @@ export function activeCycleMetrics<E extends ScopedEntry>(
     startBF,
     goalWeight: firstFinite(active.goal_weight, profile.goal_weight),
     goalBF: firstFinite(active.goal_bf, profile.goal_bf),
+  }
+}
+
+/**
+ * Build the userData fed to fetchCalculation, scoped to the active cycle (F4+F7).
+ *
+ * Both the dashboard's /calculate path and the report generator call this, so
+ * they always send the SAME current weight / baseline / goals / start date to
+ * the backend. Before this, the report injected the latest-entry weight and
+ * clobbered start_date=today while /calculate used the raw profile blob — so the
+ * report and dashboard showed different numbers for the same cycle.
+ *
+ * Returns a NEW object (never mutates the input). Identity when no active cycle.
+ */
+export function cycleScopedCalcUser<
+  U extends ProfileFallback & { start_date?: string | null },
+>(userData: U, entries: ScopedEntry[], cycle: ActiveCycleLike | null): U {
+  if (!cycle) return userData
+  const m = activeCycleMetrics(entries, cycle, userData)
+  return {
+    ...userData,
+    current_weight: m.currentWeight,
+    current_bf: m.currentBF,
+    goal_weight: m.goalWeight,
+    goal_bf: m.goalBF,
+    ...(cycle.start_date ? { start_date: String(cycle.start_date).slice(0, 10) } : {}),
   }
 }

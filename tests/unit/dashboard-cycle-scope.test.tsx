@@ -46,7 +46,7 @@ describe('Dashboard — active-cycle scoping (F3+F5)', () => {
       return Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
     }) as unknown as typeof fetch)
   })
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => { vi.unstubAllGlobals() })
 
   const renderDashboard = (stateOverrides = {}) => {
     const state = {
