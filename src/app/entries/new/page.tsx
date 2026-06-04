@@ -18,9 +18,14 @@ export default function NewEntryPage() {
   const { error, entries } = state
   const [isSaving, setIsSaving] = React.useState(false)
 
-  // Entry dates feed missed-weigh-in detection in the cycle banner.
+  // Entry dates feed missed-weigh-in detection, which needs canonical
+  // YYYY-MM-DD strings (F9). Normalise here: BodyFatEntry.date may be an ISO
+  // string or a Date, so collapse both to date-only.
   const entryDates = React.useMemo(
-    () => (entries ?? []).map((e: { date: string }) => e.date),
+    () =>
+      (entries ?? []).map((e) =>
+        e.date instanceof Date ? e.date.toISOString().slice(0, 10) : String(e.date).slice(0, 10)
+      ),
     [entries]
   )
 

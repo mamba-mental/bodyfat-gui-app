@@ -120,5 +120,29 @@ describe("buildProgressTrendChartData", () => {
       bodyFatActual: null,
     })
   })
+
+  // F9 — one canonical date format. The backend emits WeeklyProgression.date as
+  // MMDDYY ("061026"), which new Date() can't parse → it used to collapse to
+  // today/epoch and render "Jan 1". Predicted dates must derive deterministically
+  // from the latest actual entry + week index (weekIdx*7, no off-by-one).
+  it("derives predicted dates from the latest actual + week index, ignoring MMDDYY backend dates", () => {
+    const entries: BodyFatEntry[] = [
+      buildEntry({ id: "a", date: "2026-06-03T00:00:00.000Z", weight: 266.8, body_fat_percentage: 39.2 }),
+    ]
+    const progression: WeeklyProgression[] = [
+      buildWeek({ date: "061026", weight: 264, body_fat_percentage: 38.5 }),
+      buildWeek({ date: "061726", weight: 262, body_fat_percentage: 38.0 }),
+    ]
+
+    const chartData = buildProgressTrendChartData(entries, progression)
+    const predicted = chartData.filter((p) => p.type === "predicted")
+
+    // week 0 aligns with the latest actual (Jun 3), week 1 is +7 days (Jun 10).
+    expect(predicted[0].fullDate.slice(0, 7)).toBe("2026-06")
+    expect(predicted[1].fullDate.slice(0, 10)).toBe("2026-06-10")
+    // No point collapses to the 1970 epoch / "Jan 1".
+    expect(chartData.every((p) => !p.fullDate.startsWith("1970"))).toBe(true)
+    expect(chartData.every((p) => p.date !== "Jan 1")).toBe(true)
+  })
 })
 

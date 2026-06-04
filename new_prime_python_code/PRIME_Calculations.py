@@ -437,8 +437,13 @@ def predict_weight_loss(
         )
         fat_loss_ratio = min(fat_loss_ratio * fasting_fat_multiplier, 0.98)
 
-        # Calculate actual fat and lean mass changes
-        fat_loss = weekly_fat_target
+        # Calculate actual fat and lean mass changes.
+        # F8 (audit HIGH-1): consume fat_loss_ratio. Total weekly loss stays
+        # pinned to weekly_weight_target (the dual-goal target); fat_loss_ratio
+        # sets what FRACTION of that loss is fat vs lean, so diet/exercise/PED/
+        # fasting/bodybuilder modifiers actually shape body composition. Bounded
+        # to the weekly target so fat loss can never exceed the week's total loss.
+        fat_loss = weekly_weight_target * fat_loss_ratio
 
         # Estimate muscle gain
         # Convert scores (1-10) to approximate training volume and intensity

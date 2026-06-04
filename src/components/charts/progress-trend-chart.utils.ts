@@ -301,11 +301,12 @@ export function buildProgressTrendChartData(
       }
     })
 
-  // Predicted weeks are weekly forward projections. The backend progression `date`
-  // is unreliable (often a week index that parses to the 1970 epoch -> every x-axis
-  // tick renders "Jan 1"). Derive the date deterministically from the latest actual
-  // entry + the week offset instead, falling back to the backend date only when it's
-  // plausible (year >= 2000).
+  // F9 — one canonical date format. The backend progression `date` is MMDDYY
+  // ("061026"), which new Date() mis-parses (Invalid, the 1970 epoch -> "Jan 1",
+  // or even a 6-digit year like +061026). It is NOT a usable date. So we IGNORE
+  // it entirely and derive each predicted week deterministically from the latest
+  // actual entry + the week index: week 0 aligns with the last actual (connecting
+  // the actual and predicted lines), week N is +N*7 days. No off-by-one, no epoch.
   const predBaseSorted = [...entries].sort(
     (a, b) => normaliseDate(a.date).getTime() - normaliseDate(b.date).getTime()
   )
@@ -317,12 +318,8 @@ export function buildProgressTrendChartData(
     progression
       ?.slice(0, maxPredictedWeeks)
       .map<ProgressTrendChartPoint>((week, weekIdx) => {
-        const parsed = normaliseDate(week.date)
-        let progressionDate = parsed
-        if (parsed.getFullYear() < 2000) {
-          progressionDate = new Date(predBase)
-          progressionDate.setDate(progressionDate.getDate() + (weekIdx + 1) * 7)
-        }
+        const progressionDate = new Date(predBase)
+        progressionDate.setDate(progressionDate.getDate() + weekIdx * 7)
 
         return {
           date: formatLabelDate(progressionDate),

@@ -549,6 +549,15 @@ async def generate_report(user_data: UserData):
             diet_type=user_data.diet_type,
             exercise_type=user_data.exercise_type,
             sleep_quality=user_data.sleep_quality,
+            # F8/HIGH-2: pass the SAME modifier inputs as /calculate (main.py:408-411)
+            # so the report projection matches the dashboard. Omitting these let
+            # predict_weight_loss fall back to defaults (3 / 7 / 7 / 12.0), and now
+            # that fat_loss_ratio is live (F8), a user on OMAD or non-default volume
+            # got one curve on the dashboard and a different one in the saved report.
+            workout_days=user_data.workout_days,
+            volume_score=user_data.volume_score,
+            intensity_score=user_data.intensity_score,
+            eating_window_hours=user_data.eating_window_hours,
         )
 
         # Generate report using fast version (no AI analysis)
