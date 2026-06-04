@@ -81,8 +81,12 @@ export class DataSync {
   /**
    * Save entry with write-through to both Redis and SQLite
    */
-  async saveEntry(entry: BodyFatEntry): Promise<{ success: boolean; error?: string }> {
+  async saveEntry(entry: BodyFatEntry): Promise<{ success: boolean; error?: string; entry?: BodyFatEntry }> {
     const errors: string[] = [];
+    // F2: capture the SERVER-resolved row so the canonical cycle_id (assigned by
+    // the Python repository when the client posts without one) flows back to
+    // client state. Without this, the reducer holds a cycle-orphaned weigh-in.
+    let persisted: BodyFatEntry | undefined;
 
     // Write to SQLite first (source of truth)
     try {
@@ -95,6 +99,13 @@ export class DataSync {
       if (!sqliteResponse.ok) {
         const errorData = await sqliteResponse.json().catch(() => ({}));
         errors.push(`SQLite write failed: ${errorData.detail || sqliteResponse.statusText}`);
+      } else {
+        // Python returns { success, message, entry } — unwrap the resolved row.
+        const payload = await sqliteResponse.json().catch(() => null);
+        const row = payload?.entry ?? payload;
+        if (row && typeof row === 'object' && 'id' in row) {
+          persisted = row as BodyFatEntry;
+        }
       }
     } catch (error) {
       errors.push(`SQLite write error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -119,6 +130,7 @@ export class DataSync {
     return {
       success: errors.length === 0,
       error: errors.length > 0 ? errors.join('; ') : undefined,
+      entry: persisted,
     };
   }
 

@@ -222,7 +222,12 @@ class Database:
                 cycle_id
             ))
             conn.commit()
-    
+        # Return the resolved row (new dict — never mutate the caller's input) so
+        # the server-assigned cycle_id flows back through the response to client
+        # state. Without this, the React reducer holds a cycle-orphaned weigh-in
+        # even though the DB row is correct (the "active cycle looks empty" bug).
+        return {**entry, 'user_id': user_id, 'cycle_id': cycle_id}
+
     def delete_entry(self, entry_id: str):
         """Delete an entry"""
         with sqlite3.connect(self.db_path) as conn:

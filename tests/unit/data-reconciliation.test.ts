@@ -82,6 +82,30 @@ describe('normaliseEntry', () => {
   it('returns null when id is missing', () => {
     expect(normaliseEntry({})).toBeNull();
   });
+
+  // F2: the Redis-cache route runs every saved entry through normaliseEntry.
+  // It used to whitelist fields WITHOUT cycle_id/program_id, so the
+  // server-resolved cycle_id was silently dropped before the entry reached
+  // client state — the "active cycle looks empty" bug. The cycle identity must
+  // survive normalisation.
+  it('preserves cycle_id and program_id (cycle identity survives)', () => {
+    const entry = normaliseEntry({
+      id: 'e1',
+      date: '2026-06-03',
+      weight: 266.8,
+      body_fat_percentage: 39.2,
+      cycle_id: 'cyc-0626',
+      program_id: 'prog-legacy',
+    });
+
+    expect(entry?.cycle_id).toBe('cyc-0626');
+    expect(entry?.program_id).toBe('prog-legacy');
+  });
+
+  it('leaves cycle_id undefined when absent (no fabricated tag)', () => {
+    const entry = normaliseEntry({ id: 'e2', date: '2026-06-03', weight: 200 });
+    expect(entry?.cycle_id).toBeUndefined();
+  });
 });
 
 describe('reconcileEntries', () => {

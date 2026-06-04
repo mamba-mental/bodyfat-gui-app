@@ -76,7 +76,12 @@ export async function POST(request: NextRequest) {
         );
 
         if (response.ok) {
-          savedFromPython = await response.json();
+          // Python returns { success, message, entry } — unwrap to the entry
+          // row, which carries the server-resolved cycle_id (F2). Feeding the
+          // whole wrapper to normaliseEntry returned null (no .id on the
+          // wrapper) and the cycle-tagged row was lost.
+          const payload = await response.json();
+          savedFromPython = payload?.entry ?? payload;
         } else {
           pythonError = `Python API returned ${response.status}`;
           console.warn('Error saving entry in Python API:', pythonError);

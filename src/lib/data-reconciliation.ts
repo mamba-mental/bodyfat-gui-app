@@ -28,7 +28,7 @@ export function normaliseEntry(entry: any): BodyFatEntry | null {
     return date.toISOString();
   };
 
-  return {
+  const normalised: BodyFatEntry = {
     id,
     date: typeof entry.date === 'string' ? entry.date : toTimestamp(entry.date),
     weight: Number(entry.weight ?? entry.weight_lbs ?? entry.body_weight ?? 0),
@@ -38,6 +38,15 @@ export function normaliseEntry(entry: any): BodyFatEntry | null {
     created_at: toTimestamp(entry.created_at ?? entry.timestamp),
     updated_at: toTimestamp(entry.updated_at ?? entry.modified_at ?? entry.timestamp),
   };
+
+  // F2: cycle identity must survive normalisation. The cache route ran every
+  // saved entry through here, and omitting these fields silently orphaned the
+  // weigh-in from its cycle before it reached client state. Only attach when
+  // present so we never fabricate a tag (the "undefined when absent" contract).
+  if (entry.cycle_id != null) normalised.cycle_id = entry.cycle_id;
+  if (entry.program_id != null) normalised.program_id = entry.program_id;
+
+  return normalised;
 }
 
 export interface ReconciledEntries {

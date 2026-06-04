@@ -89,7 +89,11 @@ export async function saveEntry(entry: BodyFatEntry): Promise<BodyFatEntry> {
   if (!result.success) {
     throw new Error(result.error || 'Failed to save entry')
   }
-  return entry
+  // F2: return the SERVER-persisted row when available — it carries the
+  // canonical cycle_id the repository assigned. The reducer dispatch downstream
+  // depends on this so cycle-scoped views see the weigh-in immediately. Fall
+  // back to the input only if the server didn't echo a row.
+  return result.entry ?? entry
 }
 
 export async function deleteEntry(entryId: string): Promise<void> {

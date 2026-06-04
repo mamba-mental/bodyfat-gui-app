@@ -322,8 +322,11 @@ async def save_entry(entry: Entry):
         entry_dict["created_at"] = datetime.now().isoformat()
         entry_dict["updated_at"] = datetime.now().isoformat()
 
-    db.save_entry(entry_dict, "default")  # Unified user_id (post 2026-05-04 data unification)
-    return {"success": True, "message": "Entry saved", "entry": entry_dict}
+    # save_entry returns the RESOLVED row (with the server-assigned cycle_id),
+    # so the response carries the canonical cycle_id back to the client. Returning
+    # the pre-save entry_dict here was the F2 bug: cycle_id came back null.
+    saved = db.save_entry(entry_dict, "default")  # Unified user_id (post 2026-05-04 data unification)
+    return {"success": True, "message": "Entry saved", "entry": saved}
 
 
 @router.delete("/api/data/entries/{entry_id}")
