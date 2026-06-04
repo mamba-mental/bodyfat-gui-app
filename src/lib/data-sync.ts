@@ -278,20 +278,23 @@ export class DataSync {
    */
   async getReports(): Promise<Report[]> {
     try {
-      // Try Redis first via Next.js API route
-      const redisResponse = await fetch('/api/data/reports', {
+      // F6: the /api/data/reports route is a Python-canonical proxy (Python first,
+      // Redis only as an offline fallback inside the route), so this is the SAME
+      // SQLite backend reports are written to — not a Redis-first read. cycle_id
+      // survives because Python is the source of truth on both save and read.
+      const primaryResponse = await fetch('/api/data/reports', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (redisResponse.ok) {
-        const reports = await redisResponse.json();
+      if (primaryResponse.ok) {
+        const reports = await primaryResponse.json();
         if (reports && reports.length > 0) {
           return reports;
         }
       }
     } catch (error) {
-      console.warn('[DataSync] Redis reports read failed, falling back to SQLite:', error);
+      console.warn('[DataSync] reports route read failed, falling back to direct Python:', error);
     }
 
     // Fallback to SQLite via Python API

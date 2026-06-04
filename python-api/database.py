@@ -332,8 +332,13 @@ class Database:
                 report_data = json.loads(row['data'])
                 report_data['id'] = row['id']
                 report_data['file_path'] = row['file_path']
+                # F6: the cycle_id COLUMN is authoritative (it carries the
+                # active-cycle fallback resolved at save time). The list path
+                # already does this; the detail path used to omit it, so the same
+                # report read two ways gave two answers.
+                report_data['cycle_id'] = row['cycle_id'] if 'cycle_id' in row.keys() else None
                 return report_data
-            
+
             return None
     
     def save_report(self, report: Dict[str, Any], user_id: str = "default"):
