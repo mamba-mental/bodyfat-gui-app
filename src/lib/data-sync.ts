@@ -79,16 +79,23 @@ export class DataSync {
   }
 
   /**
-   * Save entry with write-through to both Redis and SQLite
+   * Save entry with write-through to both Redis and SQLite.
+   *
+   * BUG-FIX (silent save desync): the Python SQLite write is now the hard gate.
+   * If it fails (non-OK HTTP status or network error) we THROW immediately so
+   * the caller (storage-api saveEntry → entry-actions addEntry) never dispatches
+   * ADD_ENTRY and the UI cannot show an entry that the DB never received.
+   * Redis is best-effort only — a Redis failure is logged but does NOT throw.
    */
   async saveEntry(entry: BodyFatEntry): Promise<{ success: boolean; error?: string; entry?: BodyFatEntry }> {
-    const errors: string[] = [];
     // F2: capture the SERVER-resolved row so the canonical cycle_id (assigned by
     // the Python repository when the client posts without one) flows back to
     // client state. Without this, the reducer holds a cycle-orphaned weigh-in.
     let persisted: BodyFatEntry | undefined;
 
-    // Write to SQLite first (source of truth)
+    // ── HARD GATE: Write to SQLite (source of truth) ─────────────────────────
+    // Any failure here throws so the caller never adds a phantom entry to state.
+    let sqliteErrorMsg: string | undefined;
     try {
       const sqliteResponse = await fetch(`${PYTHON_API_URL}/api/data/entries`, {
         method: 'POST',
@@ -98,7 +105,7 @@ export class DataSync {
 
       if (!sqliteResponse.ok) {
         const errorData = await sqliteResponse.json().catch(() => ({}));
-        errors.push(`SQLite write failed: ${errorData.detail || sqliteResponse.statusText}`);
+        sqliteErrorMsg = `SQLite write failed (${sqliteResponse.status}): ${errorData.detail || sqliteResponse.statusText}`;
       } else {
         // Python returns { success, message, entry } — unwrap the resolved row.
         const payload = await sqliteResponse.json().catch(() => null);
@@ -108,10 +115,17 @@ export class DataSync {
         }
       }
     } catch (error) {
-      errors.push(`SQLite write error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      sqliteErrorMsg = `SQLite write error: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
 
-    // Write to Redis (cache)
+    if (sqliteErrorMsg) {
+      // THROW — entry was NOT persisted; caller must NOT dispatch ADD_ENTRY.
+      throw new Error(sqliteErrorMsg);
+    }
+
+    // ── BEST-EFFORT: Write to Redis (cache) ──────────────────────────────────
+    // Redis failure only logs — it does NOT prevent the entry from being added
+    // to UI state because SQLite (the source of truth) already confirmed the save.
     try {
       const redisResponse = await fetch('/api/data/entries', {
         method: 'POST',
@@ -121,15 +135,14 @@ export class DataSync {
 
       if (!redisResponse.ok) {
         const errorData = await redisResponse.json().catch(() => ({}));
-        errors.push(`Redis write failed: ${errorData.error || redisResponse.statusText}`);
+        console.warn('[DataSync] Redis write failed (non-fatal):', errorData.error || redisResponse.statusText);
       }
     } catch (error) {
-      errors.push(`Redis write error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.warn('[DataSync] Redis write error (non-fatal):', error instanceof Error ? error.message : 'Unknown error');
     }
 
     return {
-      success: errors.length === 0,
-      error: errors.length > 0 ? errors.join('; ') : undefined,
+      success: true,
       entry: persisted,
     };
   }
@@ -140,26 +153,30 @@ export class DataSync {
   async deleteEntry(entryId: string): Promise<{ success: boolean; error?: string }> {
     const errors: string[] = [];
 
-    // Delete from SQLite first (source of truth)
+    // Delete from SQLite first (source of truth).
+    // A 404 means the row is already gone — that IS the desired end-state of a
+    // delete, so we treat it as success (idempotent delete), not a failure.
     try {
       const sqliteResponse = await fetch(`${PYTHON_API_URL}/api/data/entries/${entryId}`, {
         method: 'DELETE',
       });
 
-      if (!sqliteResponse.ok) {
+      if (!sqliteResponse.ok && sqliteResponse.status !== 404) {
         errors.push(`SQLite delete failed: ${sqliteResponse.statusText}`);
       }
     } catch (error) {
       errors.push(`SQLite delete error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    // Delete from Redis (cache)
+    // Delete from Redis (cache). Same idempotency rule: a cache miss (404) just
+    // means the entry was never cached or already evicted — the goal (key absent)
+    // is satisfied, so it is NOT a partial failure.
     try {
       const redisResponse = await fetch(`/api/entries/${entryId}`, {
         method: 'DELETE',
       });
 
-      if (!redisResponse.ok) {
+      if (!redisResponse.ok && redisResponse.status !== 404) {
         errors.push(`Redis delete failed: ${redisResponse.statusText}`);
       }
     } catch (error) {

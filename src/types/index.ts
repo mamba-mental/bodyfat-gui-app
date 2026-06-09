@@ -46,12 +46,26 @@ export interface UserData {
 
   ped_use?: boolean;
 
+  /**
+   * PED (Performance-Enhancing Drug) stack — array of compounds the user is running.
+   * Optional: old data without this field must still typecheck.
+   * Empty array or undefined → engine falls back to the ped_use boolean path unchanged.
+   * Contract: matches Python engine's `ped_stack` parameter exactly.
+   */
+  ped_stack?: { compound: string; dose_mg?: number; phase?: string }[];
+
   exercise_type?: string;
   sleep_quality?: string;
   // Body Measurements
   waist?: number; // inches
   hip?: number; // inches
   neck?: number; // inches
+
+  // Goal type — drives which curve + floor + partitioning model the engine runs
+  goal_type?: "cut" | "recomp" | "lean_gain" | "maintain"; // default "cut"
+
+  // Configurable calorie floor (kcal/day). Default 1200. PSMF day floor = max(floor, protein_g*4+250)
+  calorie_floor?: number; // default 1200
 
   // Calculated field
   timeline_weeks?: number;
@@ -124,7 +138,7 @@ export interface WeeklyProgression {
   date: string; // MMDDYY format
   weight: number; // lbs
   body_fat_percentage: number; // percentage
-  daily_calorie_intake: number; // calories
+  daily_calorie_intake: number; // calories — training-day headline (see weekly_average_calories for the blended avg)
   tdee: number; // Total Daily Energy Expenditure
   weekly_caloric_output: number; // deficit calories
   total_weight_lost: number; // cumulative lbs
@@ -134,6 +148,25 @@ export interface WeeklyProgression {
   rmr: number; // Resting Metabolic Rate
   tef: number; // Thermic Effect of Food
   neat: number; // Non-Exercise Activity Thermogenesis
+
+  // --- New fields from the upgraded calc engine (all optional for back-compat) ---
+  week_number?: number; // 1-based week index
+  training_calories?: number; // calories on resistance-training days
+  rest_calories?: number; // calories on rest / low-activity days
+  psmf_calories?: number; // Protein-Sparing Modified Fast day calories
+  protein_g?: number; // daily protein in grams (scaled to lean mass)
+  phase?: string; // diet phase label — RESET | ADAPT | CYCLE | PEAK
+  weekly_average_calories?: number; // blended weekly mean across all day types
+  calorie_floor?: number; // configurable calorie floor used for this week (default 1200)
+  weekly_fat_loss_lb?: number; // estimated fat-only loss for the week (lbs)
+  p_ratio?: number; // fat:lean partitioning ratio (Forbes / PED-adjusted); 0–1, fraction going to fat
+  rmr_method?: string; // which RMR equation was used — e.g. "mifflin" | "ten_haaf" | "cunningham"
+  below_rmr?: boolean; // true when intake drops below RMR (flagged as "by design" on PED protocols)
+  feasibility?: "on_track" | "aggressive" | "ceiling_capped"; // plan pacing assessment
+  /** Per-week TAPERING training-day intake from the phase-decay reference curve (RESET→ADAPT→CYCLE→PEAK).
+   *  Additive display-only field added by the report generator (BUG #9/#12 fix).
+   *  Falls back to daily_calorie_intake when absent (older engine output / gain-maintain mode). */
+  reference_training_calories?: number;
 }
 
 export interface BodyFatEntry {
@@ -191,6 +224,61 @@ export interface AppState {
   report_generation_status: string; // e.g., "Starting", "Calculating", "Calling Python", "Saving", "Complete"
   report_generation_entry_date: string | null; // Date of the entry used for the report
   error: string | null;
+  /** Canonical-source reconciliation state. Null/undefined = no prompt pending. */
+  cycle_sync?: CycleSyncState | null;
+}
+
+// ---------------------------------------------------------------------------
+// Canonical-source reconciliation — profile vs active-cycle drift detection
+// ---------------------------------------------------------------------------
+
+/**
+ * A single field where the user's profile snapshot and the active cycle
+ * disagree. Both values are preserved so the user can choose either as the
+ * canonical source in the selection matrix.
+ */
+export interface ProfileCycleDriftItem {
+  /** Internal field identifier — used as the React key and for writes. */
+  field: 'goal_weight' | 'goal_bf' | 'current_weight' | 'current_bf' | 'timeline_weeks'
+  /** Human-readable label (PRIME is AuDHD — spell it out fully). */
+  label: string
+  /** The value currently stored in the user profile blob. */
+  profileValue: number
+  /** The value currently stored in the active cycle. */
+  cycleValue: number
+}
+
+/**
+ * Which source the user picked for a given field in the reconciler matrix.
+ * Defaults to 'cycle' (cycle is the architectural source of truth), but the
+ * user can override per field.
+ */
+export type DriftFieldSource = 'profile' | 'cycle'
+
+/**
+ * Per-field selection record built by the reconciler matrix before the user
+ * clicks "Apply". Maps the drift item's `field` to the chosen source.
+ */
+export type DriftSelection = Partial<Record<ProfileCycleDriftItem['field'], DriftFieldSource>>
+
+/**
+ * Mode the reconciler is opened in:
+ *  - 'drift'      — passive detection: profile and cycle drifted apart silently.
+ *  - 'intentional'— the user just saved an Update Profile edit; offer to apply
+ *                   the same changes to the active cycle.
+ */
+export type CycleSyncMode = 'drift' | 'intentional'
+
+/** App-level state for the cycle-sync / drift-reconciler UI. */
+export interface CycleSyncState {
+  /** When non-empty, the reconciler should be shown to the user. */
+  driftItems: ProfileCycleDriftItem[]
+  /** The active cycle id the drift is against. */
+  cycleId: string | null
+  /** Whether this prompt was triggered by an intentional profile edit. */
+  mode: CycleSyncMode
+  /** Whether the user explicitly dismissed this reconciler instance. */
+  dismissed: boolean
 }
 
 export type AppAction =
@@ -210,7 +298,10 @@ export type AppAction =
   | { type: 'CLEAR_ERROR' }
   // Program Archiving actions
   | { type: 'ARCHIVE_PROGRAM'; payload: ArchivedProgram }
-  | { type: 'SET_ARCHIVED_PROGRAMS'; payload: ArchivedProgram[] };
+  | { type: 'SET_ARCHIVED_PROGRAMS'; payload: ArchivedProgram[] }
+  // Canonical-source reconciliation actions
+  | { type: 'SET_CYCLE_SYNC_PROMPT'; payload: CycleSyncState }
+  | { type: 'DISMISS_CYCLE_SYNC_PROMPT' };
 
 // Form-specific types
 export interface UserFormData extends Omit<UserData, 'height_cm'> {

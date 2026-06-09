@@ -67,40 +67,114 @@ export class AIService {
     entries: BodyFatEntry[],
     calculation?: CalculationResult
   ): Promise<AIInsight[]> {
+    // Resolve the configured provider for this area up front so we can tell
+    // "no provider assigned" apart from "provider failed". `status` drives the
+    // actionable message the user sees instead of a silent blank panel.
+    const aiConfig = this.aiSettingsService.getAreaConfig('progress_insights')
+    console.log('AI Service - Insights config:', { ...aiConfig, apiKey: aiConfig.apiKey ? '[set]' : null })
+    const hasWorkingProvider = aiConfig.status === 'ok'
+
+    // Definitively no provider assigned (or it's disabled / missing a key):
+    // surface the actionable "configure a provider" message up front rather than
+    // falling through to the route's generic fallback insights, which would
+    // hide the real problem. (`settings_unavailable` is a transient load race —
+    // we still attempt the call and re-run on the ai-settings-loaded event.)
+    if (aiConfig.status === 'no_provider' || aiConfig.status === 'provider_unavailable') {
+      return [this.buildNoProviderInsight(aiConfig.status)]
+    }
+
     try {
-      // Get configured AI settings for the insights area
-      const aiConfig = this.aiSettingsService.getAreaConfig('progress_insights')
-      console.log('AI Service - Insights config:', aiConfig)
-      
       const response = await fetch(`${API_BASE_URL}/ai/insights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          user, 
-          entries, 
+        body: JSON.stringify({
+          user,
+          entries,
           calculation,
-          // Include AI configuration if available
+          // Include AI configuration if available (baseUrl for custom endpoints)
           aiProvider: aiConfig.provider,
           aiModel: aiConfig.model,
-          aiApiKey: aiConfig.apiKey
+          aiApiKey: aiConfig.apiKey,
+          aiBaseUrl: aiConfig.baseUrl
         })
       })
-      
+
       if (!response.ok) {
-        throw new Error('Failed to generate AI insights')
+        // Surface the real server error instead of swallowing it.
+        let detail = `status ${response.status}`
+        try {
+          const errBody = await response.json()
+          if (errBody?.error) detail = errBody.error
+        } catch {
+          // non-JSON error body; keep the status-code detail
+        }
+        throw new Error(`Failed to generate AI insights: ${detail}`)
       }
-      
-      const insights = await response.json()
-      return this.processInsights(insights, user, entries, calculation)
+
+      const payload = await response.json()
+
+      // The route returns a bare array on success. If it ever returns an
+      // { error } object with a 200, treat that as a real failure too.
+      if (payload && !Array.isArray(payload) && payload.error) {
+        throw new Error(`Failed to generate AI insights: ${payload.error}`)
+      }
+
+      const processed = this.processInsights(payload, user, entries, calculation)
+
+      // If the panel would otherwise be blank AND no working provider is
+      // assigned, give the user an actionable status insight instead of nothing.
+      if (processed.length === 0 && !hasWorkingProvider) {
+        return [this.buildNoProviderInsight(aiConfig.status)]
+      }
+
+      return processed
     } catch (error) {
       console.error('Error generating AI insights:', error)
-      
-      // Check if fallback is enabled
-      if (this.aiSettingsService.isFallbackEnabled('progress_insights')) {
+
+      // Check if fallback is enabled — but only fall back when there genuinely
+      // was a working provider that failed mid-flight. If no provider is
+      // configured, the fallback insights hide the real (actionable) problem,
+      // so surface the "configure a provider" message instead.
+      if (hasWorkingProvider && this.aiSettingsService.isFallbackEnabled('progress_insights')) {
         return this.generateFallbackInsights(user, entries, calculation)
       }
-      
-      return []
+
+      if (!hasWorkingProvider) {
+        return [this.buildNoProviderInsight(aiConfig.status)]
+      }
+
+      // Working provider failed and fallback is disabled — surface the error.
+      throw error instanceof Error ? error : new Error('Failed to generate AI insights')
+    }
+  }
+
+  /**
+   * Build a single actionable insight that tells the user to assign/configure
+   * an AI provider for Progress Insights. The component recognizes the well-known
+   * id `no-provider-configured` and renders a "go to AI Settings" call-to-action.
+   */
+  private buildNoProviderInsight(
+    status: 'settings_unavailable' | 'no_provider' | 'provider_unavailable' | 'ok'
+  ): AIInsight {
+    const message =
+      status === 'provider_unavailable'
+        ? 'The AI provider assigned to Progress Insights is disabled or missing an API key. Open AI Settings to enable it or add your key.'
+        : 'No AI provider is assigned to Progress Insights yet. Open AI Settings to choose a provider and model so your insights can be generated.'
+
+    return {
+      id: 'no-provider-configured',
+      type: 'guidance',
+      title: 'Configure an AI provider',
+      message,
+      priority: 'high',
+      actionable: true,
+      action: {
+        label: 'Open AI Settings',
+        path: '/settings/ai'
+      },
+      dismissible: true,
+      timestamp: new Date(),
+      category: 'progress'
     }
   }
 

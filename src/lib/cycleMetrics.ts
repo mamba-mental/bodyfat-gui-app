@@ -14,6 +14,8 @@
  *   start baseline  = the active cycle's start_weight / start_bf
  */
 
+import type { ProfileCycleDriftItem } from '@/types'
+
 export interface ScopedEntry {
   id: string
   date: string | Date
@@ -114,6 +116,109 @@ export function activeCycleMetrics<E extends ScopedEntry>(
     goalWeight: firstFinite(active.goal_weight, profile.goal_weight),
     goalBF: firstFinite(active.goal_bf, profile.goal_bf),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Canonical-source drift detector
+// ---------------------------------------------------------------------------
+
+/**
+ * Compare a user profile snapshot against an active cycle and return every
+ * field where they meaningfully disagree.
+ *
+ * Pure function — no side effects, no API calls, safe to call on every render.
+ *
+ * Field mapping:
+ *   profile.current_weight  ↔  cycle.start_weight
+ *   profile.current_bf      ↔  cycle.start_bf
+ *   profile.goal_weight     ↔  cycle.goal_weight
+ *   profile.goal_bf         ↔  cycle.goal_bf
+ *   profile.timeline_weeks  ↔  cycle.timeline_weeks   (optional — both must be present)
+ *
+ * A field is considered drifted when BOTH sides have a finite non-zero value
+ * AND they differ by more than a floating-point epsilon (0.001).
+ *
+ * @returns  Empty array when no drift, or an array of per-field diff items.
+ */
+export function detectProfileCycleDrift(
+  profile: {
+    current_weight?: number | null
+    current_bf?: number | null
+    goal_weight?: number | null
+    goal_bf?: number | null
+    timeline_weeks?: number | null
+  },
+  activeCycle: {
+    start_weight?: number | null
+    start_bf?: number | null
+    goal_weight?: number | null
+    goal_bf?: number | null
+    timeline_weeks?: number | null
+  },
+): ProfileCycleDriftItem[] {
+  const EPSILON = 0.001
+
+  /** Returns true when both values are finite, non-zero, and differ. */
+  function hasDrift(a: number | null | undefined, b: number | null | undefined): boolean {
+    if (a == null || b == null) return false
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return false
+    if (a === 0 || b === 0) return false
+    return Math.abs(a - b) > EPSILON
+  }
+
+  const items: ProfileCycleDriftItem[] = []
+
+  if (hasDrift(profile.goal_weight, activeCycle.goal_weight)) {
+    items.push({
+      field: 'goal_weight',
+      label: 'Goal Weight (lbs)',
+      profileValue: profile.goal_weight as number,
+      cycleValue: activeCycle.goal_weight as number,
+    })
+  }
+
+  if (hasDrift(profile.goal_bf, activeCycle.goal_bf)) {
+    items.push({
+      field: 'goal_bf',
+      label: 'Goal Body Fat %',
+      profileValue: profile.goal_bf as number,
+      cycleValue: activeCycle.goal_bf as number,
+    })
+  }
+
+  if (hasDrift(profile.current_weight, activeCycle.start_weight)) {
+    items.push({
+      field: 'current_weight',
+      label: 'Starting Weight (lbs)',
+      profileValue: profile.current_weight as number,
+      cycleValue: activeCycle.start_weight as number,
+    })
+  }
+
+  if (hasDrift(profile.current_bf, activeCycle.start_bf)) {
+    items.push({
+      field: 'current_bf',
+      label: 'Starting Body Fat %',
+      profileValue: profile.current_bf as number,
+      cycleValue: activeCycle.start_bf as number,
+    })
+  }
+
+  // timeline_weeks: only compare when BOTH have a value (it's optional on the profile).
+  if (
+    profile.timeline_weeks != null &&
+    activeCycle.timeline_weeks != null &&
+    hasDrift(profile.timeline_weeks, activeCycle.timeline_weeks)
+  ) {
+    items.push({
+      field: 'timeline_weeks',
+      label: 'Timeline (weeks)',
+      profileValue: profile.timeline_weeks as number,
+      cycleValue: activeCycle.timeline_weeks as number,
+    })
+  }
+
+  return items
 }
 
 /**

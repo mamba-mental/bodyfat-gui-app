@@ -2,9 +2,14 @@
 """
 PRIME AI Confidence Analyzer
 Created: 12/29/2024
-Updated: 01/07/2026
+Updated: 2026-06-08 — coach brain injection (build-step 4b)
 Purpose: AI-powered confidence scoring using multiple LLM providers
 Supports: Anthropic, OpenRouter, OpenAI, Gemini, Groq, and more via Universal LLM Client
+
+Coach brain (fat-loss-coach skill) is injected via coach_knowledge.py:
+  - COACH_SYSTEM_PROMPT  → LLM system message replacing the old freeform persona
+  - PRIME_GUARDRAILS     → no-shame framing, lbs units, electrolytes-first, etc.
+  - SAFETY_CONTRAINDICATIONS → protocol-specific absolute contraindications
 """
 
 import os
@@ -20,6 +25,30 @@ try:
     from PRIME_Universal_LLM_Client import UniversalLLMClient
 except ImportError:
     from new_prime_python_code.PRIME_Universal_LLM_Client import UniversalLLMClient
+
+# ---------------------------------------------------------------------------
+# Coach brain import — resolves from python-api/ (CWD when uvicorn runs) or
+# from the bodyfat-gui-app/ root that main.py adds to sys.path.
+# ---------------------------------------------------------------------------
+try:
+    from coach_knowledge import COACH_SYSTEM_PROMPT, PRIME_GUARDRAILS, SAFETY_CONTRAINDICATIONS
+except ImportError:
+    try:
+        import sys, os as _os
+        _api_dir = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "python-api")
+        if _api_dir not in sys.path:
+            sys.path.insert(0, _api_dir)
+        from coach_knowledge import COACH_SYSTEM_PROMPT, PRIME_GUARDRAILS, SAFETY_CONTRAINDICATIONS
+    except ImportError:
+        # Hard fallback: coach brain unavailable — log loudly, allow startup to continue
+        import logging as _log
+        _log.getLogger("prime_ai_confidence").error(
+            "coach_knowledge.py not found — COACH_SYSTEM_PROMPT will be empty. "
+            "Place coach_knowledge.py alongside main.py in python-api/ and restart."
+        )
+        COACH_SYSTEM_PROMPT = ""
+        PRIME_GUARDRAILS = {}
+        SAFETY_CONTRAINDICATIONS = {}
 
 # Optional: Import Anthropic for backward compatibility
 try:
@@ -285,94 +314,238 @@ class AIConfidenceAnalyzer:
             # Return fallback confidence score
             return self._generate_fallback_confidence_score(input_analysis)
     
-    def _build_analysis_prompt(self, profile_data: Dict[str, Any], 
+    def _build_analysis_prompt(self, profile_data: Dict[str, Any],
                               calculation_results: Dict[str, Any],
                               input_analysis: Dict[str, Any]) -> str:
-        """Build the prompt for Claude API analysis."""
-        
-        # Extract key parameters for analysis
-        current_weight = profile_data.get('current_weight', 'N/A')
-        goal_weight = profile_data.get('goal_weight', 'N/A')
-        current_bf = profile_data.get('current_bf', 'N/A')
-        goal_bf = profile_data.get('goal_bf', 'N/A')
-        timeframe_weeks = profile_data.get('timeframe_weeks', 'N/A')
-        
-        # Extract calculation results
-        tdee = calculation_results.get('tdee', 'N/A')
-        daily_calories = calculation_results.get('daily_calorie_intake', 'N/A')
-        weekly_weight_loss = calculation_results.get('weekly_weight_loss_target', 'N/A')
-        
-        prompt = f"""
-You are an expert body composition analyst. Analyze the following body transformation plan and provide a confidence assessment.
+        """Build the USER-turn prompt for the LLM.
 
-INPUT PARAMETERS:
+        The COACH_SYSTEM_PROMPT is injected as the system message in
+        _call_claude_api() — this method builds the structured data payload
+        (the user turn) that the coach brain receives to reason over.
+
+        GUARDRAIL CONTRACT
+        ------------------
+        The AI coach must NARRATE constraint flags that the engine already
+        computed — it must NOT invent safety numbers. Fields sourced from the
+        engine (correction_status, residual_gap, below_rmr, etc.) are surfaced
+        here so the coach can reference them directly.  The PRIME_GUARDRAILS
+        block is also injected verbatim so the coach remembers framing rules
+        (no-shame, lbs, protein-on-lean, electrolytes-first).
+        """
+
+        # ---- Basic profile fields ----
+        current_weight = profile_data.get("current_weight", "N/A")
+        goal_weight = profile_data.get("goal_weight", "N/A")
+        current_bf = profile_data.get("current_bf", "N/A")
+        goal_bf = profile_data.get("goal_bf", "N/A")
+        timeframe_weeks = profile_data.get("timeframe_weeks", "N/A")
+
+        # ---- Calculation headline fields ----
+        tdee = calculation_results.get("tdee", "N/A")
+        daily_calories = calculation_results.get("daily_calorie_intake", "N/A")
+        weekly_weight_loss = calculation_results.get("weekly_weight_loss_target", "N/A")
+
+        # ---- Controller / course-correction fields (from engine, week 0) ----
+        # These arrive in calculation_results["progression"][0] when the engine
+        # emits them.  We surface them so the coach can narrate them accurately
+        # without inventing values.
+        prog = calculation_results.get("progression") or []
+        week0: Dict[str, Any] = prog[0] if prog and isinstance(prog[0], dict) else {}
+
+        required_weight = week0.get("required_weight", "N/A")
+        required_bf = week0.get("required_bf", "N/A")
+        correction_status = week0.get("correction_status", "N/A")
+        required_deficit = week0.get("required_deficit", "N/A")
+        residual_gap = week0.get("residual_gap", "N/A")
+        below_rmr = week0.get("below_rmr", "N/A")
+        prescribed_cardio_sessions = week0.get("prescribed_cardio_sessions", "N/A")
+        prescribed_cardio_min = week0.get("prescribed_cardio_min", "N/A")
+        ped_confidence = week0.get("ped_confidence", "N/A")
+        phase = week0.get("phase") or profile_data.get("phase", "N/A")
+
+        # TODO (main.py): The fields below are emitted by the engine per week but
+        # main.py does NOT currently forward them inside calc_results when it calls
+        # generate_ai_confidence_analysis().  Ask main.py to include them in the
+        # calc_results dict passed at /calculate line ~589:
+        #   "required_weight", "required_bf", "correction_status",
+        #   "required_deficit", "residual_gap", "below_rmr",
+        #   "prescribed_cardio_sessions", "prescribed_cardio_min", "ped_confidence"
+        # Until then they will read as "N/A" here.  The coach should treat "N/A"
+        # as "engine did not emit this field yet" and skip narration of that metric.
+
+        # ---- PED section (unchanged logic) ----
+        ped_use = profile_data.get("ped_use", False)
+        ped_stack = profile_data.get("ped_stack") or []
+
+        if ped_stack:
+            compound_lines = []
+            for entry in ped_stack:
+                if isinstance(entry, dict):
+                    name = entry.get("compound", "unknown")
+                    dose = entry.get("dose_mg")
+                    _phase = entry.get("phase", "")
+                    dose_str = f" @ {dose} mg/day" if dose is not None else ""
+                    phase_str = f" ({_phase} phase)" if _phase else ""
+                    compound_lines.append(f"    • {name}{dose_str}{phase_str}")
+            ped_stack_text = (
+                "\n".join(compound_lines) if compound_lines
+                else "  (stack provided but no compounds parsed)"
+            )
+            ped_section = f"""
+PED PROTOCOL:
+- PED Use: YES
+- Current Phase: {phase}
+- PED Evidence Confidence: {ped_confidence}
+- Active Compound Stack:
+{ped_stack_text}
+- Note: Engine applies bounded p-ratio modifiers and thermogenic EE bonus per
+  docs/PED-MODIFIERS-SOURCING.md. The stack shifts p-ratio, muscle-gain, and
+  thermogenic calorie burn. Reference actual compounds above in your analysis."""
+        elif ped_use:
+            ped_section = f"""
+PED PROTOCOL:
+- PED Use: YES
+- Current Phase: {phase}
+- Active Compound Stack: Not specified (generic PED flag active)
+- Note: A 1.5× muscle-gain multiplier and phase-based p-ratio bonus are applied."""
+        else:
+            ped_section = """
+PED PROTOCOL:
+- PED Use: NO (natural protocol)"""
+
+        # ---- PRIME guardrails block (injected verbatim from coach_knowledge) ----
+        # Surface the most actionable guardrail rules so the coach knows them even
+        # if it doesn't re-read the system prompt at inference time.
+        _guardrails_summary = ""
+        if PRIME_GUARDRAILS:
+            _no_shame = PRIME_GUARDRAILS.get("no_shame_framing", {})
+            _units = PRIME_GUARDRAILS.get("weight_units", {})
+            _elec = PRIME_GUARDRAILS.get("electrolytes_before_mental_health", {})
+            _psmf = PRIME_GUARDRAILS.get("protein_on_lean_mass_for_psmf", {})
+            _honest = PRIME_GUARDRAILS.get("honest_not_optimistic", {})
+            _guardrails_summary = f"""
+PRIME COACHING GUARDRAILS (apply to every response):
+- No-shame framing: {_no_shame.get('rule', 'Never shame for off-plan days.')}
+- Units: {_units.get('rule', 'All weights in lbs.')}
+- Electrolytes first: {_elec.get('rule', 'Rule out electrolyte deficiency before attributing symptoms to other causes.')}
+- PSMF protein: {_psmf.get('rule', 'Protein on lean mass for PSMF, not total weight.')}
+- Honesty rule: {_honest.get('rule', 'Show real options; never fabricate rosy catch-up.')}"""
+
+        prompt = f"""
+## ENGINE DATA FOR THIS WEEK
+You are receiving structured output from the Ap³xFit calculation engine.
+Your job is to turn this data into coaching judgment — specific, honest, actionable.
+DO NOT invent safety numbers. NARRATE the flags the engine already computed below.
+
+### CURRENT STATE
 - Current Weight: {current_weight} lbs
-- Goal Weight: {goal_weight} lbs  
+- Goal Weight: {goal_weight} lbs
 - Current Body Fat: {current_bf}%
 - Goal Body Fat: {goal_bf}%
 - Timeframe: {timeframe_weeks} weeks
-- TDEE: {tdee} calories
-- Recommended Daily Calories: {daily_calories}
-- Target Weekly Weight Loss: {weekly_weight_loss} lbs
 
-INPUT RELIABILITY SCORES:
+### ENGINE OUTPUT — TRAJECTORY
+- TDEE: {tdee} kcal/day
+- Recommended Daily Calories (training-day): {daily_calories} kcal
+- Target Weekly Weight Loss: {weekly_weight_loss} lbs
+- Required Weight This Week: {required_weight} lbs
+- Required BF% This Week: {required_bf}%
+
+### ENGINE OUTPUT — CONTROLLER FLAGS
+- Correction Status: {correction_status}  (on_track | pushing_limits | maxed_out)
+- Required Weekly Deficit: {required_deficit} kcal
+- Residual Gap (unachievable after all levers): {residual_gap} kcal
+- Below RMR Flag: {below_rmr}
+- Prescribed Cardio: {prescribed_cardio_sessions} sessions/week × {prescribed_cardio_min} min/session
+{ped_section}
+
+### INPUT RELIABILITY (pre-computed)
 - Anthropometric Data: {input_analysis.get('anthropometric_reliability', 'N/A')}/100
 - Activity Data: {input_analysis.get('activity_reliability', 'N/A')}/100
 - Goal Data: {input_analysis.get('goal_reliability', 'N/A')}/100
 - Data Completeness: {input_analysis.get('data_completeness', 'N/A')}/100
+{_guardrails_summary}
 
-ANALYSIS REQUIRED:
-1. Overall confidence score (0-100) for achieving the stated goals
-2. Input reliability assessment (0-100)
-3. Calculation accuracy confidence (0-100)
-4. Goal feasibility score (0-100)
-5. List of specific warnings (if any)
-6. List of actionable suggestions for improvement
-7. Key confidence factors with scores
-8. DETAILED EXPLANATIONS for each score
+## YOUR ANALYSIS TASK
+Apply your coaching judgment (from the system prompt) to the engine data above.
 
-Please provide your analysis in the following JSON format:
+1. Confirm the correction_status in plain language with evidence from the numbers.
+2. Issue the concrete prescription: calorie adjustment, cardio change, refeed timing, PSMF frequency. Be specific and numeric (lbs, kcal, sessions).
+3. Flag any safety constraint violation if one exists (1,200 kcal floor, 120 BPM cap, 237g protein minimum, lean ceiling). Only flag constraints the engine has indicated — do NOT fabricate numbers.
+4. Apply no-shame framing throughout. Frame deviations as data points.
+5. Check electrolytes before attributing low energy to overtraining.
+6. End with the single most important action for the next 24–48 hours.
+
+Provide your response in the following JSON format:
 {{
-    "overall_confidence": <score>,
-    "overall_confidence_explanation": "<detailed explanation of why this score was given>",
-    "input_reliability": <score>,
-    "input_reliability_explanation": "<detailed explanation of input data quality>",
-    "calculation_accuracy": <score>,
-    "calculation_accuracy_explanation": "<detailed explanation of calculation reliability>",
-    "goal_feasibility": <score>,
-    "goal_feasibility_explanation": "<detailed explanation of goal achievability>",
-    "warnings": [<list of warning strings>],
-    "suggestions": [<list of suggestion strings>],
+    "overall_confidence": <score 0-100>,
+    "overall_confidence_explanation": "<why this score>",
+    "input_reliability": <score 0-100>,
+    "input_reliability_explanation": "<input data quality assessment>",
+    "calculation_accuracy": <score 0-100>,
+    "calculation_accuracy_explanation": "<calculation reliability>",
+    "goal_feasibility": <score 0-100>,
+    "goal_feasibility_explanation": "<honest goal achievability — show real options if behind>",
+    "warnings": ["<specific warning string>", ...],
+    "suggestions": ["<actionable suggestion>", ...],
     "confidence_factors": {{
         "timeframe_realism": <score>,
         "calorie_deficit_sustainability": <score>,
         "body_composition_feasibility": <score>,
         "data_quality": <score>
     }},
-    "detailed_analysis": "<comprehensive paragraph explaining the overall assessment, key factors, and recommendations>"
+    "detailed_analysis": "<coaching narrative: status confirmation, concrete prescription, safety flags if any, most important next action>"
 }}
-
-Focus on practical, evidence-based assessment. Be specific about potential issues and actionable improvements. Provide detailed explanations for each score.
 """
         return prompt
     
     async def _call_claude_api(self, prompt: str) -> str:
-        """
-        Call LLM API with error handling.
-        Now uses Universal LLM Client to support multiple providers.
+        """Call LLM API with the coach brain injected as the system message.
+
+        COACH_SYSTEM_PROMPT (imported from coach_knowledge) becomes the AI
+        coach's operating instructions, replacing the old freeform persona.
+
+        Injection strategy by provider:
+        - OpenAI-compatible (openai, groq, mistral, xai, fireworks, openrouter,
+          perplexity, chutes, minimax, mercury): system role at position 0 in
+          the messages array — the standard convention for these APIs.
+        - Anthropic: the /messages API requires system as a TOP-LEVEL field, not
+          a role inside messages[].  UniversalLLMClient passes messages[] directly,
+          so we instead prepend the coach brain into the user message body with a
+          clear delimiter.  This keeps full coach context without a 400 error.
+        - Gemini: system role messages are mapped to 'user' role by the client,
+          so we use the same prepend-into-user approach as Anthropic.
         """
         try:
-            messages = [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+            # Providers where {"role":"system"} in messages[] is the correct path
+            _SYSTEM_ROLE_PROVIDERS = {
+                "openai", "groq", "mistral", "xai", "fireworks",
+                "openrouter", "perplexity", "chutes", "minimax", "mercury",
+            }
+
+            if COACH_SYSTEM_PROMPT:
+                if self.provider in _SYSTEM_ROLE_PROVIDERS:
+                    # Standard OpenAI-compatible path
+                    messages: List[Dict[str, str]] = [
+                        {"role": "system", "content": COACH_SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ]
+                else:
+                    # Anthropic + Gemini: prepend into the user turn
+                    combined_user = (
+                        f"{COACH_SYSTEM_PROMPT}\n\n"
+                        "---\n"
+                        f"{prompt}"
+                    )
+                    messages = [{"role": "user", "content": combined_user}]
+            else:
+                # Coach brain unavailable — fall back to prompt-only (old behaviour)
+                messages = [{"role": "user", "content": prompt}]
 
             response = await self.client.chat_completion(
                 messages=messages,
                 temperature=0.3,
-                max_tokens=1500
+                max_tokens=1500,
             )
 
             logger.info(f"AI response received from {self.provider}/{self.model}")
@@ -476,7 +649,10 @@ Focus on practical, evidence-based assessment. Be specific about potential issue
             
             # PED usage - used in muscle gain and fat loss adjustments
             'ped_use': True,           # Used in muscle gain multiplier (1.5x) and fat loss ratio
-            
+            # PED compound stack — drives p_ratio modifier, lean_modifier, ee_bonus_kcal,
+            # confidence grade, and AI-prompt context (MEDIUM fix 2026-06-08).
+            'ped_stack': True,         # Used in compute_ped_stack_modifiers() for compound-level modifiers
+
             # Timeframe - used in weekly progression calculations
             'start_date': True,        # Used in progression timeline
             'end_date': True,          # Used in progression timeline and deficit calculations

@@ -1,0 +1,2102 @@
+{
+  "nutrition": {
+    "base_diet": "Ketogenic (high fat, adequate protein, very low carb)",
+    "structure": [
+      "BASE DIET: Ketogenic (high fat, adequate protein, very low carb)",
+      "CARB CYCLING: Higher carbs on training days, very low on rest days",
+      "PSMF: Every Monday — protein only, minimal fat/carbs",
+      "REFEED: Sunday (starting Week 5) — strategic carb load to reset leptin",
+      "PED ENHANCEMENT: Stack supports muscle preservation + accelerated fat loss"
+    ],
+    "structure_source": "01-nutrition-plan.docx > The Protocol: Keto + Carb Cycling + PSMF",
+    "phase_definitions": [
+      {
+        "phase": 1,
+        "name": "METABOLIC RESET",
+        "weeks": "1-4",
+        "notes": "Monday PSMF, training days higher cal, rest days very low",
+        "source": "01-nutrition-plan.docx > Phase-by-Phase Breakdown > PHASE 1"
+      },
+      {
+        "phase": 2,
+        "name": "FAT ADAPTATION",
+        "weeks": "5-8",
+        "notes": "Sunday refeed begins Week 5, carbs increase on training days",
+        "source": "01-nutrition-plan.docx > Phase-by-Phase Breakdown > PHASE 2"
+      },
+      {
+        "phase": 3,
+        "name": "CARB CYCLING INTENSIFIED",
+        "weeks": "9-12",
+        "notes": "Higher training day carbs, lower rest days, strategic refeeds",
+        "source": "01-nutrition-plan.docx > Phase-by-Phase Breakdown > PHASE 3"
+      },
+      {
+        "phase": 4,
+        "name": "FINAL CUT / PEAK",
+        "weeks": "13-16",
+        "notes": "Lowest baseline, strategic carb loads for final look",
+        "source": "01-nutrition-plan.docx > Phase-by-Phase Breakdown > PHASE 4"
+      }
+    ],
+    "day_type_ranges": [
+      {
+        "day_type": "TRAINING DAY",
+        "calories": "1650–1800",
+        "protein": "250–280g",
+        "fat": "65–80g",
+        "carbs": "50–100g",
+        "when": "Gym days (3x/wk)"
+      },
+      {
+        "day_type": "REST DAY",
+        "calories": "1200–1400",
+        "protein": "250–280g",
+        "fat": "55–75g",
+        "carbs": "15–25g",
+        "when": "Non-gym days"
+      },
+      {
+        "day_type": "PSMF DAY",
+        "calories": "700–800",
+        "protein": "250–280g",
+        "fat": "20–30g",
+        "carbs": "<10g",
+        "when": "Monday"
+      },
+      {
+        "day_type": "REFEED DAY",
+        "calories": "2200–2500",
+        "protein": "200g",
+        "fat": "40g",
+        "carbs": "200–300g",
+        "when": "Sunday (Wk 5+)"
+      }
+    ],
+    "day_type_ranges_source": "01-nutrition-plan.docx > Daily Calorie Structure (DAY TYPE table)",
+    "phase_macros_by_day_type": [
+      {
+        "phase": 1,
+        "weeks": "1-4",
+        "by_day_type": {
+          "TRAINING DAY": {
+            "calories": "1800",
+            "protein": "250g",
+            "fat": "80g",
+            "carbs": "50g"
+          },
+          "REST DAY": {
+            "calories": "1400",
+            "protein": "250g",
+            "fat": "60g",
+            "carbs": "20g"
+          },
+          "PSMF (Mon)": {
+            "calories": "800",
+            "protein": "250g",
+            "fat": "25g",
+            "carbs": "<10g"
+          },
+          "REFEED (Sun)": {
+            "calories": "N/A",
+            "protein": "200g",
+            "fat": "40g",
+            "carbs": "N/A"
+          }
+        },
+        "source": "01-nutrition-plan.docx > Daily Calorie Structure (Phase 1 table)"
+      },
+      {
+        "phase": 2,
+        "weeks": "5-8",
+        "by_day_type": {
+          "TRAINING DAY": {
+            "calories": "1750",
+            "protein": "260g",
+            "fat": "75g",
+            "carbs": "75g"
+          },
+          "REST DAY": {
+            "calories": "1350",
+            "protein": "260g",
+            "fat": "55g",
+            "carbs": "20g"
+          },
+          "PSMF (Mon)": {
+            "calories": "800",
+            "protein": "260g",
+            "fat": "25g",
+            "carbs": "<10g"
+          },
+          "REFEED (Sun)": {
+            "calories": "2200–2500",
+            "protein": "200g",
+            "fat": "40g",
+            "carbs": "200g"
+          }
+        },
+        "source": "01-nutrition-plan.docx > Daily Calorie Structure (Phase 2 table)"
+      },
+      {
+        "phase": 3,
+        "weeks": "9-12",
+        "by_day_type": {
+          "TRAINING DAY": {
+            "calories": "1650",
+            "protein": "270g",
+            "fat": "70g",
+            "carbs": "100g"
+          },
+          "REST DAY": {
+            "calories": "1250",
+            "protein": "270g",
+            "fat": "50g",
+            "carbs": "15g"
+          },
+          "PSMF (Mon)": {
+            "calories": "750",
+            "protein": "270g",
+            "fat": "25g",
+            "carbs": "<10g"
+          },
+          "REFEED (Sun)": {
+            "calories": "2200–2500",
+            "protein": "200g",
+            "fat": "40g",
+            "carbs": "250g"
+          }
+        },
+        "source": "01-nutrition-plan.docx > Daily Calorie Structure (Phase 3 table)"
+      },
+      {
+        "phase": 4,
+        "weeks": "13-16",
+        "by_day_type": {
+          "TRAINING DAY": {
+            "calories": "1500",
+            "protein": "280g",
+            "fat": "65g",
+            "carbs": "75g"
+          },
+          "REST DAY": {
+            "calories": "1200",
+            "protein": "280g",
+            "fat": "45g",
+            "carbs": "10g"
+          },
+          "PSMF (Mon)": {
+            "calories": "700",
+            "protein": "280g",
+            "fat": "25g",
+            "carbs": "<10g"
+          },
+          "REFEED (Sun)": {
+            "calories": "2200–2500",
+            "protein": "200g",
+            "fat": "40g",
+            "carbs": "300g"
+          }
+        },
+        "source": "01-nutrition-plan.docx > Daily Calorie Structure (Phase 4 table)"
+      }
+    ],
+    "weekly_calorie_macro_curve": [
+      {
+        "week": 1,
+        "weight_lbs": "281",
+        "bf_pct": "36.8%",
+        "training_cal": "1800",
+        "rest_cal": "1400",
+        "psmf_cal": "800",
+        "protein": "250g",
+        "phase": "RESET"
+      },
+      {
+        "week": 2,
+        "weight_lbs": "277",
+        "bf_pct": "35.5%",
+        "training_cal": "1800",
+        "rest_cal": "1400",
+        "psmf_cal": "800",
+        "protein": "250g",
+        "phase": "RESET"
+      },
+      {
+        "week": 3,
+        "weight_lbs": "273",
+        "bf_pct": "34.2%",
+        "training_cal": "1775",
+        "rest_cal": "1375",
+        "psmf_cal": "800",
+        "protein": "255g",
+        "phase": "RESET"
+      },
+      {
+        "week": 4,
+        "weight_lbs": "269",
+        "bf_pct": "32.9%",
+        "training_cal": "1750",
+        "rest_cal": "1350",
+        "psmf_cal": "800",
+        "protein": "260g",
+        "phase": "RESET"
+      },
+      {
+        "week": 5,
+        "weight_lbs": "265",
+        "bf_pct": "31.5%",
+        "training_cal": "1750",
+        "rest_cal": "1350",
+        "psmf_cal": "800",
+        "protein": "260g",
+        "phase": "ADAPT"
+      },
+      {
+        "week": 6,
+        "weight_lbs": "261",
+        "bf_pct": "30.0%",
+        "training_cal": "1725",
+        "rest_cal": "1325",
+        "psmf_cal": "800",
+        "protein": "265g",
+        "phase": "ADAPT"
+      },
+      {
+        "week": 7,
+        "weight_lbs": "257",
+        "bf_pct": "28.6%",
+        "training_cal": "1700",
+        "rest_cal": "1300",
+        "psmf_cal": "800",
+        "protein": "265g",
+        "phase": "ADAPT"
+      },
+      {
+        "week": 8,
+        "weight_lbs": "253",
+        "bf_pct": "27.1%",
+        "training_cal": "1675",
+        "rest_cal": "1275",
+        "psmf_cal": "775",
+        "protein": "270g",
+        "phase": "ADAPT"
+      },
+      {
+        "week": 9,
+        "weight_lbs": "249",
+        "bf_pct": "25.5%",
+        "training_cal": "1650",
+        "rest_cal": "1250",
+        "psmf_cal": "750",
+        "protein": "270g",
+        "phase": "CYCLE"
+      },
+      {
+        "week": 10,
+        "weight_lbs": "245",
+        "bf_pct": "23.9%",
+        "training_cal": "1625",
+        "rest_cal": "1225",
+        "psmf_cal": "750",
+        "protein": "275g",
+        "phase": "CYCLE"
+      },
+      {
+        "week": 11,
+        "weight_lbs": "241",
+        "bf_pct": "22.2%",
+        "training_cal": "1600",
+        "rest_cal": "1200",
+        "psmf_cal": "750",
+        "protein": "275g",
+        "phase": "CYCLE"
+      },
+      {
+        "week": 12,
+        "weight_lbs": "237",
+        "bf_pct": "20.5%",
+        "training_cal": "1575",
+        "rest_cal": "1175",
+        "psmf_cal": "725",
+        "protein": "280g",
+        "phase": "CYCLE"
+      },
+      {
+        "week": 13,
+        "weight_lbs": "233",
+        "bf_pct": "18.7%",
+        "training_cal": "1500",
+        "rest_cal": "1200",
+        "psmf_cal": "700",
+        "protein": "280g",
+        "phase": "PEAK"
+      },
+      {
+        "week": 14,
+        "weight_lbs": "229",
+        "bf_pct": "16.9%",
+        "training_cal": "1475",
+        "rest_cal": "1175",
+        "psmf_cal": "700",
+        "protein": "285g",
+        "phase": "PEAK"
+      },
+      {
+        "week": 15,
+        "weight_lbs": "224",
+        "bf_pct": "15.0%",
+        "training_cal": "1450",
+        "rest_cal": "1150",
+        "psmf_cal": "700",
+        "protein": "285g",
+        "phase": "PEAK"
+      },
+      {
+        "week": 16,
+        "weight_lbs": "220",
+        "bf_pct": "13.0%",
+        "training_cal": "1425",
+        "rest_cal": "1125",
+        "psmf_cal": "700",
+        "protein": "290g",
+        "phase": "PEAK"
+      }
+    ],
+    "weekly_calorie_macro_curve_source": "01-nutrition-plan.docx > Weekly Calorie & Macro Targets (16-week curve table)",
+    "weekly_calorie_macro_curve_calibration": "Reference curve calibrated for a 281->220 lb cut over 16 weeks. Scale weight and calorie columns proportionally if start/goal/deficit differ.",
+    "sample_meal_plans": [
+      {
+        "day_type": "TRAINING DAY",
+        "header": "~1700 cal | 260g P | 75g F | 75g C",
+        "meals": [
+          {
+            "meal": "Meal 1 (7am)",
+            "food": "6 whole eggs scrambled, 2 strips bacon, 1/2 avocado",
+            "protein": "42g",
+            "fat": "45g",
+            "carbs": "3g",
+            "calories": "580"
+          },
+          {
+            "meal": "Pre-WO (11am)",
+            "food": "8oz chicken breast, 1 cup rice cooked, 1 tbsp olive oil",
+            "protein": "55g",
+            "fat": "15g",
+            "carbs": "45g",
+            "calories": "540"
+          },
+          {
+            "meal": "Post-WO (3pm)",
+            "food": "10oz 93% ground beef, 6oz sweet potato, 1 cup broccoli",
+            "protein": "65g",
+            "fat": "12g",
+            "carbs": "25g",
+            "calories": "480"
+          },
+          {
+            "meal": "Meal 4 (7pm)",
+            "food": "6oz salmon, 2 cups spinach, 1 tbsp butter",
+            "protein": "40g",
+            "fat": "18g",
+            "carbs": "2g",
+            "calories": "340"
+          },
+          {
+            "meal": "TOTAL",
+            "food": "",
+            "protein": "202g",
+            "fat": "90g",
+            "carbs": "75g",
+            "calories": "1940"
+          }
+        ],
+        "source": "01-nutrition-plan.docx > Sample Meal Plans by Day Type"
+      },
+      {
+        "day_type": "REST DAY",
+        "header": "~1350 cal | 260g P | 60g F | 20g C",
+        "meals": [
+          {
+            "meal": "Meal 1 (8am)",
+            "food": "6 whole eggs, 2oz cheese, 2 cups spinach",
+            "protein": "48g",
+            "fat": "42g",
+            "carbs": "3g",
+            "calories": "580"
+          },
+          {
+            "meal": "Meal 2 (1pm)",
+            "food": "8oz chicken thigh (skin on), mixed greens, ranch",
+            "protein": "52g",
+            "fat": "25g",
+            "carbs": "4g",
+            "calories": "460"
+          },
+          {
+            "meal": "Meal 3 (6pm)",
+            "food": "8oz ribeye, 1 cup asparagus, 1 tbsp butter",
+            "protein": "56g",
+            "fat": "35g",
+            "carbs": "5g",
+            "calories": "560"
+          },
+          {
+            "meal": "TOTAL",
+            "food": "",
+            "protein": "156g",
+            "fat": "102g",
+            "carbs": "12g",
+            "calories": "1600"
+          }
+        ],
+        "source": "01-nutrition-plan.docx > Sample Meal Plans by Day Type"
+      },
+      {
+        "day_type": "PSMF DAY",
+        "header": "~800 cal | 250g P | 20g F | <10g C",
+        "meals": [
+          {
+            "meal": "Meal 1 (8am)",
+            "food": "10 egg whites, 4oz chicken breast",
+            "protein": "58g",
+            "fat": "4g",
+            "carbs": "2g",
+            "calories": "275"
+          },
+          {
+            "meal": "Meal 2 (1pm)",
+            "food": "10oz cod or tilapia, lettuce, lemon",
+            "protein": "55g",
+            "fat": "3g",
+            "carbs": "2g",
+            "calories": "255"
+          },
+          {
+            "meal": "Meal 3 (6pm)",
+            "food": "10oz chicken breast, cucumber, vinegar",
+            "protein": "62g",
+            "fat": "6g",
+            "carbs": "3g",
+            "calories": "310"
+          },
+          {
+            "meal": "Meal 4 (9pm)",
+            "food": "1 scoop whey isolate (if needed)",
+            "protein": "25g",
+            "fat": "1g",
+            "carbs": "1g",
+            "calories": "110"
+          },
+          {
+            "meal": "TOTAL",
+            "food": "",
+            "protein": "200g",
+            "fat": "14g",
+            "carbs": "8g",
+            "calories": "950"
+          }
+        ],
+        "source": "01-nutrition-plan.docx > Sample Meal Plans by Day Type"
+      },
+      {
+        "day_type": "REFEED DAY",
+        "header": "~2400 cal | 200g P | 40g F | 300g C — Starting Week 5",
+        "meals": [
+          {
+            "meal": "Meal 1 (8am)",
+            "food": "6 egg whites + 2 whole eggs, 1.5 cups oatmeal, 1 banana",
+            "protein": "40g",
+            "fat": "12g",
+            "carbs": "85g",
+            "calories": "600"
+          },
+          {
+            "meal": "Meal 2 (12pm)",
+            "food": "8oz chicken breast, 2 cups white rice, low-fat teriyaki",
+            "protein": "55g",
+            "fat": "8g",
+            "carbs": "100g",
+            "calories": "700"
+          },
+          {
+            "meal": "Meal 3 (4pm)",
+            "food": "8oz lean ground turkey, 12oz potato, 1 cup vegetables",
+            "protein": "50g",
+            "fat": "10g",
+            "carbs": "75g",
+            "calories": "600"
+          },
+          {
+            "meal": "Meal 4 (8pm)",
+            "food": "6oz white fish, 1 cup rice, fat-free sauce",
+            "protein": "40g",
+            "fat": "5g",
+            "carbs": "45g",
+            "calories": "400"
+          },
+          {
+            "meal": "TOTAL",
+            "food": "",
+            "protein": "185g",
+            "fat": "35g",
+            "carbs": "305g",
+            "calories": "2300"
+          }
+        ],
+        "source": "01-nutrition-plan.docx > Sample Meal Plans by Day Type"
+      }
+    ],
+    "weekly_eating_template": [
+      {
+        "day": "Monday",
+        "type": "PSMF",
+        "calories": "750–800",
+        "protein": "250g",
+        "carbs": "<10g",
+        "fat": "20g",
+        "notes": "Lean protein only. Reset."
+      },
+      {
+        "day": "Tuesday",
+        "type": "REST",
+        "calories": "1300–1400",
+        "protein": "260g",
+        "carbs": "20g",
+        "fat": "60g",
+        "notes": "Keto. 3 meals."
+      },
+      {
+        "day": "Wednesday",
+        "type": "TRAINING",
+        "calories": "1650–1800",
+        "protein": "260g",
+        "carbs": "75g",
+        "fat": "75g",
+        "notes": "Pre/post WO carbs."
+      },
+      {
+        "day": "Thursday",
+        "type": "REST",
+        "calories": "1300–1400",
+        "protein": "260g",
+        "carbs": "20g",
+        "fat": "60g",
+        "notes": "Keto. 3 meals."
+      },
+      {
+        "day": "Friday",
+        "type": "TRAINING",
+        "calories": "1650–1800",
+        "protein": "260g",
+        "carbs": "75g",
+        "fat": "75g",
+        "notes": "Pre/post WO carbs."
+      },
+      {
+        "day": "Saturday",
+        "type": "TRAINING",
+        "calories": "1650–1800",
+        "protein": "260g",
+        "carbs": "75g",
+        "fat": "75g",
+        "notes": "Pre/post WO carbs."
+      },
+      {
+        "day": "Sunday",
+        "type": "REFEED*",
+        "calories": "2200–2500",
+        "protein": "200g",
+        "carbs": "250–300g",
+        "fat": "40g",
+        "notes": "*Starting Week 5"
+      }
+    ],
+    "weekly_eating_template_source": "01-nutrition-plan.docx > Weekly Eating Template",
+    "weekly_calorie_average": {
+      "weeks_1_4_no_refeed": "~10,350 cal/week = ~1,478 cal/day average",
+      "weeks_5_16_with_refeed": "~11,550 cal/week = ~1,650 cal/day average",
+      "source": "01-nutrition-plan.docx > Weekly Calorie Average"
+    },
+    "supplements": [
+      {
+        "supplement": "Whey Isolate",
+        "dose": "25–50g",
+        "timing": "Post-workout",
+        "purpose": "Fast protein, hit daily target"
+      },
+      {
+        "supplement": "Creatine Mono",
+        "dose": "5g",
+        "timing": "Any time",
+        "purpose": "Strength, cell volume"
+      },
+      {
+        "supplement": "Electrolytes",
+        "dose": "Per label",
+        "timing": "AM + PM",
+        "purpose": "Critical on keto: sodium, potassium, magnesium"
+      },
+      {
+        "supplement": "Fish Oil",
+        "dose": "2–4g EPA/DHA",
+        "timing": "With meals",
+        "purpose": "Inflammation, lipids"
+      },
+      {
+        "supplement": "Vitamin D3",
+        "dose": "5000 IU",
+        "timing": "Morning",
+        "purpose": "Hormone support"
+      },
+      {
+        "supplement": "Magnesium",
+        "dose": "400mg",
+        "timing": "Before bed",
+        "purpose": "Sleep, recovery, cramps"
+      },
+      {
+        "supplement": "NAC",
+        "dose": "600–1200mg",
+        "timing": "AM",
+        "purpose": "Liver support (on orals)"
+      },
+      {
+        "supplement": "TUDCA",
+        "dose": "250–500mg",
+        "timing": "With orals",
+        "purpose": "Liver support (on orals)"
+      },
+      {
+        "supplement": "Fiber (psyllium)",
+        "dose": "5–10g",
+        "timing": "Before bed",
+        "purpose": "Digestion on high protein"
+      }
+    ],
+    "supplements_source": "01-nutrition-plan.docx > Recommended Supplements",
+    "complete_protocol_weekly_nutrition": {
+      "note": "Alternate day-by-day nutrition+training pairing from 02-complete-protocol (DeLauer PSMF Hybrid + Palumbo Keto). Numbers differ from 01-nutrition-plan (Monday PSMF=1000 cal here vs 700-800; weekly avg ~1860 cal/day).",
+      "weekly_average": "~1,860 cal/day | ~252g protein | ~67g fat | ~53g carbs",
+      "days": [
+        {
+          "day": "MONDAY",
+          "nutrition": "PSMF",
+          "calories": "1,000",
+          "protein": "180g",
+          "fat": "15g",
+          "carbs": "<20g",
+          "training": "Cardio Only"
+        },
+        {
+          "day": "TUESDAY",
+          "nutrition": "Palumbo Keto",
+          "calories": "2,000",
+          "protein": "280g",
+          "fat": "90g",
+          "carbs": "<30g",
+          "training": "Weights + Cardio"
+        },
+        {
+          "day": "WEDNESDAY",
+          "nutrition": "Palumbo Keto",
+          "calories": "1,800",
+          "protein": "250g",
+          "fat": "75g",
+          "carbs": "<30g",
+          "training": "Cardio Only"
+        },
+        {
+          "day": "THURSDAY",
+          "nutrition": "Palumbo Keto",
+          "calories": "2,000",
+          "protein": "280g",
+          "fat": "90g",
+          "carbs": "<30g",
+          "training": "Weights + Cardio"
+        },
+        {
+          "day": "FRIDAY",
+          "nutrition": "Palumbo Keto",
+          "calories": "1,800",
+          "protein": "250g",
+          "fat": "75g",
+          "carbs": "<30g",
+          "training": "Cardio Only"
+        },
+        {
+          "day": "SATURDAY",
+          "nutrition": "Palumbo Keto",
+          "calories": "2,000",
+          "protein": "280g",
+          "fat": "90g",
+          "carbs": "<30g",
+          "training": "Weights + Cardio"
+        },
+        {
+          "day": "SUNDAY",
+          "nutrition": "REFEED",
+          "calories": "2,400",
+          "protein": "225g",
+          "fat": "35g",
+          "carbs": "175g",
+          "training": "Kettlebell / Active Recovery"
+        }
+      ],
+      "source": "02-complete-protocol.docx > Nutrition Structure (DAY/NUTRITION/CALORIES table)"
+    }
+  },
+  "ped_protocol": {
+    "stack_overview": {
+      "injectables": [
+        "Testosterone (enanthate/cypionate)",
+        "Equipoise (EQ)",
+        "Deca (Nandrolone decanoate)",
+        "Tren E (Trenbolone enanthate)"
+      ],
+      "orals": [
+        "Superdrol",
+        "Anavar",
+        "Winstrol",
+        "Proviron"
+      ],
+      "non_aas_fat_loss": [
+        "T3",
+        "Clenbuterol"
+      ],
+      "gh_secretagogue": [
+        "MK-677"
+      ],
+      "source": "03-ped-protocol-060226.docx > Daily Totals by Phase + Weekly Injections tables"
+    },
+    "critical_limits": "T3 MAX 75mcg | Clen never after 2pm | Deca STOP Wk 6 | Superdrol MAX 2wks | Skip T4 & Oral Primo",
+    "critical_limits_source": "03-ped-protocol-060226.docx > CRITICAL banner above Week-by-Week Dose Checklists",
+    "daily_timing_by_phase": [
+      {
+        "time": "WAKING (Fasted)",
+        "compound": "T3",
+        "WK 2–3 KICKSTART": "50mcg",
+        "WK 4–8 RECOMP": "50–75mcg",
+        "WK 9–14 HARDEN": "50–75mcg",
+        "WK 15–16 PEAK": "50–75mcg"
+      },
+      {
+        "time": "WAKING (Fasted)",
+        "compound": "Clenbuterol",
+        "WK 2–3 KICKSTART": "40–60mcg",
+        "WK 4–8 RECOMP": "60–80mcg",
+        "WK 9–14 HARDEN": "80–100mcg",
+        "WK 15–16 PEAK": "80–100mcg"
+      },
+      {
+        "time": "BREAKFAST",
+        "compound": "Proviron",
+        "WK 2–3 KICKSTART": "25mg",
+        "WK 4–8 RECOMP": "25mg",
+        "WK 9–14 HARDEN": "37.5–50mg",
+        "WK 15–16 PEAK": "50mg"
+      },
+      {
+        "time": "BREAKFAST",
+        "compound": "Superdrol",
+        "WK 2–3 KICKSTART": "10mg",
+        "WK 4–8 RECOMP": "OFF",
+        "WK 9–14 HARDEN": "OFF",
+        "WK 15–16 PEAK": "OFF"
+      },
+      {
+        "time": "BREAKFAST",
+        "compound": "Anavar",
+        "WK 2–3 KICKSTART": "OFF",
+        "WK 4–8 RECOMP": "25mg",
+        "WK 9–14 HARDEN": "OFF",
+        "WK 15–16 PEAK": "OFF"
+      },
+      {
+        "time": "BREAKFAST",
+        "compound": "Winstrol",
+        "WK 2–3 KICKSTART": "OFF",
+        "WK 4–8 RECOMP": "OFF",
+        "WK 9–14 HARDEN": "25mg",
+        "WK 15–16 PEAK": "25mg"
+      },
+      {
+        "time": "PRE-WO (60–90 min)",
+        "compound": "Superdrol",
+        "WK 2–3 KICKSTART": "10mg",
+        "WK 4–8 RECOMP": "OFF",
+        "WK 9–14 HARDEN": "OFF",
+        "WK 15–16 PEAK": "OFF"
+      },
+      {
+        "time": "PRE-WO (60–90 min)",
+        "compound": "Anavar",
+        "WK 2–3 KICKSTART": "OFF",
+        "WK 4–8 RECOMP": "25mg",
+        "WK 9–14 HARDEN": "OFF",
+        "WK 15–16 PEAK": "OFF"
+      },
+      {
+        "time": "PRE-WO (60–90 min)",
+        "compound": "Winstrol",
+        "WK 2–3 KICKSTART": "OFF",
+        "WK 4–8 RECOMP": "OFF",
+        "WK 9–14 HARDEN": "25mg",
+        "WK 15–16 PEAK": "25–37.5mg"
+      },
+      {
+        "time": "DINNER",
+        "compound": "Proviron",
+        "WK 2–3 KICKSTART": "25mg",
+        "WK 4–8 RECOMP": "25mg",
+        "WK 9–14 HARDEN": "37.5–50mg",
+        "WK 15–16 PEAK": "50mg"
+      },
+      {
+        "time": "DINNER",
+        "compound": "Winstrol (if 75mg)",
+        "WK 2–3 KICKSTART": "OFF",
+        "WK 4–8 RECOMP": "OFF",
+        "WK 9–14 HARDEN": "OFF",
+        "WK 15–16 PEAK": "12.5–25mg"
+      },
+      {
+        "time": "BEDTIME",
+        "compound": "MK-677",
+        "WK 2–3 KICKSTART": "10mg (opt)",
+        "WK 4–8 RECOMP": "10mg (opt)",
+        "WK 9–14 HARDEN": "10mg (opt)",
+        "WK 15–16 PEAK": "OFF"
+      }
+    ],
+    "daily_timing_by_phase_source": "03-ped-protocol-060226.docx > Daily Administration Timing (Exact Doses by Phase)",
+    "phase_columns": [
+      "WK 2–3 KICKSTART",
+      "WK 4–8 RECOMP",
+      "WK 9–14 HARDEN",
+      "WK 15–16 PEAK"
+    ],
+    "weekly_injections_per_pin": [
+      {
+        "compound": "Testosterone",
+        "weekly_total": "600→400→250mg",
+        "WKS 2–6 Per Pin (3x)": "200mg",
+        "WKS 7–10 Per Pin (3x)": "133mg",
+        "WKS 11–16 Per Pin (3x)": "83–100mg"
+      },
+      {
+        "compound": "Equipoise",
+        "weekly_total": "600mg",
+        "WKS 2–6 Per Pin (3x)": "200mg",
+        "WKS 7–10 Per Pin (3x)": "200mg",
+        "WKS 11–16 Per Pin (3x)": "200mg"
+      },
+      {
+        "compound": "Deca",
+        "weekly_total": "200mg→OFF",
+        "WKS 2–6 Per Pin (3x)": "100mg (2x/wk)",
+        "WKS 7–10 Per Pin (3x)": "OFF",
+        "WKS 11–16 Per Pin (3x)": "OFF"
+      },
+      {
+        "compound": "Tren E",
+        "weekly_total": "OFF→300mg",
+        "WKS 2–6 Per Pin (3x)": "OFF",
+        "WKS 7–10 Per Pin (3x)": "100–150mg (2x)",
+        "WKS 11–16 Per Pin (3x)": "150mg (2x)"
+      }
+    ],
+    "weekly_injections_source": "03-ped-protocol-060226.docx > Weekly Injections (Split Doses per Pin) — 3 pins/wk Mon/Wed/Fri",
+    "orals_and_daily_by_phase": [
+      {
+        "compound": "Superdrol",
+        "WK 2–3": "20mg (10+10)",
+        "WK 4–8": "OFF",
+        "WK 9–14": "OFF",
+        "WK 15–16": "OFF"
+      },
+      {
+        "compound": "Anavar",
+        "WK 2–3": "OFF",
+        "WK 4–8": "50mg (25+25)",
+        "WK 9–14": "OFF",
+        "WK 15–16": "OFF"
+      },
+      {
+        "compound": "Winstrol",
+        "WK 2–3": "OFF",
+        "WK 4–8": "OFF",
+        "WK 9–14": "50mg (25+25)",
+        "WK 15–16": "50–75mg (25+25+25)"
+      },
+      {
+        "compound": "Proviron",
+        "WK 2–3": "50mg (25+25)",
+        "WK 4–8": "50mg (25+25)",
+        "WK 9–14": "75–100mg (37.5+37.5)",
+        "WK 15–16": "100mg (50+50)"
+      },
+      {
+        "compound": "T3",
+        "WK 2–3": "50mcg (all AM)",
+        "WK 4–8": "50–75mcg (all AM)",
+        "WK 9–14": "50–75mcg (all AM)",
+        "WK 15–16": "50–75mcg (all AM)"
+      },
+      {
+        "compound": "Clen",
+        "WK 2–3": "40–60mcg (AM)",
+        "WK 4–8": "60–80mcg (AM)",
+        "WK 9–14": "80–100mcg (AM)",
+        "WK 15–16": "80–100mcg (AM)"
+      },
+      {
+        "compound": "MK-677",
+        "WK 2–3": "10mg (bedtime)",
+        "WK 4–8": "10mg (bedtime)",
+        "WK 9–14": "10mg (bedtime)",
+        "WK 15–16": "OFF"
+      }
+    ],
+    "orals_and_daily_by_phase_source": "03-ped-protocol-060226.docx > Daily Totals by Phase",
+    "weekly_timeline": [
+      {
+        "week": 2,
+        "phase": "KICKSTART",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "100mg",
+            "wed": "—",
+            "fri": "100mg"
+          },
+          "Tren": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50mcg, Clen: 40–60mcg, Proviron: 25mg, Superdrol: 10mg",
+          "PRE_WORKOUT": "Superdrol: 10mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 2"
+      },
+      {
+        "week": 3,
+        "phase": "KICKSTART",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "100mg",
+            "wed": "—",
+            "fri": "100mg"
+          },
+          "Tren": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50mcg, Clen: 40–60mcg, Proviron: 25mg, Superdrol: 10mg",
+          "PRE_WORKOUT": "Superdrol: 10mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 3"
+      },
+      {
+        "week": 4,
+        "phase": "RECOMP",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "100mg",
+            "wed": "—",
+            "fri": "100mg"
+          },
+          "Tren": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 60–80mcg, Proviron: 25mg, Anavar: 25mg",
+          "PRE_WORKOUT": "Anavar: 25mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 4"
+      },
+      {
+        "week": 5,
+        "phase": "RECOMP",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "100mg",
+            "wed": "—",
+            "fri": "100mg"
+          },
+          "Tren": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 60–80mcg, Proviron: 25mg, Anavar: 25mg",
+          "PRE_WORKOUT": "Anavar: 25mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 5"
+      },
+      {
+        "week": 6,
+        "phase": "RECOMP",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "100mg",
+            "wed": "—",
+            "fri": "100mg"
+          },
+          "Tren": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 60–80mcg, Proviron: 25mg, Anavar: 25mg",
+          "PRE_WORKOUT": "Anavar: 25mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 6"
+      },
+      {
+        "week": 7,
+        "phase": "TRANSITION",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "133mg",
+            "wed": "133mg",
+            "fri": "133mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "100–150mg",
+            "wed": "—",
+            "fri": "100–150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80mcg, Proviron: 25mg, Anavar: 25mg",
+          "PRE_WORKOUT": "Anavar: 25mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 7"
+      },
+      {
+        "week": 8,
+        "phase": "TRANSITION",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "133mg",
+            "wed": "133mg",
+            "fri": "133mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "100–150mg",
+            "wed": "—",
+            "fri": "100–150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80mcg, Proviron: 25mg, Anavar: 25mg",
+          "PRE_WORKOUT": "Anavar: 25mg",
+          "PM": "Proviron: 25mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 8"
+      },
+      {
+        "week": 9,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "133mg",
+            "wed": "133mg",
+            "fri": "133mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 37.5mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 37.5mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 9"
+      },
+      {
+        "week": 10,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "133mg",
+            "wed": "133mg",
+            "fri": "133mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 37.5mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 37.5mg",
+          "BEDTIME": "MK-677: 10mg"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 10"
+      },
+      {
+        "week": 11,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83–100mg",
+            "wed": "83–100mg",
+            "fri": "83–100mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 11"
+      },
+      {
+        "week": 12,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83–100mg",
+            "wed": "83–100mg",
+            "fri": "83–100mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 12"
+      },
+      {
+        "week": 13,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83–100mg",
+            "wed": "83–100mg",
+            "fri": "83–100mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 13"
+      },
+      {
+        "week": 14,
+        "phase": "HARDENING",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83–100mg",
+            "wed": "83–100mg",
+            "fri": "83–100mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 14"
+      },
+      {
+        "week": 15,
+        "phase": "PEAK",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83mg",
+            "wed": "83mg",
+            "fri": "83mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg + Winstrol: 25mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 15"
+      },
+      {
+        "week": 16,
+        "phase": "PEAK",
+        "injectables_per_pin": {
+          "Test": {
+            "mon": "83mg",
+            "wed": "83mg",
+            "fri": "83mg"
+          },
+          "EQ": {
+            "mon": "200mg",
+            "wed": "200mg",
+            "fri": "200mg"
+          },
+          "Deca": {
+            "mon": "—",
+            "wed": "—",
+            "fri": "—"
+          },
+          "Tren": {
+            "mon": "150mg",
+            "wed": "—",
+            "fri": "150mg"
+          }
+        },
+        "oral_and_daily_timing": {
+          "AM": "T3: 50–75mcg, Clen: 80–100mcg, Proviron: 50mg, Winstrol: 25mg",
+          "PRE_WORKOUT": "Winstrol: 25mg",
+          "PM": "Proviron: 50mg + Winstrol: 25mg",
+          "BEDTIME": "—"
+        },
+        "source": "03-ped-protocol-060226.docx > Week-by-Week Dose Checklists > WEEK 16"
+      }
+    ],
+    "weekly_timeline_note": "Weeks 2-16 only. Week 1 has NO dosing table in either PED doc — cycle dosing begins Week 2 (Kickstart). Both 03-ped-protocol-060226.docx and 03-ped-protocol.docx contain identical week-by-week injectable + oral timing (verified zero diff).",
+    "key_transitions": [
+      {
+        "week": "4",
+        "what_changes": "Superdrol → OFF, Anavar → ON (25+25mg)",
+        "why": "Liver recovery; recomp oral"
+      },
+      {
+        "week": "7",
+        "what_changes": "Deca → OFF, Tren → ON, Test 600→400",
+        "why": "Remove water; add hardener"
+      },
+      {
+        "week": "9",
+        "what_changes": "Anavar → OFF, Winstrol → ON (25+25mg)",
+        "why": "Hardening oral switch"
+      },
+      {
+        "week": "11",
+        "what_changes": "Test 400→250–300, Proviron 50→100mg, MK → OFF",
+        "why": "Final dry-out phase"
+      },
+      {
+        "week": "15",
+        "what_changes": "Winstrol can increase to 75mg (25+25+25)",
+        "why": "Peak week polish"
+      }
+    ],
+    "key_transitions_source": "03-ped-protocol-060226.docx > Key Transitions table",
+    "bloodwork_schedule": [
+      {
+        "timing": "Baseline",
+        "cycle_day": "__D+0__",
+        "tests": "CBC, CMP, Lipids, Glucose, Thyroid, Test/E2, Prolactin, HbA1c, BP"
+      },
+      {
+        "timing": "Week 4",
+        "cycle_day": "__D+21__",
+        "tests": "CBC, CMP, Lipids, Liver (ALT/AST), BP"
+      },
+      {
+        "timing": "Week 8",
+        "cycle_day": "__D+49__",
+        "tests": "Full panel"
+      },
+      {
+        "timing": "Week 12",
+        "cycle_day": "__D+77__",
+        "tests": "CBC, CMP, Lipids, Thyroid, BP"
+      }
+    ],
+    "bloodwork_schedule_source": "03-ped-protocol-060226.docx > Bloodwork Schedule table (Baseline/Wk4/Wk8/Wk12)",
+    "bloodwork_reference_ranges": [
+      {
+        "marker": "ALT (liver)",
+        "green": "7–56 U/L",
+        "yellow": "56–100",
+        "red": ">100",
+        "action_if_red": "Stop/halve orals. TUDCA 500mg + NAC 1200mg. Re-test in 2 weeks."
+      },
+      {
+        "marker": "AST (liver)",
+        "green": "10–40 U/L",
+        "yellow": "40–80",
+        "red": ">80",
+        "action_if_red": "Same as ALT. Note: heavy training elevates AST briefly — fast 12hr + avoid lifting 48hr pre-draw."
+      },
+      {
+        "marker": "Hematocrit",
+        "green": "40–50%",
+        "yellow": "50–54",
+        "red": ">54",
+        "action_if_red": "Donate blood (Red Cross / therapeutic phlebotomy). Drop EQ +/- Test 100mg if persists."
+      },
+      {
+        "marker": "Hemoglobin",
+        "green": "13.5–17.5 g/dL",
+        "yellow": "17.5–18.5",
+        "red": ">18.5",
+        "action_if_red": "Same as Hct. Donate blood."
+      },
+      {
+        "marker": "LDL cholesterol",
+        "green": "<100 mg/dL",
+        "yellow": "100–160",
+        "red": ">160",
+        "action_if_red": "Bergamot 1g + cardio +1x/wk. If >190, Crestor 5mg w/ physician."
+      },
+      {
+        "marker": "HDL cholesterol",
+        "green": ">40 mg/dL",
+        "yellow": "30–40",
+        "red": "<30",
+        "action_if_red": "Niacin 500mg, fish oil up to 4g, drop orals. HDL recovers post-cycle."
+      },
+      {
+        "marker": "Total/HDL ratio",
+        "green": "<3.5",
+        "yellow": "3.5–5.0",
+        "red": ">5.0",
+        "action_if_red": "Aggressive lipid mgmt + drop or rotate orals."
+      },
+      {
+        "marker": "Triglycerides",
+        "green": "<150 mg/dL",
+        "yellow": "150–200",
+        "red": ">200",
+        "action_if_red": "Fish oil 4g, drop sugar, cardio up. Tren can spike trigs."
+      },
+      {
+        "marker": "Total Testosterone",
+        "green": "On-cycle: supraphysiologic OK (>1500)",
+        "yellow": "—",
+        "red": "<300 in PCT/post-cycle",
+        "action_if_red": "Extend PCT, recheck Wk 30. See endo if Wk 30 still suppressed."
+      },
+      {
+        "marker": "Estradiol (E2 Sensitive)",
+        "green": "20–40 pg/mL",
+        "yellow": "40–70 (asx) / 15–20",
+        "red": ">70 (sx) / <15",
+        "action_if_red": "Adjust AI dose. Re-test in 7–10 days. Never crash E2."
+      },
+      {
+        "marker": "Prolactin",
+        "green": "<15 ng/mL",
+        "yellow": "15–25",
+        "red": ">25",
+        "action_if_red": "Caber 0.5mg 2x/wk for 2 weeks. Re-test."
+      },
+      {
+        "marker": "Glucose (fasting)",
+        "green": "70–99 mg/dL",
+        "yellow": "100–125",
+        "red": ">125",
+        "action_if_red": "Drop oral compounds (esp Anavar/Winstrol). Check HbA1c. See physician."
+      },
+      {
+        "marker": "HbA1c",
+        "green": "<5.7%",
+        "yellow": "5.7–6.4 (prediabetic)",
+        "red": ">6.4 (diabetic range)",
+        "action_if_red": "Drop carbs, cardio up, drop orals. See physician."
+      },
+      {
+        "marker": "BP (resting)",
+        "green": "<130/80",
+        "yellow": "130–140 / 80–90",
+        "red": ">140/90 sustained",
+        "action_if_red": "Telmisartan 20–40mg. Drop Tren/EQ if persists."
+      },
+      {
+        "marker": "TSH (post-T3)",
+        "green": "0.4–4.5 mIU/L",
+        "yellow": "Suppressed on T3 (normal)",
+        "red": "Still suppressed 4+ wk post-T3",
+        "action_if_red": "Iodine 150mcg, see endo for recovery protocol."
+      },
+      {
+        "marker": "PSA",
+        "green": "<2.5 ng/mL (under 50)",
+        "yellow": "2.5–4.0",
+        "red": ">4.0",
+        "action_if_red": "Stop cycle, see urologist."
+      }
+    ],
+    "bloodwork_reference_ranges_source": "03-ped-protocol-060226.docx > Bloodwork Interpretation Guide (reference ranges table)",
+    "pct": {
+      "mandatory": true,
+      "timeline": [
+        {
+          "when": "Wk 14–16 (final 3 weeks of cycle)",
+          "what": "HCG 500–1000 IU 2x/wk (Mon + Thu)",
+          "why": "Restart Leydig cell function before SERM hits"
+        },
+        {
+          "when": "Wk 17 (1 week after last pin)",
+          "what": "Continue HCG, no SERM yet",
+          "why": "Long esters still active — SERM would be wasted"
+        },
+        {
+          "when": "Wk 18 (2 weeks after last pin)",
+          "what": "Stop HCG. Wait 1 more week.",
+          "why": "Let HCG-driven E2 clear before starting SERM"
+        },
+        {
+          "when": "Wk 19 — start SERM Week 1",
+          "what": "Nolvadex 40mg/day OR Clomid 50mg/day",
+          "why": "Restart endogenous LH/FSH"
+        },
+        {
+          "when": "Wk 20 — SERM Week 2",
+          "what": "Nolvadex 40mg OR Clomid 50mg",
+          "why": "Continue restart"
+        },
+        {
+          "when": "Wk 21 — SERM Week 3",
+          "what": "Nolvadex 20mg OR Clomid 25mg",
+          "why": "Taper down"
+        },
+        {
+          "when": "Wk 22 — SERM Week 4",
+          "what": "Nolvadex 20mg OR Clomid 25mg",
+          "why": "Final taper"
+        },
+        {
+          "when": "Wk 26 (4 weeks post-PCT)",
+          "what": "Full bloodwork: Test, LH, FSH, E2, SHBG",
+          "why": "Verify HPTA recovery"
+        },
+        {
+          "when": "Wk 30 (8 weeks post-PCT)",
+          "what": "Re-test if Wk 26 results were low",
+          "why": "Some men need 12+ weeks; PCT extension may help"
+        }
+      ],
+      "restart_success_criteria_week26": [
+        "Total Test back in normal range (typically 400-900 ng/dL depending on lab + age)",
+        "LH + FSH detectable (anything > 1 IU/L is recovery; suppressed = still shut down)",
+        "E2 in 20-40 pg/mL range",
+        "Libido + AM erections returning",
+        "Mood + energy stable"
+      ],
+      "failure_action": "If Week 26 bloodwork still shows shutdown (Test < 250, LH/FSH < 1) — see an endocrinologist familiar with anabolic recovery. Do NOT just blast another cycle to mask it.",
+      "source": "03-ped-protocol-060226.docx > Post-Cycle Therapy (PCT)"
+    },
+    "ancillaries_ai_hcg": [
+      {
+        "compound": "Anastrozole (Arimidex)",
+        "dose": "0.25–0.5mg EOD",
+        "when": "Start Wk 2, titrate to E2 labs",
+        "purpose": "Aromatase inhibitor — controls estrogen from Test/EQ aromatization. Bloods-driven dosing; do NOT crash E2."
+      },
+      {
+        "compound": "Aromasin (Exemestane)",
+        "dose": "12.5–25mg EOD",
+        "when": "Alternative to Anastrozole",
+        "purpose": "Suicidal AI — preferred by some; doesn't rebound on cessation"
+      },
+      {
+        "compound": "HCG (on-cycle)",
+        "dose": "250–500 IU 2x/wk (Mon + Thu, SubQ)",
+        "when": "Start Wk 2, run through Wk 16",
+        "purpose": "Keeps Leydig cells responsive. Maintains testicle size + fertility. Optional but recommended for 16wk+ cycles."
+      },
+      {
+        "compound": "Cabergoline (Caber)",
+        "dose": "0.25mg E3D (every 3 days)",
+        "when": "Start Wk 7 (when Tren begins)",
+        "purpose": "Dopamine agonist. Controls prolactin elevation from Tren + Deca. Prevents prolactin-induced gyno + libido loss."
+      },
+      {
+        "compound": "Nolvadex (Tamoxifen) — RESERVE",
+        "dose": "20–40mg/day PRN",
+        "when": "Only if gyno symptoms appear",
+        "purpose": "SERM. Acute gyno rescue. Have 60 tabs on hand from cycle start — don't wait until you need it."
+      },
+      {
+        "compound": "Telmisartan",
+        "dose": "20–40mg/day",
+        "when": "If BP > 135/85 sustained",
+        "purpose": "ARB blood pressure med. EQ + Tren elevate BP. Coordinate with physician."
+      },
+      {
+        "compound": "Bergamot Citrus / Niacin",
+        "dose": "1000mg / 500mg daily",
+        "when": "Throughout cycle",
+        "purpose": "Lipid management (LDL up, HDL down on cycle). Cardiovascular protection."
+      }
+    ],
+    "ancillaries_source": "03-ped-protocol-060226.docx > On-Cycle Ancillaries table",
+    "ai_dosing_principle": [
+      "Do NOT dose AI blindly. Start at 0.25mg E3D. Get E2 + Sensitive E2 panel at Week 4.",
+      "Target E2: 20-40 pg/mL on standard assay, 20-30 on sensitive assay.",
+      "If E2 < 20 with symptoms (joint pain, low libido, depression) -> reduce AI dose.",
+      "If E2 > 40 with symptoms (gyno itch, water retention, BP spike) -> increase AI dose.",
+      "Crashed E2 is WORSE than slightly elevated E2 — never overshoot."
+    ],
+    "ai_dosing_principle_source": "03-ped-protocol-060226.docx > On-Cycle Ancillaries > AI dosing principle",
+    "front_load_taper_notes": {
+      "test_taper": "Testosterone tapers across cycle: 600mg/wk (Wk2-6, 200mg/pin) -> 400mg/wk (Wk7-10, 133mg/pin) -> 250-300mg/wk (Wk11-16, 83-100mg/pin).",
+      "deca": "Deca 200mg/wk (Wk2-6, 100mg 2x/wk Mon+Fri) then STOP after Wk6.",
+      "tren": "Tren E starts Wk7 (OFF before): 100-150mg per pin 2x/wk (Mon+Fri), ramps to 150mg per pin (300mg/wk) Wk9-16.",
+      "eq": "Equipoise held constant at 600mg/wk (200mg/pin) entire cycle.",
+      "no_explicit_frontload": "No explicit single-dose front-load/loading-dose protocol stated; ramp is via phase dose escalation. NOT SPECIFIED IN DOC (for any classic front-load).",
+      "source": "03-ped-protocol-060226.docx > Weekly Injections table + Key Transitions"
+    },
+    "injection_sites": [
+      {
+        "day": "MONDAY",
+        "primary_site": "Right Glute (upper-outer quadrant)",
+        "alternate": "Right Ventroglute",
+        "notes": "Largest muscle, highest volume tolerance"
+      },
+      {
+        "day": "WEDNESDAY",
+        "primary_site": "Left Glute (upper-outer quadrant)",
+        "alternate": "Left Ventroglute",
+        "notes": "Match Monday side for symmetry"
+      },
+      {
+        "day": "FRIDAY",
+        "primary_site": "Right Delt (lateral head)",
+        "alternate": "Left Quad (VL)",
+        "notes": "Smaller volume — split if you're pinning >2mL"
+      }
+    ],
+    "injection_sites_source": "03-ped-protocol-060226.docx > Injection Technique + Safety SOP > Site rotation",
+    "needles": [
+      {
+        "purpose": "Draw from vial",
+        "gauge_length": "18g × 1.5\"",
+        "why": "Fast draw for viscous oils"
+      },
+      {
+        "purpose": "IM glute injection",
+        "gauge_length": "23g × 1.5\"",
+        "why": "Reaches deep muscle on most adult builds"
+      },
+      {
+        "purpose": "IM glute (lean)",
+        "gauge_length": "23g × 1.0\" — if BF <12%",
+        "why": "Shorter needle if you're already lean — avoid IM-too-deep"
+      },
+      {
+        "purpose": "IM delt / quad",
+        "gauge_length": "25g × 1.0\"",
+        "why": "Smaller muscle, thinner needle, less PIP"
+      },
+      {
+        "purpose": "SubQ HCG",
+        "gauge_length": "29–31g × 0.5\" insulin pin",
+        "why": "Belly fat pinch, painless"
+      }
+    ],
+    "needles_source": "03-ped-protocol-060226.docx > Injection Technique + Safety SOP > Needles + syringes",
+    "sides_decision_tree": [
+      {
+        "symptom": "Gyno: itch under nipple",
+        "mild": "Track daily, no action",
+        "moderate": "Start Nolva 20mg/day. Check E2 + prolactin within 7 days.",
+        "severe": "Visible lump + tender + leaking → Nolva 40mg, see endo within 72hr"
+      },
+      {
+        "symptom": "Tren cough (post-injection)",
+        "mild": "<30s cough, no other sx",
+        "moderate": "Inject slower, rotate sites, warm oil pre-inject",
+        "severe": "Persistent cough, chest tightness, wheezing → ER, possible PE"
+      },
+      {
+        "symptom": "Insomnia (Tren / MK-677)",
+        "mild": "Mild trouble falling asleep",
+        "moderate": "Move Tren pin to AM only. Mag glycinate 400mg + glycine 3g pre-bed. Drop MK-677 if needed.",
+        "severe": "<3hr sleep for 5+ nights → drop Tren 50mg or switch to Tren ACE; if persistent, drop Tren entirely"
+      },
+      {
+        "symptom": "Night sweats",
+        "mild": "Light sweating, OK",
+        "moderate": "Cool room (65°F), moisture-wick sheets, sleep half-naked",
+        "severe": "Soaking sheets nightly = drop Tren 100mg or stop"
+      },
+      {
+        "symptom": "BP elevation",
+        "mild": "<135/85 — monitor weekly",
+        "moderate": "135–150 / 85–95: Telmisartan 20–40mg, cardio +1x/wk, drop sodium, bergamot citrus",
+        "severe": ">150/100 sustained → stop Tren + EQ, see physician immediately"
+      },
+      {
+        "symptom": "Resting HR",
+        "mild": "<90 bpm — monitor",
+        "moderate": "90–105: drop Clen, more potassium (lite salt), taurine 3g/day",
+        "severe": ">110 sustained → stop Clen, EKG"
+      },
+      {
+        "symptom": "Tren paranoia / aggression",
+        "mild": "Mild mood shift, irritability",
+        "moderate": "Talk to partner/coach, drop Tren 50mg, cardio for cortisol",
+        "severe": "Rage episodes you can't control → STOP Tren immediately, see physician + therapist"
+      },
+      {
+        "symptom": "EQ anxiety",
+        "mild": "Mild edge, manageable",
+        "moderate": "Drop EQ 100mg/wk, ashwagandha 600mg, breathwork",
+        "severe": "Panic attacks, derealization → drop EQ entirely"
+      },
+      {
+        "symptom": "Clen tremor",
+        "mild": "Hand shake, normal",
+        "moderate": "Taurine 3g, potassium up, drop Clen 20mcg",
+        "severe": "Severe tremor + palpitations → stop Clen, EKG"
+      },
+      {
+        "symptom": "T3 fatigue / thyroid",
+        "mild": "Mild on T3 OK",
+        "moderate": "Hold T3 at current dose, don't go above 75mcg",
+        "severe": "Crashing energy + cold post-cycle → see endo for thyroid panel, possible recovery support"
+      },
+      {
+        "symptom": "Acne (back/shoulder)",
+        "mild": "Mild breakout",
+        "moderate": "Benzoyl peroxide 5%, salicylic body wash, shower post-cardio",
+        "severe": "Cystic + spreading → accutane consult, drop oral compound"
+      },
+      {
+        "symptom": "Hair shedding (DHT-driven)",
+        "mild": "Few extra in drain",
+        "moderate": "Topical finasteride/minoxidil (NOT oral fin on cycle — kills libido)",
+        "severe": "Aggressive shedding → drop Winstrol/Anavar/Proviron, see dermatologist"
+      },
+      {
+        "symptom": "Libido / erection issues",
+        "mild": "Mild dip",
+        "moderate": "Check E2 (likely crashed or too high). Adjust AI. Consider Cialis 5mg daily.",
+        "severe": "No AM erections for 14+ days → check E2 + prolactin + Test. Adjust ancillaries."
+      },
+      {
+        "symptom": "Liver: yellow eyes, dark urine, nausea",
+        "mild": "—",
+        "moderate": "Stop ALL orals immediately. NAC 1200mg + TUDCA 500mg. Bloods within 48hr.",
+        "severe": "Yellowing + RUQ pain → ER. Liver damage."
+      }
+    ],
+    "sides_decision_tree_source": "03-ped-protocol-060226.docx > Sides Decision Tree table",
+    "complete_protocol_ped_timing": {
+      "note": "Simpler PED daily-timing summary from 02-complete-protocol (clock-time based).",
+      "rows": [
+        {
+          "time": "6:00 AM (fasted)",
+          "compound": "T3 50mcg + Clen 40–80mcg",
+          "notes": "Before cardio if AM cardio day"
+        },
+        {
+          "time": "7:00 AM",
+          "compound": "Proviron 25mg + Superdrol 10mg (Wk 2–3)",
+          "notes": "With breakfast"
+        },
+        {
+          "time": "Pre-Workout",
+          "compound": "Superdrol 10mg (Wk 2–3) OR Anavar 25mg (Wk 4+)",
+          "notes": "60–90 min before training"
+        },
+        {
+          "time": "Dinner",
+          "compound": "Proviron 25mg",
+          "notes": "With PM meal"
+        },
+        {
+          "time": "Bedtime",
+          "compound": "MK-677 10mg",
+          "notes": "30–60 min before sleep"
+        },
+        {
+          "time": "Mon/Wed/Fri Injections",
+          "compound": "Test + EQ + Deca (Wk 2–6)",
+          "notes": "Split doses per pin"
+        }
+      ],
+      "source": "02-complete-protocol.docx > PED Protocol Integration table"
+    }
+  },
+  "coach_pivots": {
+    "nutrition_critical_rules": [
+      "HIT YOUR PROTEIN EVERY DAY. 250g minimum. Non-negotiable. Protects muscle.",
+      "PSMF Monday is not optional. Anchor of the deficit. Do it.",
+      "Refeeds are CLEAN CARBS. Not pizza. Not ice cream. Rice, potato, oats.",
+      "Weigh yourself daily, track weekly average. Don't panic at daily fluctuations.",
+      "Stall 2+ weeks: drop rest day calories by 100, add 10 min cardio.",
+      "Losing >4 lbs/week: add 100 cal to training days. Preserve muscle.",
+      "SLEEP IS CRITICAL. Fix sleep or progress stalls.",
+      "HYDRATION: 1 gallon water minimum. More on training days. Electrolytes daily.",
+      "Track everything. MyFitnessPal, Cronometer, or paper. What gets measured gets managed."
+    ],
+    "nutrition_critical_rules_source": "01-nutrition-plan.docx > Critical Rules (numbered list)",
+    "conditional_rules": [
+      {
+        "trigger": "Stall 2+ weeks",
+        "action": "drop rest day calories by 100, add 10 min cardio",
+        "source": "01-nutrition-plan.docx > Critical Rules #5"
+      },
+      {
+        "trigger": "Losing >4 lbs/week",
+        "action": "add 100 cal to training days. Preserve muscle.",
+        "source": "01-nutrition-plan.docx > Critical Rules #6"
+      },
+      {
+        "trigger": "Losing >4 lbs/wk (weekly adjust)",
+        "action": "increase calories",
+        "source": "01-nutrition-plan.docx > Weekly Calorie & Macro Targets note"
+      },
+      {
+        "trigger": "Losing <2 lbs/wk",
+        "action": "decrease calories",
+        "source": "01-nutrition-plan.docx > Weekly Calorie & Macro Targets note"
+      },
+      {
+        "trigger": "Stall 2+ weeks (phase note)",
+        "action": "drop rest day calories by 100, add 10 min cardio",
+        "source": "01-nutrition-plan.docx > Critical Rules"
+      }
+    ],
+    "refeed_diet_break": {
+      "refeed_start": "Sunday refeed begins Week 5",
+      "purpose": "Reset leptin, refill glycogen, psychological break. Keep fat LOW. Carbs from clean sources only.",
+      "rules": [
+        "Refeeds are CLEAN CARBS. Not pizza. Not ice cream. Rice, potato, oats.",
+        "Front-load carbs earlier in day",
+        "Keep fat very low (<40g total)",
+        "No junk food 'cheat' — this is strategic, not emotional"
+      ],
+      "source": "01-nutrition-plan.docx > REFEED DAY + Meal Timing Strategy + Critical Rules"
+    },
+    "cardio_escalation": {
+      "rule": "Heart rate UNDER 120 BPM at all times (Palumbo LISS method). Higher = muscle breakdown on keto.",
+      "weekly_schedule": [
+        {
+          "day": "MONDAY",
+          "type": "LISS — Incline Walk",
+          "duration": "30–45 min",
+          "timing": "Fasted AM (after T3/Clen)",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "TUESDAY",
+          "type": "LISS — Post-Weights",
+          "duration": "20 min",
+          "timing": "After training",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "WEDNESDAY",
+          "type": "LISS — Incline Walk",
+          "duration": "30–45 min",
+          "timing": "AM or PM",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "THURSDAY",
+          "type": "LISS — Post-Weights",
+          "duration": "20 min",
+          "timing": "After training",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "FRIDAY",
+          "type": "LISS — Incline Walk",
+          "duration": "30–45 min",
+          "timing": "AM or PM",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "SATURDAY",
+          "type": "LISS — Post-Weights",
+          "duration": "20 min",
+          "timing": "After training",
+          "intensity": "HR 100–115"
+        },
+        {
+          "day": "SUNDAY",
+          "type": "Kettlebell Flow",
+          "duration": "20–30 min",
+          "timing": "Any time",
+          "intensity": "HR 110–120"
+        }
+      ],
+      "stall_cardio_bumps": [
+        "Stall 2+ weeks: add 10 min cardio (01-nutrition-plan Critical Rules)",
+        "Stall (>10 days): add 2nd PSMF day OR audit food tracking (02-complete-protocol Troubleshooting)"
+      ],
+      "source": "02-complete-protocol.docx > Cardio Protocol: Palumbo LISS Method (DAY/TYPE/DURATION/TIMING/INTENSITY table)"
+    },
+    "peak_week_manipulation": {
+      "rules": [
+        "PEAK WEEK (Wk15) — Winstrol can go to 75mg (add 25mg PM dose).",
+        "Test drops 400->250-300mg/wk in Wk11 (final dry-out phase); MK-677 stops Wk11.",
+        "Nutrition Phase 4 (Wk13-16): lowest baseline, strategic carb loads for final look."
+      ],
+      "explicit_peak_week_carb_water_manipulation": "NOT SPECIFIED IN DOC — no explicit carb-depletion/water-load/sodium-manipulation peak-week protocol is written in the docs; 'strategic carb loads for final look' is the only peak nutrition guidance.",
+      "source": "03-ped-protocol-060226.docx > Week 15 marker + Key Transitions; 01-nutrition-plan.docx > PHASE 4"
+    },
+    "troubleshooting": [
+      {
+        "issue": "Stall (>10 days)",
+        "likely_cause": "Metabolic adaptation or tracking error",
+        "fix": "Add 2nd PSMF day OR audit food tracking"
+      },
+      {
+        "issue": "Low energy",
+        "likely_cause": "Electrolytes (90% of keto issues)",
+        "fix": "Add 1–2g sodium, check Mg/K"
+      },
+      {
+        "issue": "Strength dropping",
+        "likely_cause": "Deficit too aggressive",
+        "fix": "Add 200 cal on training days"
+      },
+      {
+        "issue": "Not hungry on PSMF",
+        "likely_cause": "Ketones suppressing appetite",
+        "fix": "This is good — eat protein anyway"
+      },
+      {
+        "issue": "Muscle cramps",
+        "likely_cause": "Magnesium/potassium low",
+        "fix": "Add 400mg Mg, more lite salt"
+      },
+      {
+        "issue": "Sleep issues",
+        "likely_cause": "Cortisol, caffeine, or Clen",
+        "fix": "No Clen after 10am, Mg at bed"
+      },
+      {
+        "issue": "Bloating on refeed",
+        "likely_cause": "Too much carbs too fast",
+        "fix": "Spread carbs over more meals"
+      }
+    ],
+    "troubleshooting_source": "02-complete-protocol.docx > Troubleshooting (ISSUE/LIKELY CAUSE/FIX table)"
+  },
+  "_meta": {
+    "source_files": [
+      "01-nutrition-plan.docx",
+      "03-ped-protocol-060226.docx (NEWEST PED — preferred)",
+      "03-ped-protocol.docx (older PED — identical week-by-week, used to cross-verify)",
+      "02-complete-protocol.docx (training/cardio/troubleshooting + alternate nutrition)"
+    ],
+    "extraction_date": "2026-06-08",
+    "extraction_method": "python-docx — iterated document.paragraphs AND document.tables. Per-week PED timeline cross-verified between both PED docs (zero diff across weeks 2-16).",
+    "anti_fabrication_note": "Only literal document values extracted. Absent values marked null or 'NOT SPECIFIED IN DOC'. No macro numbers, doses, or timing invented.",
+    "subject": "MJ PRIME — 281.3 lbs @ 36.8% BF -> 220 lbs @ 13% BF, 16-week cut, cycle start June 1, 2026",
+    "gaps": [
+      "Week 1 has NO PED dosing table in either PED doc — cycle dosing begins Week 2 (Kickstart). Week 1 PED doses = NOT SPECIFIED IN DOC.",
+      "Week 1 nutrition: weekly curve (01-nutrition-plan) gives Week 1 macros, but PED Week 1 is undefined. Possible intentional ramp-in / baseline-bloodwork week (Baseline panel = D+0).",
+      "No explicit single-dose front-load / loading-dose protocol — dose ramp is via phase escalation only.",
+      "No explicit peak-week carb-depletion / water-load / sodium-manipulation protocol — only 'strategic carb loads for final look' (nutrition Phase 4).",
+      "AI (Anastrozole/Aromasin) and HCG doses appear ONLY in the On-Cycle Ancillaries table, not in the per-week timeline checklists — they are not tracked week-by-week in the dose checklists.",
+      "Two nutrition systems exist and DISAGREE: 01-nutrition-plan (PSMF 700-800 cal, ~1478-1650 cal/day avg) vs 02-complete-protocol (PSMF 1000 cal, ~1860 cal/day avg, DeLauer/Palumbo hybrid). Both extracted; app must choose canonical source.",
+      "Refeed protein differs between sources: 200g (01-nutrition-plan) vs 225g (02-complete-protocol).",
+      "Tren weekly total: phase table (idx4) says 'OFF->300mg' and 100-150mg per pin; per-week timeline shows Wk7-8 = 100-150mg/pin (2 pins Mon+Fri) and Wk9-16 = 150mg/pin. Wk7-8 exact dose (100 vs 150) left as range in doc.",
+      "Test per-pin in Wk11-16 timeline shows '83-100mg' (Wk11-14) then '83mg' (Wk15-16); weekly total stated as 250-300mg — exact taper point within the range not pinned per week.",
+      "Cardio intensity for fat-loss escalation beyond the fixed weekly LISS schedule is not quantified week-by-week (only the stall-bump rules).",
+      "PSMF second-day add (troubleshooting fix) has no defined macros — uses standard PSMF day macros by implication.",
+      "Glossary, injection aseptic-technique steps, PIP management, and red-flag lists are captured in nutrition/PED docs as prose; included as reference but not structured per-compound."
+    ]
+  }
+}

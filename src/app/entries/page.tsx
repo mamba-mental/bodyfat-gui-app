@@ -30,7 +30,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Download, Edit, Trash2, Plus, TrendingDown, TrendingUp, AlertCircle } from "lucide-react"
+import { Calendar, Camera, Download, Edit, Trash2, Plus, TrendingDown, TrendingUp, AlertCircle, X } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import Link from "next/link"
 import { useApp } from "@/contexts/app-context"
@@ -43,6 +43,20 @@ interface EditingEntry {
   weight: string
   body_fat_percentage: string
   notes: string
+  photo?: string
+}
+
+const MAX_EDIT_PHOTO_SIZE_BYTES = 2 * 1024 * 1024 // 2 MB — matches entry-form.tsx
+
+/** Normalise a Date | string to the YYYY-MM-DD value an <input type="date"> expects. */
+function toDateInputValue(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date)
+  if (isNaN(d.getTime())) return ""
+  // Use local year/month/day to avoid UTC-offset shifting the displayed date
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
 }
 
 interface CycleMeta {
@@ -58,8 +72,10 @@ export default function EntriesPage() {
 
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null)
+  const editFileInputRef = React.useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filterPeriod, setFilterPeriod] = useState<"all" | "week" | "month" | "quarter">("all")
+  const [filterPeriod, setFilterPeriod] = useState<"all" | "week" | "month" | "quarter" | "cycle">("cycle")
 
   // ReComp Cycle metadata (P5): group the history by the cycle each entry belongs to.
   const [cycles, setCycles] = React.useState<CycleMeta[]>([])
@@ -86,10 +102,15 @@ export default function EntriesPage() {
 
   const filteredEntries = React.useMemo(() => {
     if (filterPeriod === "all") return entries
-    
+
+    if (filterPeriod === "cycle") {
+      if (!activeCycle) return entries
+      return entries.filter((e) => (e as any).cycle_id === activeCycle.id)
+    }
+
     const now = new Date()
     const cutoffDate = new Date(now)
-    
+
     switch (filterPeriod) {
       case "week":
         cutoffDate.setDate(now.getDate() - 7)
@@ -101,9 +122,9 @@ export default function EntriesPage() {
         cutoffDate.setMonth(now.getMonth() - 3)
         break
     }
-    
+
     return entries.filter(entry => new Date(entry.date) >= cutoffDate)
-  }, [entries, filterPeriod])
+  }, [entries, filterPeriod, activeCycle])
 
   // Group filtered entries by their cycle, newest cycle first. Entries without a
   // known cycle fall into an "Unassigned" group so every entry stays reachable (P5).
@@ -131,14 +152,40 @@ export default function EntriesPage() {
   }, [filteredEntries, cycleById])
 
   const handleEditEntry = (entry: any) => {
+    const photo = entry.photo ?? undefined
     setEditingEntry({
       id: entry.id,
-      date: entry.date,
+      date: toDateInputValue(entry.date),
       weight: entry.weight.toString(),
       body_fat_percentage: entry.body_fat_percentage?.toString() || "",
-      notes: entry.notes || ""
+      notes: entry.notes || "",
+      photo,
     })
+    setEditPhotoPreview(photo ?? null)
     setIsEditDialogOpen(true)
+  }
+
+  const handleEditPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_EDIT_PHOTO_SIZE_BYTES) {
+      setError("Photo must be smaller than 2 MB")
+      return
+    }
+    if (!file.type.startsWith("image/")) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      setEditPhotoPreview(base64)
+      setEditingEntry((prev) => prev ? { ...prev, photo: base64 } : null)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveEditPhoto = () => {
+    setEditPhotoPreview(null)
+    setEditingEntry((prev) => prev ? { ...prev, photo: undefined } : null)
+    if (editFileInputRef.current) editFileInputRef.current.value = ""
   }
 
   const handleUpdateEntry = async () => {
@@ -156,12 +203,14 @@ export default function EntriesPage() {
         weight: parseFloat(editingEntry.weight),
         body_fat_percentage: editingEntry.body_fat_percentage ? parseFloat(editingEntry.body_fat_percentage) : undefined,
         notes: editingEntry.notes || undefined,
+        photo: editingEntry.photo,
         updated_at: new Date()
       }
       
       await updateEntry(updatedEntry)
       setIsEditDialogOpen(false)
       setEditingEntry(null)
+      setEditPhotoPreview(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update entry")
     }
@@ -397,6 +446,9 @@ export default function EntriesPage() {
       <Tabs value={filterPeriod} onValueChange={(value) => setFilterPeriod(value as any)} className="space-y-4">
         <div className="flex justify-between items-center">
           <TabsList>
+            <TabsTrigger value="cycle">
+              {activeCycle ? activeCycle.name : "This Cycle"}
+            </TabsTrigger>
             <TabsTrigger value="all">All Time</TabsTrigger>
             <TabsTrigger value="quarter">Last 3 Months</TabsTrigger>
             <TabsTrigger value="month">Last Month</TabsTrigger>
@@ -456,7 +508,9 @@ export default function EntriesPage() {
                 <p className="text-muted-foreground mb-4">
                   {filterPeriod === "all"
                     ? "No entries found. Start tracking your progress!"
-                    : `No entries found in the selected time period.`
+                    : filterPeriod === "cycle"
+                    ? "No entries found in this cycle yet. Log your first measurement!"
+                    : "No entries found in the selected time period."
                   }
                 </p>
                 <Link href="/entries/new">
@@ -530,11 +584,70 @@ export default function EntriesPage() {
                   placeholder="Optional notes"
                 />
               </div>
+
+              {/* Progress photo — prefill existing, allow replace or remove */}
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right pt-2">Photo</Label>
+                <div className="col-span-3 space-y-2">
+                  {editPhotoPreview ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={editPhotoPreview}
+                        alt="Progress photo preview"
+                        className="w-24 h-32 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveEditPhoto}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
+                        aria-label="Remove photo"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editFileInputRef.current?.click()}
+                      aria-label="Upload a progress photo"
+                    >
+                      <Camera className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Add Photo
+                    </Button>
+                  )}
+                  {editPhotoPreview && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editFileInputRef.current?.click()}
+                      aria-label="Replace progress photo"
+                    >
+                      <Camera className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Replace
+                    </Button>
+                  )}
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleEditPhotoChange}
+                    aria-hidden="true"
+                  />
+                  <p className="text-xs text-muted-foreground">Optional — max 2 MB, JPEG/PNG</p>
+                </div>
+              </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false)
+              setEditPhotoPreview(null)
+            }}>
               Cancel
             </Button>
             <Button variant="default" onClick={handleUpdateEntry} disabled={loading}>

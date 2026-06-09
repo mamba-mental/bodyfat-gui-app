@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { useApp } from "@/contexts/app-context"
 import { getEatingPatternOptions, getEatingWindowHours } from "@/lib/eating-patterns"
+import { PedStackPicker } from "@/components/setup/ped-stack-picker"
 
 
 export default function CustomSetupPage() {
@@ -98,6 +99,7 @@ export default function CustomSetupPage() {
 
 
     ped_use: current_user?.ped_use || false,
+    ped_stack: current_user?.ped_stack || [],
     exercise_type: current_user?.exercise_type || "resistance",
     sleep_quality: current_user?.sleep_quality || "good"
   })
@@ -143,6 +145,7 @@ export default function CustomSetupPage() {
         eating_pattern: current_user.eating_pattern || "standard",
 
         ped_use: current_user.ped_use || false,
+        ped_stack: current_user.ped_stack || [],
 
         exercise_type: current_user.exercise_type || "resistance",
         sleep_quality: current_user.sleep_quality || "good"
@@ -221,7 +224,8 @@ export default function CustomSetupPage() {
       end_date: endDateIso,
       dob: normalizedDob || "",
       eating_pattern: formData.eating_pattern || "standard",
-      eating_window_hours: getEatingWindowHours(formData.eating_pattern)
+      eating_window_hours: getEatingWindowHours(formData.eating_pattern),
+      ped_stack: formData.ped_stack && formData.ped_stack.length > 0 ? formData.ped_stack : undefined,
     }
 
     // Save the user data first
@@ -678,6 +682,21 @@ export default function CustomSetupPage() {
                 </Select>
               </div>
             </div>
+
+            {formData.ped_use && (
+              <div className="space-y-2 mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+                <Label>PED Protocol Stack</Label>
+                <p className="text-xs text-muted-foreground">
+                  Add the specific compounds you&apos;re running per phase. The TYPE of compound materially
+                  changes the fat-loss / lean-retention prediction — each shows an evidence-confidence badge
+                  (green = RCT-grade, grey = estimated). Leave empty to use a generic &quot;PEDs on&quot; signal.
+                </p>
+                <PedStackPicker
+                  value={formData.ped_stack}
+                  onChange={(stack) => setFormData((prev) => ({ ...prev, ped_stack: stack }))}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 

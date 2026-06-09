@@ -110,35 +110,46 @@ export class AISettingsService {
   }
   
   /**
-   * Get the configured provider and model for a specific area
+   * Get the configured provider and model for a specific area.
+   *
+   * Always returns a `status` so callers can distinguish WHY a provider is
+   * unavailable (settings not yet loaded vs. no provider assigned vs. provider
+   * disabled/missing key) instead of silently treating every case as "empty".
+   * `baseUrl` is included for OpenAI-compatible custom endpoints.
    */
   getAreaConfig(areaId: string): {
     provider: AIProvider | null
     model: string | null
     apiKey: string | null
+    baseUrl: string | null
+    status: 'ok' | 'settings_unavailable' | 'no_provider' | 'provider_unavailable'
   } {
     const settings = this.getSettings()
     if (!settings || !settings.areas || !settings.providers) {
+      // Settings haven't loaded yet (async fetch in flight) OR the file is empty.
+      // This is distinct from "user never configured a provider".
       console.warn('AI settings not loaded or invalid structure')
-      return { provider: null, model: null, apiKey: null }
+      return { provider: null, model: null, apiKey: null, baseUrl: null, status: 'settings_unavailable' }
     }
-    
+
     const area = settings.areas.find(a => a.id === areaId)
     if (!area || !area.currentProvider || !area.currentModel) {
       console.warn(`No configuration found for area: ${areaId}`)
-      return { provider: null, model: null, apiKey: null }
+      return { provider: null, model: null, apiKey: null, baseUrl: null, status: 'no_provider' }
     }
-    
+
     const providerConfig = settings.providers[area.currentProvider]
     if (!providerConfig || !providerConfig.enabled || !providerConfig.apiKey) {
       console.warn(`Provider ${area.currentProvider} not enabled or missing API key`)
-      return { provider: null, model: null, apiKey: null }
+      return { provider: null, model: null, apiKey: null, baseUrl: null, status: 'provider_unavailable' }
     }
-    
+
     return {
       provider: area.currentProvider,
       model: area.currentModel,
-      apiKey: providerConfig.apiKey
+      apiKey: providerConfig.apiKey,
+      baseUrl: providerConfig.baseUrl || null,
+      status: 'ok'
     }
   }
   

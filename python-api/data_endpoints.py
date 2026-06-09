@@ -86,6 +86,9 @@ class Entry(BaseModel):
     # save_entry fall back to the active cycle and silently re-tag every entry
     # (ReComp Cycle data-drift bug). Explicit cycle_id now survives the round-trip.
     cycle_id: Optional[str] = None
+    # BUG-FIX (photos never persisted): photo was absent from the Pydantic model so
+    # Pydantic stripped it from every POST body before it reached save_entry.
+    photo: Optional[str] = None
 
 
 class Report(BaseModel):
@@ -305,16 +308,21 @@ async def save_user_data(user: UserProfile):
 
 
 @router.get("/api/data/entries")
-async def get_entries():
-    """Get all body fat entries"""
-    entries = db.get_entries("default")  # Unified user_id (post 2026-05-04 data unification)
+async def get_entries(cycle_id: Optional[str] = None):
+    """Get body fat entries.
+
+    cycle_id (optional query param): when supplied, returns only entries
+    belonging to that cycle — used by the report generator to scope
+    actual weigh-ins to the current/selected cycle. Omit for all entries.
+    """
+    entries = db.get_entries("default", cycle_id=cycle_id)  # Unified user_id (post 2026-05-04 data unification)
     return entries
 
 
 @router.post("/api/data/entries")
 async def save_entry(entry: Entry):
     """Save a new body fat entry"""
-    # Convert to dict
+    # Convert to dict — includes photo (now in the Pydantic model)
     entry_dict = entry.dict()
 
     # Add timestamp if not provided

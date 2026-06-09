@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ap³xFit — Living Progress Report (MOCKUP)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1a2230; --ink-soft:#5b6678; --line:#e4e8ef; --bg:#f6f8fb; --card:#ffffff;
+    --steel:#2c5f8a; --steel-soft:#eaf1f8; --amber:#c2780c; --amber-soft:#fdf3e2;
+    --green:#1f8a55; --green-soft:#e8f6ee; --red:#c23a3a; --red-soft:#fbecec;
+    --plan:#9aa7bb; --actual:#2c5f8a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Outfit',system-ui,sans-serif;line-height:1.5;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .sheet{max-width:920px;margin:0 auto;padding:28px;}
+  .mock-banner{background:var(--amber-soft);border:1px dashed var(--amber);color:#8a560a;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:20px;}
+  .mock-banner b{font-weight:800;}
+
+  /* Header */
+  .rpt-head{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 26px;box-shadow:0 1px 3px rgba(20,30,50,.04);}
+  .rpt-head .row1{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .brand{font-weight:800;font-size:13px;letter-spacing:.12em;color:var(--steel);text-transform:uppercase;}
+  .cycle-name{font-size:26px;font-weight:800;margin:2px 0 2px;letter-spacing:-.01em;}
+  .sub{color:var(--ink-soft);font-size:14px;}
+  .wk-badge{text-align:right;}
+  .wk-badge .big{font-size:30px;font-weight:800;color:var(--steel);line-height:1;}
+  .wk-badge .ph{display:inline-block;margin-top:6px;background:var(--steel-soft);color:var(--steel);font-weight:600;font-size:11px;letter-spacing:.08em;padding:3px 10px;border-radius:999px;text-transform:uppercase;}
+  .cadence-tag{margin-top:14px;display:inline-flex;gap:8px;align-items:center;background:var(--green-soft);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:600;}
+
+  /* Summary band */
+  .band{display:grid;grid-template-columns:repeat(3,1fr) 1.2fr;gap:14px;margin:18px 0;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .stat .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;}
+  .stat .val{font-size:24px;font-weight:800;margin-top:4px;}
+  .stat .val small{font-size:13px;color:var(--ink-soft);font-weight:600;}
+  .stat .delta{font-size:12.5px;margin-top:4px;font-weight:600;}
+  .up{color:var(--green);} .down{color:var(--green);} .warn{color:var(--amber);}
+  .stat.goal{background:linear-gradient(135deg,#2c5f8a,#214b6e);color:#fff;border:none;}
+  .stat.goal .lab,.stat.goal .val small{color:#cfe0f0;}
+  .status-pill{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.16);}
+
+  h2.sec{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:700;margin:30px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+
+  /* Chart */
+  .chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+  .chart-wrap{height:300px;}
+  .legend{display:flex;gap:18px;font-size:12.5px;color:var(--ink-soft);margin-top:6px;flex-wrap:wrap;}
+  .legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px;}
+
+  /* AI Coach panel */
+  .coach{background:linear-gradient(135deg,#fdf3e2,#fff);border:1px solid var(--amber);border-left:5px solid var(--amber);border-radius:14px;padding:20px 22px;margin:14px 0;}
+  .coach .ttl{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:#8a560a;}
+  .coach .ttl .chip{font-size:10px;letter-spacing:.1em;background:var(--amber);color:#fff;padding:2px 8px;border-radius:6px;text-transform:uppercase;}
+  .coach .directive{font-size:15px;margin:12px 0 4px;}
+  .coach ul{margin:8px 0 0;padding-left:0;list-style:none;}
+  .coach li{padding:7px 0;border-top:1px dashed #eddcb8;display:flex;gap:10px;align-items:baseline;}
+  .coach li b{min-width:120px;color:#8a560a;font-weight:700;font-size:13px;}
+  .coach .cta{margin-top:12px;font-size:13px;color:var(--ink-soft);}
+
+  /* Week log */
+  .week{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;}
+  .week.future{opacity:.62;}
+  .wk-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;background:#fbfcfe;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .wk-h .left{display:flex;align-items:center;gap:12px;}
+  .wk-h .num{font-size:18px;font-weight:800;}
+  .phase{font-size:10.5px;letter-spacing:.08em;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:6px;}
+  .ph-reset{background:#eef2f7;color:#566;}
+  .ph-adapt{background:var(--steel-soft);color:var(--steel);}
+  .ph-cycle{background:#efe7fb;color:#6b4fa3;}
+  .ph-peak{background:var(--red-soft);color:var(--red);}
+  .wk-h .feas{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;}
+  .feas-ok{background:var(--green-soft);color:var(--green);}
+  .feas-agg{background:var(--amber-soft);color:var(--amber);}
+  .wk-body{padding:16px 18px;display:grid;grid-template-columns:1.4fr .9fr;gap:18px;}
+  @media(max-width:680px){.wk-body{grid-template-columns:1fr;}.band{grid-template-columns:1fr 1fr;}}
+
+  table.pa{width:100%;border-collapse:collapse;font-size:13px;}
+  table.pa th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;padding:0 8px 6px 0;}
+  table.pa td{padding:5px 8px 5px 0;border-top:1px solid var(--line);}
+  table.pa .pcol{color:var(--plan);}
+  table.pa .acol{font-weight:700;}
+  .ahead{color:var(--green);font-weight:700;} .behind{color:var(--amber);font-weight:700;}
+  .weighins{margin-top:12px;}
+  .weighins .wi{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-top:1px dotted var(--line);}
+  .weighins .wi .d{color:var(--ink-soft);}
+  .wi-first{font-weight:700;}
+  .wi-first::after{content:" · report run";color:var(--green);font-size:10px;font-weight:700;}
+
+  .photo-col .photo{background:#eef2f7;border:1px dashed #c4cedd;border-radius:10px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8a97aa;font-size:12px;text-align:center;gap:6px;}
+  .photo-col .pdate{font-size:11px;color:var(--ink-soft);margin-top:6px;text-align:center;}
+  .wk-coach{grid-column:1/-1;background:var(--amber-soft);border-radius:10px;padding:10px 14px;font-size:13px;border-left:3px solid var(--amber);}
+  .wk-coach b{color:#8a560a;}
+
+  .foot{margin-top:26px;font-size:12px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:14px;}
+  .foot b{color:var(--ink);}
+
+  @media print{
+    body{background:#fff;} .mock-banner{display:none;} .sheet{max-width:none;padding:0;}
+    .chart-card,.rpt-head,.stat,.week,.coach{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="mock-banner">
+    <b>MOCKUP — illustrative data.</b> This is the proposed "Living Progress Report" layout for review. Numbers are representative
+    (real cycle shape: PRIME.TIME-06.2026, 16 wk, Mon/Thu/Sat). Tell me what to change, add, or cut — then we reverse-engineer the data pipeline.
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <div class="rpt-head">
+    <div class="row1">
+      <div>
+        <div class="brand">Ap³xFit · Living Progress Report</div>
+        <div class="cycle-name">PRIME.TIME-06.2026</div>
+        <div class="sub">MJ PRIME · 47 · 5′9″ · Goal: 217 lb @ 13% BF · 16-week cut · weigh-ins Mon / Thu / Sat</div>
+      </div>
+      <div class="wk-badge">
+        <div class="big">WEEK 3</div>
+        <div class="sub">of 16</div>
+        <div class="ph">ADAPT phase</div>
+      </div>
+    </div>
+    <div class="cadence-tag">● Full report — generated on this week's first weigh-in (Mon, Jun 15). Next full report: Mon, Jun 22.</div>
+  </div>
+
+  <!-- ===== SUMMARY BAND ===== -->
+  <div class="band">
+    <div class="stat">
+      <div class="lab">Start (Wk 1)</div>
+      <div class="val">266.8 <small>lb</small></div>
+      <div class="sub mono">39.2% BF</div>
+    </div>
+    <div class="stat">
+      <div class="lab">Now (Wk 3 actual)</div>
+      <div class="val">258.4 <small>lb</small></div>
+      <div class="delta down">▼ 8.4 lb · ▼ 2.4% BF</div>
+    </div>
+    <div class="stat">
+      <div class="lab">vs Plan</div>
+      <div class="val warn">+1.1 <small>lb behind</small></div>
+      <div class="delta warn">fat-loss 0.3%/wk under target</div>
+    </div>
+    <div class="stat goal">
+      <div class="lab">Goal · Wk 16</div>
+      <div class="val">217 <small>lb · 13%</small></div>
+      <div class="status-pill">ON TRACK — minor correction</div>
+    </div>
+  </div>
+
+  <!-- ===== AI COACH ===== -->
+  <div class="coach">
+    <div class="ttl">🧠 AI Coach <span class="chip">Next Session Plan</span></div>
+    <div class="directive">
+      You're <b>1.1 lb ahead on the scale</b> but <b>fat-loss is running ~0.3%/wk under plan</b> — you're losing a touch of water/lean
+      faster than fat. Tighten the deficit slightly and protect muscle. You're a <b>PED-assisted cut</b>, so the partitioning headroom is there.
+    </div>
+    <ul>
+      <li><b>Next 2 weigh-ins</b><span>Hold training-day calories at <b>1,700</b>. Drop <b>rest-day</b> calories <b>1,350 → 1,250</b> (−100).</span></li>
+      <li><b>PSMF day (Mon)</b><span>Keep at the <b>1,200</b> floor — protein 237 g. No change.</span></li>
+      <li><b>Cardio / NEAT</b><span>Add <b>1× 25-min LISS</b> (fasted AM) to bias the deficit toward fat, not lean.</span></li>
+      <li><b>Protein</b><span>Hold <b>1.4 g/lb lean</b> (≈ 235 g). This is your muscle-retention anchor.</span></li>
+      <li><b>Recheck</b><span>If fat-loss is still &lt; target by <b>Mon Jun 22</b>, add a 2nd LISS before cutting calories further.</span></li>
+    </ul>
+    <div class="cta">Goal type: <b>CUT</b> · RMR (Cunningham, measured InBody LBM): <b>2,180</b> · This directive auto-tunes to cut / recomp / lean-gain.</div>
+  </div>
+
+  <!-- ===== CHART (week-indexed) ===== -->
+  <h2 class="sec">Trajectory — planned vs actual, by week</h2>
+  <div class="chart-card">
+    <div class="chart-wrap"><canvas id="traj"></canvas></div>
+    <div class="legend">
+      <span><i style="border-color:#9aa7bb;border-top-style:dashed"></i>Planned weight</span>
+      <span><i style="border-color:#2c5f8a"></i>Actual weigh-ins</span>
+      <span><i style="border-color:#c2780c"></i>Body-fat % (actual)</span>
+      <span>📷 = progress photo on file</span>
+    </div>
+  </div>
+
+  <!-- ===== PER-WEEK CANONICAL LOG ===== -->
+  <h2 class="sec">Week-by-week record — the canonical log</h2>
+
+  <!-- WEEK 1 -->
+  <div class="week">
+    <div class="wk-h">
+      <div class="left"><span class="num">Week 1</span><span class="phase ph-reset">RESET</span><span class="sub">Jun 3 – Jun 9</span></div>
+      <span class="feas feas-ok">on track</span>
+    </div>
+    <div class="wk-body">
+      <div>
+        <table class="pa">
+          <tr><th>Metric</th><th>Planned</th><th>Actual (wk end)</th><th>Δ</th></tr>
+          <tr><td>Weight</td><td class="pcol">263.4 lb</td><td class="acol">263.0 lb</td><td class="ahead">▼ 0.4 ahead</td></tr>
+          <tr><td>Body fat</td><td class="pcol">38.4%</td><td class="acol">38.3%</td><td class="ahead">on target</td></tr>
+          <tr><td>Cals (train/rest/PSMF)</td><td class="pcol mono">1734 / 1349 / 1200</td><td class="acol mono">followed</td><td>—</td></tr>
+          <tr><td>Protein</td><td class="pcol">237 g</td><td class="acol">240 g</td><td>—</td></tr>
+        </table>
+        <div class="weighins">
+          <div class="wi wi-first"><span>Mon Jun 3</span><span class="mono">266.8 lb · 39.2%</span></div>
+          <div class="wi"><span class="d">Thu Jun 5</span><span class="mono">265.1 lb · 38.9%</span></div>
+          <div class="wi"><span class="d">Sat Jun 7</span><span class="mono">263.0 lb · 38.3%</span></div>
+        </div>
+      </div>
+      <div class="photo-col">
+        <div class="photo">📷<span>Progress photo</span></div>
+        <div class="pdate">Mon Jun 3 · start</div>
+      </div>
+      <div class="wk-coach"><b>Coach:</b> Textbook start — strong water/glycogen flush on keto induction. Fat-loss on target. Hold the line.</div>
+    </div>
+  </div>
+
+  <!-- WEEK 2 -->
+  <div class="week">
+    <div class="wk-h">
+      <div class="left"><span class="num">Week 2</span><span class="phase ph-adapt">ADAPT</span><span class="sub">Jun 10 – Jun 16</span></div>
+      <span class="feas feas-agg">aggressive</span>
+    </div>
+    <div class="wk-body">
+      <div>
+        <table class="pa">
+          <tr><th>Metric</th><th>Planned</th><th>Actual (wk end)</th><th>Δ</th></tr>
+          <tr><td>Weight</td><td class="pcol">260.0 lb</td><td class="acol">260.4 lb</td><td class="behind">▲ 0.4 behind</td></tr>
+          <tr><td>Body fat</td><td class="pcol">37.6%</td><td class="acol">37.9%</td><td class="behind">▲ 0.3 behind</td></tr>
+          <tr><td>Cals (train/rest/PSMF)</td><td class="pcol mono">1725 / 1325 / 1200</td><td class="acol mono">2 high days</td><td class="behind">+~250</td></tr>
+          <tr><td>Protein</td><td class="pcol">240 g</td><td class="acol">228 g</td><td class="behind">−12 g</td></tr>
+        </table>
+        <div class="weighins">
+          <div class="wi wi-first"><span>Mon Jun 10</span><span class="mono">262.1 lb · 38.1%</span></div>
+          <div class="wi"><span class="d">Thu Jun 12</span><span class="mono">261.0 lb · 38.0%</span></div>
+          <div class="wi"><span class="d">Sat Jun 14</span><span class="mono">260.4 lb · 37.9%</span></div>
+        </div>
+      </div>
+      <div class="photo-col">
+        <div class="photo">📷<span>Progress photo</span></div>
+        <div class="pdate">Mon Jun 10</div>
+      </div>
+      <div class="wk-coach"><b>Coach:</b> Two over-target days + protein dipped. Fat-loss slipped 0.3%. Not alarming — corrected in this week's plan above.</div>
+    </div>
+  </div>
+
+  <!-- WEEK 3 (current) -->
+  <div class="week">
+    <div class="wk-h">
+      <div class="left"><span class="num">Week 3</span><span class="phase ph-adapt">ADAPT</span><span class="sub">Jun 17 – Jun 23 · current</span></div>
+      <span class="feas feas-agg">aggressive</span>
+    </div>
+    <div class="wk-body">
+      <div>
+        <table class="pa">
+          <tr><th>Metric</th><th>Planned (wk end)</th><th>Actual (so far)</th><th>Δ</th></tr>
+          <tr><td>Weight</td><td class="pcol">256.7 lb</td><td class="acol">258.4 lb</td><td class="behind">▲ 1.7 behind</td></tr>
+          <tr><td>Body fat</td><td class="pcol">36.8%</td><td class="acol">37.1%</td><td class="behind">▲ 0.3 behind</td></tr>
+          <tr><td>Cals (train/rest/PSMF)</td><td class="pcol mono">1717 / 1250 / 1200</td><td class="acol mono">in progress</td><td>—</td></tr>
+        </table>
+        <div class="weighins">
+          <div class="wi wi-first"><span>Mon Jun 15</span><span class="mono">258.4 lb · 37.1%</span></div>
+          <div class="wi"><span class="d">Thu Jun 18</span><span class="mono">— pending —</span></div>
+          <div class="wi"><span class="d">Sat Jun 20</span><span class="mono">— pending —</span></div>
+        </div>
+      </div>
+      <div class="photo-col">
+        <div class="photo">📷<span>Progress photo</span></div>
+        <div class="pdate">Mon Jun 15 · latest</div>
+      </div>
+      <div class="wk-coach"><b>Coach:</b> See the <b>Next Session Plan</b> up top — rest-day calories down 100 + 1 LISS. Re-weigh Thu to confirm the pivot is working.</div>
+    </div>
+  </div>
+
+  <!-- FUTURE (collapsed sample) -->
+  <div class="week future">
+    <div class="wk-h">
+      <div class="left"><span class="num">Weeks 4 – 16</span><span class="phase ph-cycle">CYCLE → PEAK</span><span class="sub">projected</span></div>
+      <span class="sub">fills in as you log</span>
+    </div>
+    <div class="wk-body" style="grid-template-columns:1fr;">
+      <div class="sub">Each week unlocks its planned targets + a photo slot, and records your actual weigh-ins as you go. Phases shift
+      ADAPT → CYCLE (Wk 9) → PEAK (Wk 13). Goal converges to <b>217 lb / 13%</b> at Week 16.</div>
+    </div>
+  </div>
+
+  <!-- ===== CADENCE EXPLAINER ===== -->
+  <div class="foot">
+    <b>How reports run (the cadence):</b> A <b>full Living Progress Report</b> (this document) is generated automatically on the
+    <b>first weigh-in of each week</b> (your Monday), with the option to attach a progress photo. The <b>Thu &amp; Sat</b> weigh-ins
+    don't trigger a full report — they log into the week and produce a short <b>AI Coach check-in</b> ("on course / adjust X") instead.
+    This keeps the canonical record clean and saves compute, storage, and paper — while still giving you the next course of action after every weigh-in, just like a real coach between sessions.
+  </div>
+
+</div>
+
+<script>
+  const weeks = Array.from({length:16},(_,i)=>'Wk '+(i+1));
+  // Planned weight (front-loaded geometric, 266.8 -> 217)
+  const planned = [263.4,260.0,256.7,253.6,250.7,247.9,245.3,242.8,240.5,238.3,236.2,234.3,232.4,230.7,229.0,217.0]
+    .map((v,i)=> i<15 ? Math.round((266.8*Math.pow(217/266.8,(i+1)/16))*10)/10 : 217);
+  // Actual weigh-ins (only weeks logged so far)
+  const actualW = [263.0,260.4,258.4,null,null,null,null,null,null,null,null,null,null,null,null,null];
+  const actualBF= [38.3,37.9,37.1,null,null,null,null,null,null,null,null,null,null,null,null,null];
+  const photos  = [263.0,260.4,258.4,null,null,null,null,null,null,null,null,null,null,null,null,null];
+  new Chart(document.getElementById('traj'),{
+    data:{labels:weeks,datasets:[
+      {type:'line',label:'Planned weight',data:planned,borderColor:'#9aa7bb',borderDash:[6,5],borderWidth:2,pointRadius:0,tension:.3,yAxisID:'y'},
+      {type:'line',label:'Actual weight',data:actualW,borderColor:'#2c5f8a',backgroundColor:'#2c5f8a',borderWidth:3,pointRadius:5,pointHoverRadius:7,spanGaps:false,tension:.3,yAxisID:'y'},
+      {type:'line',label:'Body fat %',data:actualBF,borderColor:'#c2780c',backgroundColor:'#c2780c',borderWidth:2,pointRadius:4,borderDash:[2,3],spanGaps:false,tension:.3,yAxisID:'y1'},
+      {type:'scatter',label:'📷 photo',data:photos.map((v,i)=>v==null?null:({x:weeks[i],y:v})),pointStyle:'rectRot',pointRadius:7,borderColor:'#1f8a55',backgroundColor:'#e8f6ee',yAxisID:'y'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{position:'left',title:{display:true,text:'Weight (lb)'},suggestedMin:215,suggestedMax:270,grid:{color:'#eef1f6'}},
+        y1:{position:'right',title:{display:true,text:'Body fat %'},suggestedMin:10,suggestedMax:40,grid:{drawOnChartArea:false}},
+        x:{grid:{display:false}}
+      }}
+  });
+</script>
+</body>
+</html>

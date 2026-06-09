@@ -75,15 +75,19 @@ export async function POST(request: NextRequest) {
       resistance_training: userData.resistance_training ?? true,
       is_athlete: userData.is_athlete ?? false,
       is_bodybuilder: userData.is_bodybuilder ?? false,
-      ped_use: userData.ped_use ?? false
+      ped_use: userData.ped_use ?? false,
+      // Eating pattern — kept explicit for parity with calculate/route.ts so the
+      // Python engine receives them regardless of ...userData spread ordering.
+      eating_pattern: userData.eating_pattern || 'standard',
+      eating_window_hours: userData.eating_window_hours ?? 12,
+      // Pass ped_stack only when non-empty. Python engine: empty/undefined → ped_use bool path unchanged.
+      ...(userData.ped_stack && userData.ped_stack.length > 0
+        ? { ped_stack: userData.ped_stack }
+        : {}),
     }
 
     console.log('Processed API data:', JSON.stringify(apiData, null, 2))
     console.log('Python API URL:', PYTHON_API_URL)
-
-    // First check if Python API is accessible - skip health check and go directly to report
-    // The health check endpoint doesn't exist in the Python API
-    let pythonApiAvailable = true
 
     // Call the Python API to generate the report
     try {
@@ -147,13 +151,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getActivityLevelText(level: number): string {
-  const levels = ['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extremely Active']
-  return levels[level] || 'Unknown'
-}
-
-function calculateProgress(current: number, goal: number, start: number): number {
-  if (start === goal) return 100
-  const progress = ((start - current) / (start - goal)) * 100
-  return Math.max(0, Math.min(100, progress))
-}

@@ -19,15 +19,22 @@ import { CalorieManagementWidget } from "@/components/charts/calorie-management-
 import { BeforeAfterComparison } from "@/components/charts/before-after-comparison"
 import { PhotoTimeline } from "@/components/charts/photo-timeline"
 import { ChartErrorBoundary } from "@/components/error-boundary-chart"
+import { useCycles } from "@/hooks/use-cycles"
 
 export default function ChartsPage() {
   const { state } = useApp()
   const { current_user, current_calculation, entries } = state
+  const { active: activeCycle } = useCycles()
 
-  const [timeRange, setTimeRange] = useState<"all" | "3months" | "6months" | "1year">("all")
+  const [timeRange, setTimeRange] = useState<"all" | "3months" | "6months" | "1year" | "cycle">("cycle")
 
   const filteredEntries = React.useMemo(() => {
     if (timeRange === "all") return entries
+
+    if (timeRange === "cycle") {
+      if (!activeCycle) return entries
+      return entries.filter((entry) => (entry as any).cycle_id === activeCycle.id)
+    }
 
     const now = new Date()
     const cutoffDate = new Date(now)
@@ -45,7 +52,7 @@ export default function ChartsPage() {
     }
 
     return entries.filter(entry => new Date(entry.date) >= cutoffDate)
-  }, [entries, timeRange])
+  }, [entries, timeRange, activeCycle])
 
   const getProgressStats = () => {
     if (!current_user || entries.length === 0) return null
@@ -144,10 +151,13 @@ export default function ChartsPage() {
 
         <div className="flex items-center space-x-2">
           <Select value={timeRange} onValueChange={(value) => setTimeRange(value as typeof timeRange)}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="cycle">
+                {activeCycle ? activeCycle.name : "This Cycle"}
+              </SelectItem>
               <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="1year">Last Year</SelectItem>
               <SelectItem value="6months">Last 6 Months</SelectItem>

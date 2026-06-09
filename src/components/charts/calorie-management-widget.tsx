@@ -59,13 +59,18 @@ export function CalorieManagementWidget({
   const chartData = React.useMemo(() => {
     if (!progression) return []
 
-    return progression.slice(0, 7).map((week, index) => ({
-      week: `Week ${index + 1}`,
-      intake: Math.round(week.daily_calorie_intake),
-      tdee: Math.round(week.tdee),
-      deficit: Math.round(week.tdee - week.daily_calorie_intake),
-      date: week.date,
-    }))
+    return progression.slice(0, 7).map((week, index) => {
+      // Use the per-week tapering reference curve value when available (BUG #9 fix).
+      // Falls back to daily_calorie_intake (flat solver value) for older engine output.
+      const taperIntake = week.reference_training_calories ?? week.daily_calorie_intake
+      return {
+        week: `Week ${index + 1}`,
+        intake: Math.round(taperIntake),
+        tdee: Math.round(week.tdee),
+        deficit: Math.round(week.tdee - taperIntake),
+        date: week.date,
+      }
+    })
   }, [progression, refreshKey])
 
   const currentWeek = chartData[0]
@@ -246,10 +251,10 @@ export function CalorieManagementWidget({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currentCalories ? Math.round(currentCalories) : currentWeek?.intake || 'N/A'}
+              {currentWeek?.intake ?? (currentCalories ? Math.round(currentCalories) : 'N/A')}
             </div>
             <p className="text-xs text-muted-foreground">
-              Calories per day
+              Calories per day (training day)
             </p>
           </CardContent>
         </Card>

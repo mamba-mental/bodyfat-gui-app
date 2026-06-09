@@ -29,7 +29,7 @@ export default function NewEntryPage() {
     [entries]
   )
 
-  const handleSubmit = async (data: { date: Date; weight: number; body_fat_percentage?: number; notes?: string }) => {
+  const handleSubmit = async (data: { date: Date; weight: number; body_fat_percentage?: number; notes?: string; photo?: string }) => {
     setIsSaving(true)
     try {
       await addEntry({
@@ -37,6 +37,7 @@ export default function NewEntryPage() {
         weight: data.weight,
         body_fat_percentage: data.body_fat_percentage,
         notes: data.notes,
+        photo: data.photo,
       })
 
       // Redirect to dashboard after successful submission

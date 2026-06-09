@@ -38,6 +38,7 @@ export const initialState: AppState = {
   report_generation_status: '',
   report_generation_entry_date: null,
   error: null,
+  cycle_sync: null,
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -169,6 +170,22 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           ? { ...state.current_user, archived_programs: action.payload }
           : null,
         error: null,
+      }
+
+    // Canonical-source reconciliation — open the reconciler UI
+    case 'SET_CYCLE_SYNC_PROMPT':
+      return {
+        ...state,
+        cycle_sync: action.payload,
+      }
+
+    // Canonical-source reconciliation — user dismissed the prompt
+    case 'DISMISS_CYCLE_SYNC_PROMPT':
+      return {
+        ...state,
+        cycle_sync: state.cycle_sync != null
+          ? { ...state.cycle_sync, dismissed: true }
+          : null,
       }
 
     default:

@@ -51,11 +51,13 @@ async def create_ai_analyzer_with_settings():
             logger.warning("No valid LLM configuration found in settings")
             return None
         
-        # Create universal client
+        # Create universal client (base_url threads the custom OpenAI-compatible
+        # endpoint URL through for cliproxy / self-hosted servers; None for built-ins)
         client = UniversalLLMClient(
             provider=config['provider'],
             api_key=config['apiKey'],
-            model=config['model']
+            model=config['model'],
+            base_url=config.get('baseUrl')
         )
         
         logger.info(

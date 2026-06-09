@@ -87,6 +87,16 @@ class Database:
             if 'program_id' not in columns:
                 conn.execute('ALTER TABLE entries ADD COLUMN program_id TEXT')
 
+            # BUG-FIX (photos never persisted): idempotent migration — safe to run
+            # on any existing DB regardless of current schema. ALTER TABLE ADD COLUMN
+            # is a no-op-equivalent when guarded by the PRAGMA table_info check.
+            # Re-read columns because the list may have been fetched before program_id
+            # was added on this same startup (we use a fresh PRAGMA read to be safe).
+            cursor2 = conn.execute("PRAGMA table_info(entries)")
+            columns_now = [row[1] for row in cursor2.fetchall()]
+            if 'photo' not in columns_now:
+                conn.execute('ALTER TABLE entries ADD COLUMN photo TEXT')
+
             # --- ReComp Cycle schema (F1: idempotent; was previously Alembic-only) ---
             # Guarantees a fresh / non-migrated DB has the cycle schema so save_entry,
             # save_cycle, and report save never 500 on a missing column or table. This
@@ -161,16 +171,34 @@ class Database:
             ''', (user_id, user_data.get('name', 'User'), data_json))
             conn.commit()
     
-    def get_entries(self, user_id: str = "default") -> List[Dict[str, Any]]:
-        """Get all entries for a user"""
+    def get_entries(
+        self,
+        user_id: str = "default",
+        cycle_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get entries for a user, optionally scoped to a single cycle.
+
+        Args:
+            user_id: The canonical user identifier (always 'default' post-2026-05-04).
+            cycle_id: When supplied, return only entries whose cycle_id matches.
+                      Used by the report generator to pull ACTUAL weigh-ins for a
+                      specific ReComp cycle from the canonical SQLite store.
+                      None → return all entries (existing behaviour, unchanged).
+        """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute('''
-                SELECT * FROM entries 
-                WHERE user_id = ? 
-                ORDER BY date DESC
-            ''', (user_id,))
-            
+            if cycle_id:
+                cursor = conn.execute(
+                    'SELECT * FROM entries WHERE user_id = ? AND cycle_id = ? ORDER BY date DESC',
+                    (user_id, cycle_id),
+                )
+            else:
+                cursor = conn.execute(
+                    'SELECT * FROM entries WHERE user_id = ? ORDER BY date DESC',
+                    (user_id,),
+                )
+
+            col_names = [d[0] for d in cursor.description] if cursor.description else []
             entries = []
             for row in cursor:
                 entry = {
@@ -181,9 +209,12 @@ class Database:
                     'body_fat_percentage': row['body_fat_percentage'],
                     'notes': row['notes'],
                     'program_id': row['program_id'],
-                    'cycle_id': row['cycle_id'] if 'cycle_id' in row.keys() else None,
+                    'cycle_id': row['cycle_id'] if 'cycle_id' in col_names else None,
+                    # BUG-FIX: include photo in reads so the UI and report generator
+                    # can retrieve progress photos from the canonical store.
+                    'photo': row['photo'] if 'photo' in col_names else None,
                     'created_at': row['created_at'],
-                    'updated_at': row['updated_at']
+                    'updated_at': row['updated_at'],
                 }
                 entries.append(entry)
 
@@ -206,11 +237,12 @@ class Database:
                 existing = conn.execute(
                     'SELECT cycle_id FROM entries WHERE id = ?', (entry['id'],)
                 ).fetchone()
-                cycle_id = (existing[0] if existing and existing[0] else None)                     or self.get_active_cycle_id(user_id)
+                cycle_id = (existing[0] if existing and existing[0] else None) \
+                    or self.get_active_cycle_id(user_id)
             conn.execute('''
                 INSERT OR REPLACE INTO entries
-                (id, user_id, date, weight, body_fat_percentage, notes, program_id, cycle_id, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                (id, user_id, date, weight, body_fat_percentage, notes, program_id, cycle_id, photo, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ''', (
                 entry['id'],
                 user_id,
@@ -219,14 +251,16 @@ class Database:
                 entry.get('body_fat_percentage'),
                 entry.get('notes'),
                 entry.get('program_id'),
-                cycle_id
+                cycle_id,
+                # BUG-FIX: persist progress photo (base64 string or None).
+                entry.get('photo'),
             ))
             conn.commit()
         # Return the resolved row (new dict — never mutate the caller's input) so
         # the server-assigned cycle_id flows back through the response to client
         # state. Without this, the React reducer holds a cycle-orphaned weigh-in
         # even though the DB row is correct (the "active cycle looks empty" bug).
-        return {**entry, 'user_id': user_id, 'cycle_id': cycle_id}
+        return {**entry, 'user_id': user_id, 'cycle_id': cycle_id, 'photo': entry.get('photo')}
 
     def delete_entry(self, entry_id: str):
         """Delete an entry"""
@@ -394,7 +428,54 @@ class Database:
             ''', (user_id, data_json))
             conn.commit()
     
-    def import_data(self, user_data: Dict[str, Any] = None, 
+    def get_smoothed_start_bf(
+        self,
+        user_id: str = "default",
+        n: int = 3,
+    ) -> Optional[float]:
+        """Return a rolling average of the last *n* body-fat readings for a user.
+
+        InBody BIA devices are noisy under keto/PSMF water-weight swings
+        (week 1-2 glycogen depletion can move a single reading ±2-3 pp
+        independent of actual fat change).  Seeding the engine with a
+        single raw reading amplifies that noise across the whole projection.
+
+        This helper averages the last *n* entries that have a non-null
+        body_fat_percentage so the SEED value fed to predict_weight_loss
+        is stable.  Only the SEED is smoothed; individual stored entries
+        are never modified.
+
+        Returns None when fewer than 1 entry with BF% exists (caller falls
+        back to the request value).
+
+        Args:
+            user_id: The user whose entries to query.
+            n: Number of recent BF readings to average (default 3; clamped
+               to the number of available readings when fewer exist).
+
+        Returns:
+            Smoothed starting BF% as a float, or None if no BF entries exist.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                """
+                SELECT body_fat_percentage
+                FROM   entries
+                WHERE  user_id = ?
+                  AND  body_fat_percentage IS NOT NULL
+                ORDER  BY date DESC
+                LIMIT  ?
+                """,
+                (user_id, n),
+            )
+            rows = [row[0] for row in cursor.fetchall()]
+
+        if not rows:
+            return None
+
+        return round(sum(rows) / len(rows), 2)
+
+    def import_data(self, user_data: Dict[str, Any] = None,
                     entries: List[Dict[str, Any]] = None,
                     reports: List[Dict[str, Any]] = None):
         """Import data from JSON files"""

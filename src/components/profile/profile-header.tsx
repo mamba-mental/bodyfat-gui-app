@@ -134,16 +134,29 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
   return (
     <div className={cn("relative", className)}>
       {/* Banner */}
+      {/* Container uses aspect-[15/4] when a banner image is present so the full
+          1500×400 image is always visible without cropping. When no banner is set
+          we fall back to the original fixed-height decorative gradient. */}
+      {/* Banner container.
+          When a banner image is set we honour the 15:4 ratio via aspect-[15/4] but
+          clamp the display height so it never blows up to billboard size on wide
+          screens. max-h-[160px] md:max-h-[200px] keeps it as a crisp banner strip
+          (≈ the 1500×400 reference image) while object-cover fills the area cleanly.
+          The gradient-only fallback keeps its fixed heights unchanged. */}
       <div className={cn(
         "relative bg-gradient-to-r from-primary/20 to-primary/10 overflow-hidden",
-        compact ? "h-20 md:h-24" : "h-32 md:h-48 rounded-t-lg"
+        user.profile_banner
+          ? "w-full aspect-[15/4] max-h-[160px] md:max-h-[200px]"
+          : compact
+            ? "h-20 md:h-24"
+            : "h-32 md:h-48 rounded-t-lg",
+        !compact && "rounded-t-lg"
       )}>
         {user.profile_banner ? (
           <img
             src={user.profile_banner}
             alt="Profile banner"
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: 'center' }}
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10" />

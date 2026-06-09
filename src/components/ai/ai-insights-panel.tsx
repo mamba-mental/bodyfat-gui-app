@@ -86,19 +86,22 @@ export function AIInsightsPanel({
   // Force re-render when AI settings are loaded
   React.useEffect(() => {
     const handleSettingsLoaded = () => {
-      // Reload insights with new settings
-      if (current_user && entries.length > 0) {
+      // Reload insights with new settings. Fire even with 0 entries so a
+      // "configure an AI provider" status insight can surface.
+      if (current_user) {
         loadInsights()
       }
     }
-    
+
     window.addEventListener('ai-settings-loaded', handleSettingsLoaded)
     return () => window.removeEventListener('ai-settings-loaded', handleSettingsLoaded)
-  }, [current_user, entries, loadInsights])
+  }, [current_user, loadInsights])
 
-  // Load insights when data changes
+  // Load insights when data changes. Run for any logged-in user (even with no
+  // entries) so the provider-configuration status is always reflected rather
+  // than leaving the panel blank.
   React.useEffect(() => {
-    if (current_user && entries.length > 0 && !loading && !settingsLoading) {
+    if (current_user && !loading && !settingsLoading) {
       loadInsights()
     }
   }, [current_user, entries, current_calculation, loading, settingsLoading, loadInsights])
@@ -110,6 +113,12 @@ export function AIInsightsPanel({
   // Dismissals are applied at render time so they survive reloads and never
   // feed back into loadInsights' dependencies (which would re-loop).
   const visibleInsights = insights.filter(insight => !dismissedInsights.has(insight.id))
+
+  // The service emits a well-known status insight when no working AI provider is
+  // assigned to Progress Insights. Surface it as a clear, actionable callout
+  // instead of the misleading generic "No insights available — add more entries".
+  const NO_PROVIDER_ID = 'no-provider-configured'
+  const noProviderInsight = visibleInsights.find(insight => insight.id === NO_PROVIDER_ID)
 
   const getInsightIcon = (type: AIInsight['type']) => {
     switch (type) {
@@ -201,6 +210,29 @@ export function AIInsightsPanel({
               </div>
             ))}
           </div>
+        ) : noProviderInsight ? (
+          <Alert>
+            <Brain className="h-4 w-4" />
+            <AlertDescription className="space-y-3">
+              <div>
+                <p className="font-medium">{noProviderInsight.title}</p>
+                <p className="text-sm text-muted-foreground">{noProviderInsight.message}</p>
+              </div>
+              {noProviderInsight.action?.path && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (noProviderInsight.action?.path) {
+                      window.location.href = noProviderInsight.action.path
+                    }
+                  }}
+                >
+                  {noProviderInsight.action.label}
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
         ) : visibleInsights.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />

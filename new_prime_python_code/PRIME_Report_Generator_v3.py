@@ -255,7 +255,20 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
         else:
             return "Needs Improvement"
     avg_deficit = sum(d['weekly_caloric_output'] for d in progression_data) / len(progression_data) if progression_data else 0
-    avg_intake = sum(d['daily_calorie_intake'] for d in progression_data) / len(progression_data) if progression_data else 0
+    # BUG #12 fix — make the "Daily Cal Intake" column TAPER per week.
+    # The cut-mode solver holds daily_calorie_intake ~flat across weeks, so the
+    # legacy table showed one constant number for every row. The engine also emits
+    # `reference_training_calories` — the phase-varying calibrated training-day
+    # intake from RECOMP_REF_CURVE (RESET->ADAPT->CYCLE->PEAK taper) — which is the
+    # value the Living Report's phase narrative reflects. Build immutable per-week
+    # copies whose daily_calorie_intake shows that real taper, falling back to the
+    # original field when the new one is absent (older engine / gain/maintain mode).
+    # Source progression_data is NOT mutated (other consumers keep the solver value).
+    weekly_progress_display = [
+        {**d, 'daily_calorie_intake': d.get('reference_training_calories', d['daily_calorie_intake'])}
+        for d in progression_data
+    ]
+    avg_intake = sum(d['daily_calorie_intake'] for d in weekly_progress_display) / len(weekly_progress_display) if weekly_progress_display else 0
     context = {
         'name': name,
         'report_date': datetime.datetime.now().strftime('%B %d, %Y'),
@@ -312,7 +325,7 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
         'frequency_score': frequency_score,
         'tef': initial_tdee * 0.1,
         'neat': initial_tdee * 0.15,
-        'weekly_progress': progression_data,
+        'weekly_progress': weekly_progress_display,
         'body_composition_changes': [
             {
                 'category': 'Current',
@@ -387,15 +400,16 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
     markdown_content = f"""
 # PRIME Body Composition Report
 
-**Name:** {name}  
+**Name:** {name}
 **Date:** {context['report_date']}
 
-## Summary
-- Week: {total_weeks}
-- Total Weight Loss: {total_weight_loss:.1f} lbs
-- Total Fat Loss: {total_fat_loss:.1f} lbs
-- Muscle Change: {muscle_change:+.1f} lbs
+## Projected Summary
+*These are PREDICTED outcomes of the plan over the timeline below -- not results already achieved.*
+
 - Timeline: {total_weeks} weeks
+- Projected Total Weight Loss: {total_weight_loss:.1f} lbs
+- Projected Total Fat Loss: {total_fat_loss:.1f} lbs
+- Projected Muscle Change: {muscle_change:+.1f} lbs
 
 ## Charts
 

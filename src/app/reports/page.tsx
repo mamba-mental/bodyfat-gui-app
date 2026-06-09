@@ -19,6 +19,7 @@ import TurndownService from 'turndown'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { defaultSelectedCycle, scopeByCycle, ALL_CYCLES } from "@/lib/cycleScope"
 import { sourceFingerprint, canGenerateReport } from "@/lib/reportGate"
+import type { Cycle } from "@/hooks/use-cycles"
 import {
   Dialog,
   DialogContent,
@@ -29,12 +30,26 @@ import {
 } from "@/components/ui/dialog"
 
 import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
+import { fetchGeneratedLivingReport, generateId } from "@/lib/storage-api"
 
 const CALC_VERSION = "calc-v1"
 const GENERATOR_VERSION = "gen-v3"
 
+/**
+ * Tiny sentinel that fires a callback once when its subtree mounts.
+ * Used so the AI Analysis tab triggers the on-demand fetch immediately
+ * when the user clicks the tab (TabsContent mounts lazily on first visit).
+ */
+function AiTabMountTrigger({ onMount }: { onMount: () => void }) {
+  React.useEffect(() => {
+    onMount()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentionally run once on mount only
+  return null
+}
+
 export default function ReportsPage() {
-  const { state, generateNewReport, deleteReport } = useApp()
+  const { state, dispatch, generateNewReport, deleteReport } = useApp()
   const {
     current_user,
     current_calculation,
@@ -48,7 +63,7 @@ export default function ReportsPage() {
 
   // ReComp Cycle scoping (P4): load cycles, default to the CURRENT (active) cycle,
   // let the user pick a specific cycle or aggregate "All ReComp Cycles".
-  const [cycles, setCycles] = React.useState<any[]>([])
+  const [cycles, setCycles] = React.useState<Cycle[]>([])
   const [selectedCycleId, setSelectedCycleId] = React.useState<string>(ALL_CYCLES)
   React.useEffect(() => {
     let alive = true
@@ -94,6 +109,60 @@ export default function ReportsPage() {
     return undefined
   }
 
+  // Living Report generation state
+  const [livingReportLoading, setLivingReportLoading] = useState(false)
+  const [livingReportError, setLivingReportError] = useState<string | null>(null)
+
+  const handleGenerateLivingReport = async () => {
+    if (!current_user) return
+    setLivingReportLoading(true)
+    setLivingReportError(null)
+    try {
+      // Build actual_entries from app entries (week number derived from start_date)
+      const startMs = current_user.start_date ? new Date(current_user.start_date).getTime() : null
+      const actualEntries = (allEntries as any[]).map((e: any) => {
+        const entryMs = new Date(e.date).getTime()
+        const week = startMs
+          ? Math.max(1, Math.round((entryMs - startMs) / (7 * 24 * 60 * 60 * 1000)))
+          : 1
+        return {
+          week,
+          weight: e.weight,
+          bf: e.body_fat_percentage ?? e.bf ?? 0,
+          date: typeof e.date === 'string' ? e.date : new Date(e.date).toISOString().slice(0, 10),
+          ...(e.photo ? { photo: e.photo } : {}),
+        }
+      })
+      const res = await fetchGeneratedLivingReport(current_user, actualEntries)
+      if (!res.html_content) throw new Error('Living report returned no HTML content')
+
+      // Register the living report in the in-memory store so it appears in
+      // Report History immediately (the backend already inserted a DB row).
+      const now = new Date()
+      const livingReportRecord = {
+        id: res.id ?? generateId(),
+        user_id: current_user.name ?? 'default',
+        title: `Living Report — ${current_user.name ?? 'User'} (${now.toLocaleDateString()})`,
+        generated_at: now.toISOString(),
+        html_content: res.html_content,
+        html_path: res.html_path,
+        markdown_path: res.md_path,
+        // report_type is a pass-through field — kept for history badge rendering
+        report_type: 'living',
+      } as any
+      dispatch({ type: 'ADD_REPORT', payload: livingReportRecord })
+
+      const blob = new Blob([res.html_content], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch (err) {
+      console.error('[ReportsPage] Living report generation failed:', err)
+      setLivingReportError(err instanceof Error ? err.message : 'Failed to generate living report')
+    } finally {
+      setLivingReportLoading(false)
+    }
+  }
+
   // P7: block generating a report when there's no NEW data since the last one.
   // reason 'no-entries' = the target cycle has nothing to report on yet;
   // 'no-new-data' = the latest entry is unchanged since the last report.
@@ -132,6 +201,74 @@ export default function ReportsPage() {
     }
     await generateNewReport(undefined, { sourceFingerprint: currentFp, cycleId: targetCycleId })
   }
+
+  // --- On-demand AI analysis fetch ---
+  // Fast-path report generation intentionally skips the AI call, so
+  // calculation_result.ai_analysis is often null on the latest report.
+  // When the user opens the AI Analysis tab we lazily fetch it here and
+  // cache the result in component state so it doesn't refetch on re-renders.
+  const [aiAnalysisCache, setAiAnalysisCache] = React.useState<Record<string, string | null>>({})
+  const [aiAnalysisLoading, setAiAnalysisLoading] = React.useState(false)
+  const [aiAnalysisFailed, setAiAnalysisFailed] = React.useState(false)
+
+  // The latest generated report for the selected cycle (reports are already
+  // cycle-scoped via scopeByCycle above and sorted newest-first by the API).
+  const latestReport = reports[0] as any | undefined
+
+  // Effective AI analysis: prefer what's stored on the report; fall back to
+  // the on-demand fetched value cached in state.
+  const latestReportId: string | undefined = latestReport?.id
+  const storedAiAnalysis: string | null | undefined =
+    latestReport?.calculation_result?.ai_analysis ?? null
+  const cachedAiAnalysis: string | null =
+    latestReportId ? (aiAnalysisCache[latestReportId] ?? null) : null
+  const effectiveAiAnalysis: string | null = storedAiAnalysis || cachedAiAnalysis
+
+  const fetchAiAnalysisOnDemand = React.useCallback(async () => {
+    if (!latestReport || !latestReport.calculation_result) return
+    if (effectiveAiAnalysis) return          // already have it
+    if (aiAnalysisLoading) return            // fetch in progress
+    // Note: aiAnalysisFailed is NOT checked here so callers can clear it
+    // before invoking (enabling manual retry). Auto-triggers guard via the
+    // AiTabMountTrigger / onFocus paths by only calling when the tab first
+    // mounts (mount trigger runs once) or gains focus naturally.
+
+    setAiAnalysisLoading(true)
+    setAiAnalysisFailed(false)
+    try {
+      const body = {
+        user: current_user,
+        entries,
+        calculation: latestReport.calculation_result,
+      }
+      const res = await fetch('/api/ai/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error(`AI insights fetch failed: ${res.status}`)
+      const data = await res.json()
+      // The /api/ai/insights endpoint returns an array of insight objects.
+      // Combine them into a single narrative string so it renders like a
+      // stored ai_analysis field.
+      let analysisText: string | null = null
+      if (Array.isArray(data) && data.length > 0) {
+        analysisText = data
+          .map((ins: any) => `**${ins.title}**: ${ins.content}`)
+          .join('\n\n')
+      } else if (typeof data === 'string' && data.length > 0) {
+        analysisText = data
+      }
+      if (latestReportId && analysisText) {
+        setAiAnalysisCache((prev) => ({ ...prev, [latestReportId]: analysisText }))
+      }
+    } catch (err) {
+      console.warn('[ReportsPage] On-demand AI analysis fetch failed:', err)
+      setAiAnalysisFailed(true)
+    } finally {
+      setAiAnalysisLoading(false)
+    }
+  }, [latestReport, effectiveAiAnalysis, aiAnalysisLoading, current_user, entries, latestReportId])
 
   // Lazy-fetch html_content on demand. List response strips html_content for speed,
   // so we hit /api/data/reports/{id} only when the user clicks an action that needs it.
@@ -267,6 +404,14 @@ export default function ReportsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            onClick={handleGenerateLivingReport}
+            disabled={livingReportLoading || !current_user}
+          >
+            <ClientIcon icon={Activity} className="mr-2 h-4 w-4" />
+            {livingReportLoading ? "Building..." : "Generate Living Report"}
+          </Button>
           <Button variant="default" onClick={handleGenerateReport} disabled={loading}>
             <ClientIcon icon={FileText} className="mr-2 h-4 w-4" />
             {loading ? "Generating..." : "Generate New Report"}
@@ -281,6 +426,13 @@ export default function ReportsPage() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {livingReportError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Living Report: {livingReportError}</AlertDescription>
         </Alert>
       )}
 
@@ -626,22 +778,36 @@ export default function ReportsPage() {
           </TabsContent>
 
           <TabsContent value="progression" className="space-y-4">
-            <ProgressTrendChart 
+            <ProgressTrendChart
               entries={entries}
-              progression={current_calculation.progression}
+              // Prefer the latest saved report's progression so the chart reflects
+              // what was actually generated, not a stale transient calculation.
+              progression={
+                latestReport?.calculation_result?.progression ?? current_calculation.progression
+              }
               title="PRIME Progression Analysis"
               description="Weekly breakdown of your projected transformation"
             />
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Predictions/Benchmarks/Targets</CardTitle>
-                <CardDescription>First 4 weeks of your PRIME calculation</CardDescription>
+                <CardDescription>
+                  {latestReport
+                    ? `First 4 weeks — from latest report (${new Date(latestReport.generated_at).toLocaleDateString()})`
+                    : 'First 4 weeks of your PRIME calculation'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {current_calculation && current_calculation.progression && Array.isArray(current_calculation.progression) && current_calculation.progression.length > 0 ? 
-                    current_calculation.progression.slice(0, 4).map((week, index) => (
+                  {(() => {
+                    // Use the latest report's progression when available so the table
+                    // reflects the generated (saved) data, not a stale transient calc.
+                    const progression =
+                      latestReport?.calculation_result?.progression ??
+                      (current_calculation?.progression ?? [])
+                    return Array.isArray(progression) && progression.length > 0
+                      ? progression.slice(0, 4).map((week: any, index: number) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="grid gap-4 md:grid-cols-4">
                         <div className="text-center">
@@ -662,17 +828,28 @@ export default function ReportsPage() {
                         </div>
                       </div>
                     </div>
-                  )) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      No progression data available
-                    </div>
-                  )}
+                  ))
+                      : (
+                        <div className="text-center text-muted-foreground py-4">
+                          No progression data available
+                        </div>
+                      )
+                  })()}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="analysis" className="space-y-4">
+          <TabsContent
+            value="analysis"
+            className="space-y-4"
+            // Trigger on-demand AI fetch when the tab becomes visible.
+            // Skip auto-refetch if a previous attempt failed — manual retry
+            // button (which resets aiAnalysisFailed first) handles that path.
+            onFocus={aiAnalysisFailed ? undefined : fetchAiAnalysisOnDemand}
+          >
+            {/* Also trigger on mount of the tab panel via an effect sentinel */}
+            <AiTabMountTrigger onMount={fetchAiAnalysisOnDemand} />
             <div className="grid gap-4 lg:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -680,18 +857,45 @@ export default function ReportsPage() {
                     <ClientIcon icon={Brain} className="h-5 w-5" />
                     PRIME AI Analysis
                   </CardTitle>
-                  <CardDescription>AI-powered insights from your PRIME calculation</CardDescription>
+                  <CardDescription>
+                    {latestReport
+                      ? `AI-powered insights from your latest report (${new Date(latestReport.generated_at).toLocaleDateString()})`
+                      : 'AI-powered insights from your PRIME calculation'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {current_calculation.ai_analysis ? (
-                    <div className="prose max-w-none text-sm">
-                      <p>{current_calculation.ai_analysis}</p>
+                  {effectiveAiAnalysis ? (
+                    <div className="prose max-w-none text-sm whitespace-pre-line">
+                      <p>{effectiveAiAnalysis}</p>
+                    </div>
+                  ) : aiAnalysisLoading ? (
+                    <div className="flex items-center gap-3 py-8">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary flex-shrink-0" />
+                      <p className="text-muted-foreground text-sm">Fetching AI analysis…</p>
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <ClientIcon icon={Brain} className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No AI analysis available for this calculation.</p>
-                      <p className="text-xs text-muted-foreground mt-1">Generate a new report to get AI insights.</p>
+                      {latestReport ? (
+                        <>
+                          <p className="text-muted-foreground">No AI analysis available for this report.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => { setAiAnalysisFailed(false); fetchAiAnalysisOnDemand() }}
+                            disabled={aiAnalysisLoading}
+                          >
+                            <ClientIcon icon={Brain} className="mr-2 h-4 w-4" />
+                            Fetch AI Analysis
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-muted-foreground">No AI analysis available.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Generate a new report to get AI insights.</p>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -826,7 +1030,8 @@ export default function ReportsPage() {
                     
                     <div className="text-center p-4 border rounded-lg">
                       <div className="text-lg font-bold text-purple-600">
-                        {current_calculation?.confidence_score || 'N/A'}
+                        {/* Prefer the latest report's confidence score so this reflects saved data */}
+                        {latestReport?.calculation_result?.confidence_score ?? current_calculation?.confidence_score ?? 'N/A'}
                       </div>
                       <div className="text-sm text-muted-foreground">AI Confidence</div>
                       <div className="text-xs text-muted-foreground mt-1">Plan reliability</div>
@@ -834,6 +1039,7 @@ export default function ReportsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
+                    {/* Intentional: trend stats require ≥3 cycle-scoped entries to be meaningful. */}
                     <p className="text-muted-foreground">Need at least 3 weekly entries for trend analysis.</p>
                   </div>
                 )}
@@ -905,10 +1111,17 @@ export default function ReportsPage() {
                           >
                             <ClientIcon icon={TrashIcon} className="h-3 w-3" />
                           </Button>
-                          <Badge variant="outline">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Complete
-                          </Badge>
+                          {(report as any).report_type === 'living' ? (
+                            <Badge variant="outline" className="text-teal-600 border-teal-400">
+                              <Activity className="w-3 h-3 mr-1" />
+                              Living
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Complete
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     ))}

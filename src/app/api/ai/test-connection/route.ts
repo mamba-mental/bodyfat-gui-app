@@ -57,7 +57,13 @@ export async function POST(request: NextRequest) {
       
       case 'mercury':
         return await testMercuryConnection(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
+      // Feature 1: custom OpenAI-compatible endpoints
+      case 'custom1':
+      case 'custom2':
+      case 'custom3':
+        return await testOpenAICompatibleConnection(apiKey, baseUrl || '')
+
       default:
         return NextResponse.json(
           { success: false, error: 'Provider not yet implemented' },
@@ -149,8 +155,19 @@ async function testOpenAIConnection(apiKey: string, baseUrl: string) {
 
     if (response.ok) {
       const data = await response.json()
+      // Feature 2: removed the narrow gpt-only filter for the test path too.
+      // Return a representative sample (first 15) so the toast isn't huge.
       const models = data.data
-        .filter((model: any) => model.id.includes('gpt'))
+        .filter((model: any) => {
+          const id: string = model.id
+          return (
+            !id.includes('embedding') &&
+            !id.startsWith('tts-') &&
+            !id.startsWith('dall-e') &&
+            !id.startsWith('whisper')
+          )
+        })
+        .slice(0, 15)
         .map((model: any) => ({
           id: model.id,
           name: model.id,
@@ -160,7 +177,7 @@ async function testOpenAIConnection(apiKey: string, baseUrl: string) {
       return NextResponse.json({
         success: true,
         message: 'Successfully connected to OpenAI',
-        models: models.slice(0, 10) // Return first 10 models
+        models: models
       })
     } else if (response.status === 401) {
       return NextResponse.json({
@@ -640,5 +657,56 @@ async function testMercuryConnection(apiKey: string, baseUrl: string) {
       success: false,
       error: 'Failed to connect to Mercury'
     })
+  }
+}
+
+/**
+ * Feature 1: Test connection for custom OpenAI-compatible endpoints (custom1/2/3).
+ * GETs /models, verifies the response structure, returns a sample of found models.
+ */
+async function testOpenAICompatibleConnection(apiKey: string, baseUrl: string) {
+  if (!baseUrl) {
+    return NextResponse.json({ success: false, error: 'Set the Base URL first.' })
+  }
+
+  const normalised = baseUrl.replace(/\/$/, '')
+  const modelsUrl = normalised.endsWith('/models')
+    ? normalised
+    : `${normalised}/models`
+
+  try {
+    const response = await fetch(modelsUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const list: any[] = data.data || data.models || []
+      const models = list.slice(0, 15).map((m: any) => ({
+        id: m.id,
+        name: m.id,
+        description: m.owned_by ? `Provided by ${m.owned_by}` : undefined
+      }))
+
+      return NextResponse.json({
+        success: true,
+        message: `Connected — found ${list.length} model${list.length !== 1 ? 's' : ''}`,
+        models
+      })
+    } else if (response.status === 401) {
+      return NextResponse.json({ success: false, error: 'Invalid API key' })
+    } else {
+      const errText = await response.text().catch(() => '')
+      return NextResponse.json({
+        success: false,
+        error: `Endpoint returned ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ''}`
+      })
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ success: false, error: `Network error: ${msg}` })
   }
 }

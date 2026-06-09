@@ -14,31 +14,41 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import {
   AIProvider,
+  AIModel,
   AIProviderConfig,
   AIAreaConfig,
   AISettings,
   AI_PROVIDERS,
   AI_AREAS
 } from "@/types/ai"
-import { 
-  Brain, 
-  Key, 
-  AlertCircle, 
-  CheckCircle, 
-  RefreshCw, 
-  Settings, 
+import {
+  Brain,
+  Key,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Settings,
   Shield,
   Sparkles,
   Eye,
   EyeOff,
   Copy,
   ExternalLink,
-  Code
+  Code,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { AISettingsService } from "@/lib/ai-settings-service"
 import { AIPromptsEditor } from "@/components/settings/ai-prompts-editor"
 import { withBasePath } from "@/lib/api-path"
+
+/** Providers that render editable name + base URL fields instead of a read-only endpoint display */
+const CUSTOM_PROVIDERS: AIProvider[] = ['custom1', 'custom2', 'custom3']
+
+function isCustomProvider(p: AIProvider): boolean {
+  return CUSTOM_PROVIDERS.includes(p)
+}
 
 export default function AISettingsPage() {
   const { toast } = useToast()
@@ -47,29 +57,36 @@ export default function AISettingsPage() {
   const [showKeys, setShowKeys] = React.useState<Record<AIProvider, boolean>>({} as Record<AIProvider, boolean>)
   const [settingsLoaded, setSettingsLoaded] = React.useState(false)
   const [loadError, setLoadError] = React.useState<string | null>(null)
+
+  // Feature 3: per-provider collapse state
+  const [collapsed, setCollapsed] = React.useState<Record<AIProvider, boolean>>({} as Record<AIProvider, boolean>)
+
   const aiSettingsService = React.useRef(AISettingsService.getInstance())
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
   const lastSavedRef = React.useRef<string | null>(null)
-  
+
   // Initialize with default settings
   const getDefaultSettings = (): AISettings => {
     const defaultProviders: Record<AIProvider, AIProviderConfig> = {} as Record<AIProvider, AIProviderConfig>
-    // Ensure ALL providers from AI_PROVIDERS are included
+    // Ensure ALL providers from AI_PROVIDERS are included (including custom1/2/3)
     const allProviders: AIProvider[] = [
-      'anthropic', 'chutes', 'openai', 'openrouter', 'gemini', 
-      'minimax', 'mercury', 'perplexity', 'mistral', 'xai', 
-      'groq', 'fireworks'
+      'anthropic', 'chutes', 'openai', 'openrouter', 'gemini',
+      'minimax', 'mercury', 'perplexity', 'mistral', 'xai',
+      'groq', 'fireworks',
+      'custom1', 'custom2', 'custom3'
     ]
-    
+
     allProviders.forEach((provider) => {
       defaultProviders[provider] = {
         provider: provider,
         apiKey: '',
         enabled: false,
-        models: [] // Always start with empty models array
+        models: [],
+        // Custom endpoints start with empty baseUrl so the user fills it in
+        baseUrl: isCustomProvider(provider) ? '' : undefined
       }
     })
-    
+
     return {
       providers: defaultProviders,
       areas: AI_AREAS.map(area => ({
@@ -79,25 +96,34 @@ export default function AISettingsPage() {
       globalFallbackEnabled: true
     }
   }
-  
+
   const [settings, setSettings] = React.useState<AISettings>(getDefaultSettings())
-  
+
+  // Initialise collapse state once settings are loaded
+  const initCollapseState = React.useCallback((s: AISettings) => {
+    const state: Record<AIProvider, boolean> = {} as Record<AIProvider, boolean>
+    ;(Object.keys(s.providers) as AIProvider[]).forEach((p) => {
+      const cfg = s.providers[p]
+      // Enabled providers and custom slots default OPEN; disabled commercial providers default COLLAPSED
+      const defaultOpen = cfg.enabled || isCustomProvider(p)
+      state[p] = !defaultOpen // true = collapsed
+    })
+    setCollapsed(state)
+  }, [])
+
   const loadSettings = React.useCallback(async () => {
     setLoadError(null)
     try {
-      // Load settings from server only
       const response = await fetch(withBasePath('/api/ai/settings'))
       if (response.ok) {
         const data = await response.json()
-        if (data && data.providers) {  // Check if data has providers (it's the settings object directly)
-          // Merge with default settings to include any new providers
+        if (data && data.providers) {
           const mergedSettings = getDefaultSettings()
           Object.keys(data.providers).forEach(provider => {
             if (mergedSettings.providers[provider as AIProvider]) {
               mergedSettings.providers[provider as AIProvider] = data.providers[provider]
             }
           })
-          // Merge areas ensuring all properties are present
           mergedSettings.areas = (data.areas || mergedSettings.areas).map((area: AIAreaConfig) => ({
             ...area,
             currentProvider: area.currentProvider || undefined,
@@ -107,6 +133,7 @@ export default function AISettingsPage() {
           lastSavedRef.current = JSON.stringify(mergedSettings)
           aiSettingsService.current.saveSettings(mergedSettings)
           setSettings(mergedSettings)
+          initCollapseState(mergedSettings)
           window.dispatchEvent(new CustomEvent('ai-settings-loaded'))
           setSettingsLoaded(true)
           return
@@ -116,42 +143,36 @@ export default function AISettingsPage() {
       console.error('Failed to load settings from server:', error)
       setLoadError('Unable to load AI settings, using defaults until connection is restored.')
     }
-    
-    // If server load fails, use default settings
+
     const defaults = getDefaultSettings()
     lastSavedRef.current = JSON.stringify(defaults)
     aiSettingsService.current.saveSettings(defaults)
     setSettings(defaults)
+    initCollapseState(defaults)
     window.dispatchEvent(new CustomEvent('ai-settings-loaded'))
     setSettingsLoaded(true)
-  }, [])
-  
-  // Load settings from server on mount
+  }, [initCollapseState])
+
   React.useEffect(() => {
     if (!settingsLoaded) {
       loadSettings()
     }
   }, [settingsLoaded, loadSettings])
-  
-  // Save settings to server only whenever they change (with debounce)
+
   React.useEffect(() => {
     if (settingsLoaded) {
       const serializedSettings = JSON.stringify(settings)
 
-      // Skip save when nothing changed since last sync to avoid wiping persisted data
       if (serializedSettings === lastSavedRef.current) {
         return
       }
 
-      // Clear any existing timeout
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
       }
-      
-      // Update service cache immediately for UI responsiveness
+
       aiSettingsService.current.saveSettings(settings)
 
-      // Debounce server save to avoid too many requests
       saveTimeoutRef.current = setTimeout(() => {
         fetch(withBasePath('/api/ai/settings'), {
           method: 'POST',
@@ -160,21 +181,19 @@ export default function AISettingsPage() {
         })
           .then(() => {
             lastSavedRef.current = serializedSettings
-            // Broadcast change to other components
             window.dispatchEvent(new CustomEvent('ai-settings-loaded'))
           })
           .catch(err => console.error('Failed to save settings to server:', err))
-      }, 500) // 500ms debounce
+      }, 500)
     }
-    
-    // Cleanup on unmount
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
       }
     }
   }, [settings, settingsLoaded])
-  
+
   const updateProviderConfig = (provider: AIProvider, updates: Partial<AIProviderConfig>) => {
     setSettings(prev => ({
       ...prev,
@@ -187,16 +206,16 @@ export default function AISettingsPage() {
       }
     }))
   }
-  
+
   const updateAreaConfig = (areaId: string, updates: Partial<AIAreaConfig>) => {
     setSettings(prev => ({
       ...prev,
-      areas: prev.areas.map(area => 
+      areas: prev.areas.map(area =>
         area.id === areaId ? { ...area, ...updates } : area
       )
     }))
   }
-  
+
   const testConnection = async (provider: AIProvider) => {
     setTestingProvider(provider)
     try {
@@ -209,21 +228,24 @@ export default function AISettingsPage() {
           baseUrl: settings.providers[provider].baseUrl
         })
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
+        const displayName = isCustomProvider(provider)
+          ? (settings.providers[provider].displayName || AI_PROVIDERS[provider].name)
+          : AI_PROVIDERS[provider].name
+
         toast({
           title: "Connection Successful",
-          description: `Successfully connected to ${AI_PROVIDERS[provider].name}`,
+          description: `Successfully connected to ${displayName}`,
           variant: "default"
         })
-        
-        // Update connection status and models if returned
-        updateProviderConfig(provider, { 
+
+        updateProviderConfig(provider, {
           connectionStatus: 'success',
           connectionError: undefined,
-          models: result.models || [] 
+          models: Array.from(new Map(((result.models || []) as AIModel[]).map((m) => [m.id, m])).values())
         })
       } else {
         toast({
@@ -231,9 +253,8 @@ export default function AISettingsPage() {
           description: result.error || "Failed to connect to provider",
           variant: "destructive"
         })
-        
-        // Update connection status
-        updateProviderConfig(provider, { 
+
+        updateProviderConfig(provider, {
           connectionStatus: 'failed',
           connectionError: result.error || 'Connection failed'
         })
@@ -248,8 +269,18 @@ export default function AISettingsPage() {
       setTestingProvider(null)
     }
   }
-  
+
   const fetchModels = async (provider: AIProvider) => {
+    // Custom endpoints need a baseUrl set
+    if (isCustomProvider(provider) && !settings.providers[provider].baseUrl) {
+      toast({
+        title: "Base URL Required",
+        description: "Please enter the Base URL for this custom endpoint first",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (!settings.providers[provider].apiKey) {
       toast({
         title: "API Key Required",
@@ -258,7 +289,7 @@ export default function AISettingsPage() {
       })
       return
     }
-    
+
     setLoading(true)
     try {
       const response = await fetch(withBasePath('/api/ai/fetch-models'), {
@@ -270,14 +301,21 @@ export default function AISettingsPage() {
           baseUrl: settings.providers[provider].baseUrl
         })
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success && result.models) {
-        updateProviderConfig(provider, { models: result.models })
+        const dedupedModels = Array.from(
+          new Map((result.models as AIModel[]).map((m) => [m.id, m])).values()
+        )
+        const displayName = isCustomProvider(provider)
+          ? (settings.providers[provider].displayName || AI_PROVIDERS[provider].name)
+          : AI_PROVIDERS[provider].name
+
+        updateProviderConfig(provider, { models: dedupedModels })
         toast({
           title: "Models Updated",
-          description: `Found ${result.models.length} models for ${AI_PROVIDERS[provider].name}`,
+          description: `Found ${dedupedModels.length} models for ${displayName}`,
           variant: "default"
         })
       } else {
@@ -297,7 +335,7 @@ export default function AISettingsPage() {
       setLoading(false)
     }
   }
-  
+
   const copyApiKey = (provider: AIProvider) => {
     navigator.clipboard.writeText(settings.providers[provider].apiKey)
     toast({
@@ -306,7 +344,24 @@ export default function AISettingsPage() {
       variant: "default"
     })
   }
-  
+
+  // Feature 3: collapse helpers
+  const toggleCollapse = (provider: AIProvider) => {
+    setCollapsed(prev => ({ ...prev, [provider]: !prev[provider] }))
+  }
+
+  const expandAll = () => {
+    const next: Record<AIProvider, boolean> = {} as Record<AIProvider, boolean>
+    ;(Object.keys(settings.providers) as AIProvider[]).forEach(p => { next[p] = false })
+    setCollapsed(next)
+  }
+
+  const collapseAll = () => {
+    const next: Record<AIProvider, boolean> = {} as Record<AIProvider, boolean>
+    ;(Object.keys(settings.providers) as AIProvider[]).forEach(p => { next[p] = true })
+    setCollapsed(next)
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -323,7 +378,7 @@ export default function AISettingsPage() {
           <AlertDescription>{loadError}</AlertDescription>
         </Alert>
       )}
-      
+
       <Tabs defaultValue="providers" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="providers" className="gap-2">
@@ -343,7 +398,7 @@ export default function AISettingsPage() {
             General
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="providers" className="space-y-4">
           <Alert>
             <Shield className="h-4 w-4" />
@@ -351,22 +406,39 @@ export default function AISettingsPage() {
               API keys are securely stored on the server only. All settings are persisted in the container/database and never stored in browser localStorage.
             </AlertDescription>
           </Alert>
-          
+
+          {/* Feature 3: Expand / Collapse all control */}
+          <div className="flex items-center justify-end gap-2 text-sm">
+            <Button variant="ghost" size="sm" onClick={expandAll}>
+              Expand all
+            </Button>
+            <Button variant="ghost" size="sm" onClick={collapseAll}>
+              Collapse all
+            </Button>
+          </div>
+
           <div className="grid gap-4">
             {Object.entries(AI_PROVIDERS).map(([key, provider]) => {
               const providerKey = key as AIProvider
               const config = settings.providers[providerKey]
               const isShowingKey = showKeys[providerKey]
-              
+              const isCollapsed = !!collapsed[providerKey]
+              const isCustom = isCustomProvider(providerKey)
+
+              // For custom endpoints, use the user-set displayName as the title if available
+              const cardTitle = isCustom
+                ? (config.displayName?.trim() || provider.name)
+                : provider.name
+
               return (
-                <Card 
-                  key={providerKey} 
+                <Card
+                  key={providerKey}
                   className={config.enabled ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-800'}
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg">{provider.name}</CardTitle>
+                        <CardTitle className="text-lg">{cardTitle}</CardTitle>
                         <CardDescription>
                           {config.enabled ? (
                             <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
@@ -381,178 +453,234 @@ export default function AISettingsPage() {
                           )}
                         </CardDescription>
                       </div>
-                      <Switch
-                        checked={config.enabled}
-                        onCheckedChange={(checked) => 
-                          updateProviderConfig(providerKey, { enabled: checked })
-                        }
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`${providerKey}-key`}>API Key</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            id={`${providerKey}-key`}
-                            type={isShowingKey ? "text" : "password"}
-                            value={config.apiKey}
-                            onChange={(e) => 
-                              updateProviderConfig(providerKey, { apiKey: e.target.value })
-                            }
-                            placeholder="Enter your API key"
-                          />
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowKeys(prev => ({
-                                ...prev,
-                                [providerKey]: !prev[providerKey]
-                              }))}
-                            >
-                              {isShowingKey ? 
-                                <EyeOff className="h-4 w-4" /> : 
-                                <Eye className="h-4 w-4" />
-                              }
-                            </Button>
-                            {config.apiKey && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyApiKey(providerKey)}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => testConnection(providerKey)}
-                          disabled={!config.apiKey || testingProvider === providerKey}
-                        >
-                          {testingProvider === providerKey ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Test"
-                          )}
-                        </Button>
-                      </div>
-                      {/* API Key Status Indicator */}
-                      {config.apiKey && config.connectionStatus && (
-                        <div className="flex items-center gap-2 text-sm">
-                          {config.connectionStatus === 'success' ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                              <span className="text-green-600">Working</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="h-4 w-4 text-red-600" />
-                              <span className="text-red-600">Failed - {config.connectionError || 'Connection error'}</span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* API Endpoint Display */}
-                    <div className="space-y-2">
-                      <Label>API Endpoint</Label>
+                      {/* Switch and chevron are separate — clicking Switch does NOT toggle collapse */}
                       <div className="flex items-center gap-2">
-                        <Input
-                          value={config.baseUrl || provider.baseUrl}
-                          readOnly
-                          className="font-mono text-xs"
+                        <Switch
+                          checked={config.enabled}
+                          onCheckedChange={(checked) =>
+                            updateProviderConfig(providerKey, { enabled: checked })
+                          }
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(config.baseUrl || provider.baseUrl)
-                            toast({
-                              title: "Copied!",
-                              description: "API endpoint copied to clipboard",
-                            })
-                          }}
+                          aria-label={isCollapsed ? "Expand provider" : "Collapse provider"}
+                          onClick={() => toggleCollapse(providerKey)}
                         >
-                          <Copy className="h-4 w-4" />
+                          {isCollapsed
+                            ? <ChevronDown className="h-4 w-4" />
+                            : <ChevronUp className="h-4 w-4" />
+                          }
                         </Button>
                       </div>
                     </div>
-                    
-                    {(providerKey === 'openrouter' || providerKey === 'chutes' || providerKey === 'mercury') && (
-                      <div className="space-y-2">
-                        <Label htmlFor={`${providerKey}-url`}>Custom Base URL (Optional)</Label>
-                        <Input
-                          id={`${providerKey}-url`}
-                          value={config.baseUrl || ''}
-                          onChange={(e) => 
-                            updateProviderConfig(providerKey, { baseUrl: e.target.value })
-                          }
-                          placeholder={provider.baseUrl}
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Available Models</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fetchModels(providerKey)}
-                          disabled={!config.apiKey || loading}
-                        >
-                          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                          Refresh
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-32 w-full rounded-md border p-2">
-                        {config.models && config.models.length > 0 ? (
-                          <div className="space-y-1">
-                            {config.models.map((model) => (
-                              <div key={model.id} className="text-sm">
-                                <div className="font-medium">{model.name}</div>
-                                {model.description && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {model.description}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                  </CardHeader>
+
+                  {/* Feature 3: collapsible body */}
+                  {!isCollapsed && (
+                    <CardContent className="space-y-4">
+                      {/* Feature 1: editable name + base URL for custom providers */}
+                      {isCustom && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${providerKey}-displayname`}>Endpoint Name</Label>
+                            <Input
+                              id={`${providerKey}-displayname`}
+                              value={config.displayName || ''}
+                              onChange={(e) =>
+                                updateProviderConfig(providerKey, { displayName: e.target.value })
+                              }
+                              placeholder={`e.g. My cliproxy (${provider.name})`}
+                            />
                           </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">
-                            No models loaded. Click refresh to fetch available models.
+                          <div className="space-y-2">
+                            <Label htmlFor={`${providerKey}-baseurl`}>Base URL</Label>
+                            <Input
+                              id={`${providerKey}-baseurl`}
+                              value={config.baseUrl || ''}
+                              onChange={(e) =>
+                                updateProviderConfig(providerKey, { baseUrl: e.target.value })
+                              }
+                              placeholder="http://192.168.x.x:PORT/v1"
+                              className="font-mono text-xs"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`${providerKey}-key`}>API Key</Label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              id={`${providerKey}-key`}
+                              type={isShowingKey ? "text" : "password"}
+                              value={config.apiKey}
+                              onChange={(e) =>
+                                updateProviderConfig(providerKey, { apiKey: e.target.value })
+                              }
+                              placeholder="Enter your API key"
+                            />
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowKeys(prev => ({
+                                  ...prev,
+                                  [providerKey]: !prev[providerKey]
+                                }))}
+                              >
+                                {isShowingKey ?
+                                  <EyeOff className="h-4 w-4" /> :
+                                  <Eye className="h-4 w-4" />
+                                }
+                              </Button>
+                              {config.apiKey && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyApiKey(providerKey)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => testConnection(providerKey)}
+                            disabled={
+                              !config.apiKey ||
+                              testingProvider === providerKey ||
+                              (isCustom && !config.baseUrl)
+                            }
+                          >
+                            {testingProvider === providerKey ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Test"
+                            )}
+                          </Button>
+                        </div>
+                        {/* API Key Status Indicator */}
+                        {config.apiKey && config.connectionStatus && (
+                          <div className="flex items-center gap-2 text-sm">
+                            {config.connectionStatus === 'success' ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="text-green-600">Working</span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                <span className="text-red-600">Failed - {config.connectionError || 'Connection error'}</span>
+                              </>
+                            )}
                           </div>
                         )}
-                      </ScrollArea>
-                    </div>
-                    
-                    <div className="flex gap-2 text-sm">
-                      <a
-                        href={getProviderDocsUrl(providerKey)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        API Documentation
-                      </a>
-                    </div>
-                  </CardContent>
+                      </div>
+
+                      {/* API Endpoint Display — read-only for commercial providers */}
+                      {!isCustom && (
+                        <div className="space-y-2">
+                          <Label>API Endpoint</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={config.baseUrl || provider.baseUrl}
+                              readOnly
+                              className="font-mono text-xs"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(config.baseUrl || provider.baseUrl)
+                                toast({
+                                  title: "Copied!",
+                                  description: "API endpoint copied to clipboard",
+                                })
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {(providerKey === 'openrouter' || providerKey === 'chutes' || providerKey === 'mercury') && (
+                        <div className="space-y-2">
+                          <Label htmlFor={`${providerKey}-url`}>Custom Base URL (Optional)</Label>
+                          <Input
+                            id={`${providerKey}-url`}
+                            value={config.baseUrl || ''}
+                            onChange={(e) =>
+                              updateProviderConfig(providerKey, { baseUrl: e.target.value })
+                            }
+                            placeholder={provider.baseUrl}
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Available Models</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fetchModels(providerKey)}
+                            disabled={!config.apiKey || loading || (isCustom && !config.baseUrl)}
+                          >
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                          </Button>
+                        </div>
+                        <ScrollArea className="h-32 w-full rounded-md border p-2">
+                          {config.models && config.models.length > 0 ? (
+                            <div className="space-y-1">
+                              {Array.from(new Map(config.models.map((m) => [m.id, m])).values()).map((model) => (
+                                <div key={model.id} className="text-sm">
+                                  <div className="font-medium">{model.name}</div>
+                                  {model.description && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {model.description}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              {isCustom && !config.baseUrl
+                                ? 'Set the Base URL first, then click Refresh.'
+                                : 'No models loaded. Click refresh to fetch available models.'}
+                            </div>
+                          )}
+                        </ScrollArea>
+                      </div>
+
+                      <div className="flex gap-2 text-sm">
+                        <a
+                          href={getProviderDocsUrl(providerKey)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          API Documentation
+                        </a>
+                      </div>
+                    </CardContent>
+                  )}
                 </Card>
               )
             })}
           </div>
         </TabsContent>
-        
+
         <TabsContent value="areas" className="space-y-4">
           <Alert>
             <Sparkles className="h-4 w-4" />
@@ -560,13 +688,13 @@ export default function AISettingsPage() {
               Assign different AI models to specific areas of the application for optimized performance.
             </AlertDescription>
           </Alert>
-          
+
           <div className="grid gap-4">
             {settings.areas.map((area) => {
               const selectedProvider = area.currentProvider
-              const providerModels = selectedProvider ? 
+              const providerModels = selectedProvider ?
                 settings.providers[selectedProvider].models || [] : []
-              
+
               return (
                 <Card key={area.id}>
                   <CardHeader>
@@ -579,10 +707,10 @@ export default function AISettingsPage() {
                         <Label>Provider</Label>
                         <Select
                           value={area.currentProvider || ''}
-                          onValueChange={(value) => 
-                            updateAreaConfig(area.id, { 
+                          onValueChange={(value) =>
+                            updateAreaConfig(area.id, {
                               currentProvider: value as AIProvider,
-                              currentModel: undefined 
+                              currentModel: undefined
                             })
                           }
                         >
@@ -592,21 +720,27 @@ export default function AISettingsPage() {
                           <SelectContent>
                             {Object.entries(settings.providers)
                               .filter(([, config]) => config.enabled && config.apiKey)
-                              .map(([key]) => (
-                                <SelectItem key={key} value={key}>
-                                  {AI_PROVIDERS[key as AIProvider].name}
-                                </SelectItem>
-                              ))
+                              .map(([key, config]) => {
+                                const p = key as AIProvider
+                                const label = isCustomProvider(p)
+                                  ? (config.displayName?.trim() || AI_PROVIDERS[p].name)
+                                  : AI_PROVIDERS[p].name
+                                return (
+                                  <SelectItem key={key} value={key}>
+                                    {label}
+                                  </SelectItem>
+                                )
+                              })
                             }
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label>Model</Label>
                         <Select
                           value={area.currentModel || ''}
-                          onValueChange={(value) => 
+                          onValueChange={(value) =>
                             updateAreaConfig(area.id, { currentModel: value })
                           }
                           disabled={!selectedProvider || providerModels.length === 0}
@@ -624,12 +758,12 @@ export default function AISettingsPage() {
                         </Select>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Switch
                         id={`${area.id}-fallback`}
                         checked={area.fallbackEnabled}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={(checked) =>
                           updateAreaConfig(area.id, { fallbackEnabled: checked })
                         }
                       />
@@ -643,7 +777,7 @@ export default function AISettingsPage() {
             })}
           </div>
         </TabsContent>
-        
+
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
@@ -657,7 +791,7 @@ export default function AISettingsPage() {
                 <Switch
                   id="global-fallback"
                   checked={settings.globalFallbackEnabled}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setSettings(prev => ({ ...prev, globalFallbackEnabled: checked }))
                   }
                 />
@@ -665,9 +799,9 @@ export default function AISettingsPage() {
                   Enable global fallback to local AI when all providers fail
                 </Label>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Export/Import Settings</h4>
                 <div className="flex gap-2">
@@ -723,12 +857,11 @@ export default function AISettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="prompts" className="space-y-4">
           <AIPromptsEditor
             onSave={async () => {
               try {
-                // You can integrate this with your AI settings service if needed
                 toast({
                   title: "Prompts Saved",
                   description: "Your AI prompt configurations have been saved successfully.",
@@ -761,7 +894,10 @@ function getProviderDocsUrl(provider: AIProvider): string {
     mistral: 'https://docs.mistral.ai',
     xai: 'https://docs.x.ai',
     groq: 'https://console.groq.com/docs/quickstart',
-    fireworks: 'https://docs.fireworks.ai/guides/querying-text-models'
+    fireworks: 'https://docs.fireworks.ai/guides/querying-text-models',
+    custom1: '#',
+    custom2: '#',
+    custom3: '#'
   }
-  return urls[provider] || '#'
+  return urls[provider] ?? '#'
 }

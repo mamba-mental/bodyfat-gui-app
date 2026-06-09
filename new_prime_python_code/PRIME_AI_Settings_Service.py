@@ -105,7 +105,10 @@ class AISettingsService:
         return {
             'provider': provider,
             'model': model,
-            'apiKey': api_key
+            'apiKey': api_key,
+            # baseUrl carries the custom OpenAI-compatible endpoint URL (cliproxy
+            # etc.) through to the client; None for built-in providers. PRIME 2026-06-09.
+            'baseUrl': provider_config.get('baseUrl')
         }
     
     async def get_fallback_config(self) -> Dict[str, Optional[str]]:
@@ -152,7 +155,8 @@ class AISettingsService:
                         return {
                             'provider': provider_name,
                             'model': model,
-                            'apiKey': provider_config['apiKey']
+                            'apiKey': provider_config['apiKey'],
+                            'baseUrl': provider_config.get('baseUrl')
                         }
         
         logger.warning("No fallback provider available")

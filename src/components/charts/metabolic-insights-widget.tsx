@@ -5,7 +5,7 @@ import { Activity, Flame, Zap, TrendingUp } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { ChartTooltip, type ChartConfig } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { WeeklyProgression } from "@/types"
@@ -159,46 +159,51 @@ export function MetabolicInsightsWidget({
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Pie Chart */}
-            <div className="space-y-4">
+            <div className="flex flex-col space-y-2 min-w-0">
               <h4 className="text-sm font-medium">Energy Expenditure Breakdown</h4>
-              <ChartContainer config={chartConfig} className="h-64">
-                <PieChart>
-                  <Pie
-                    data={metabolicBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    isAnimationActive={false}
-                  >
-                    {metabolicBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload
-                        return (
-                          <div className="bg-background border rounded-lg p-3 shadow-lg">
-                            <p className="font-medium">{data.name}</p>
-                            <p className="text-sm text-muted-foreground">{data.description}</p>
-                            <p className="font-bold text-lg">{Math.round(data.value)} cal</p>
-                            <p className="text-sm">{data.percentage.toFixed(1)}% of TDEE</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                </PieChart>
-              </ChartContainer>
+              {/* Use a plain div with explicit height — ChartContainer's built-in
+                  aspect-video + flex causes the pie to overflow its grid column
+                  and overlay the adjacent breakdown details. */}
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={metabolicBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      isAnimationActive={false}
+                    >
+                      {metabolicBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload
+                          return (
+                            <div className="bg-background border rounded-lg p-3 shadow-lg">
+                              <p className="font-medium">{data.name}</p>
+                              <p className="text-sm text-muted-foreground">{data.description}</p>
+                              <p className="font-bold text-lg">{Math.round(data.value)} cal</p>
+                              <p className="text-sm">{data.percentage.toFixed(1)}% of TDEE</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Breakdown Details */}
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               <h4 className="text-sm font-medium">Daily Energy Components</h4>
               <div className="space-y-3">
                 {metabolicBreakdown.map((component, index) => (

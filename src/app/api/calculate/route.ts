@@ -74,6 +74,10 @@ export async function POST(request: NextRequest) {
       is_athlete: userData.is_athlete ?? false,
       is_bodybuilder: userData.is_bodybuilder ?? false,
       ped_use: userData.ped_use ?? false,
+      // Pass ped_stack only when non-empty. Python engine: empty/undefined → ped_use bool path unchanged.
+      ...(userData.ped_stack && userData.ped_stack.length > 0
+        ? { ped_stack: userData.ped_stack }
+        : {}),
     }
 
 

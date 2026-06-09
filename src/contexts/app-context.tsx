@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { UserData, BodyFatEntry, AppAction, AppState } from '@/types'
+import { detectProfileCycleDrift } from '@/lib/cycleMetrics'
 import {
   getUserData,
   getEntries,
@@ -314,6 +315,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const normalized = ensureEatingPattern(userData)!
     void saveUserData(normalized)
     dispatch({ type: 'SET_USER_DATA', payload: normalized })
+
+    // After the profile save, check whether the saved values differ from the
+    // active cycle's stored values. When they do, this was an *intentional*
+    // mid-cycle edit (the user chose to update their profile), so we open the
+    // reconciler in 'intentional' mode: "apply to active cycle too?".
+    //
+    // We fetch the active cycle inline here (one lightweight GET) so we don't
+    // depend on the use-cycles hook, which is component-scoped and not
+    // accessible from the context layer.
+    fetch('/api/data/cycles', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((cycles: unknown[]) => {
+        const active = (cycles as Array<Record<string, unknown>>).find(
+          (c) => c.status === 'active'
+        )
+        if (!active) return
+
+        const driftItems = detectProfileCycleDrift(normalized, {
+          start_weight: active.start_weight as number | null | undefined,
+          start_bf: active.start_bf as number | null | undefined,
+          goal_weight: active.goal_weight as number | null | undefined,
+          goal_bf: active.goal_bf as number | null | undefined,
+          timeline_weeks: active.timeline_weeks as number | null | undefined,
+        })
+
+        if (driftItems.length > 0) {
+          dispatch({
+            type: 'SET_CYCLE_SYNC_PROMPT',
+            payload: {
+              driftItems,
+              cycleId: active.id as string,
+              mode: 'intentional',
+              dismissed: false,
+            },
+          })
+        }
+      })
+      .catch((err: unknown) => {
+        // Non-fatal — the reconciler is a UX enhancement, not load-bearing.
+        console.warn('[AppContext] Drift detection fetch failed:', err)
+      })
   }, [])
 
   const generateNewReport = React.useCallback(async (

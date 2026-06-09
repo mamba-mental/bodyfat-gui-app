@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 
 import { profileTemplates, type ProfileTemplate } from "./profile-templates"
+import { PedStackPicker, type PedStackEntry } from "./ped-stack-picker"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -109,6 +110,13 @@ interface WizardFormData {
   eating_pattern: string
   protein_intake: string
   sleep_quality: string
+
+  // Step 3 — Goal configuration (new fields)
+  goal_type: string // "cut" | "recomp" | "lean_gain" | "maintain"
+  calorie_floor: string // number, default 1200
+
+  // PED Protocol (Step 4 advanced — visible only when ped_use is true)
+  ped_stack: PedStackEntry[]
 }
 
 const DEFAULT_FORM: WizardFormData = {
@@ -141,10 +149,13 @@ const DEFAULT_FORM: WizardFormData = {
   intensity_score: "5",
   frequency_score: "3",
   ped_use: false,
+  ped_stack: [],
   diet_type: "balanced",
   eating_pattern: "standard",
   protein_intake: "",
   sleep_quality: "good",
+  goal_type: "cut",
+  calorie_floor: "1200",
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -214,16 +225,24 @@ export default function SetupWizard() {
         intensity_score: current_user.intensity_score?.toString() || "5",
         frequency_score: current_user.frequency_score?.toString() || "3",
         ped_use: current_user.ped_use || false,
+        ped_stack: current_user.ped_stack || [],
         diet_type: current_user.diet_type || "balanced",
         eating_pattern: current_user.eating_pattern || "standard",
         protein_intake: current_user.protein_intake?.toString() || "",
         sleep_quality: current_user.sleep_quality || "good",
+        goal_type: current_user.goal_type || "cut",
+        calorie_floor: current_user.calorie_floor?.toString() || "1200",
       }
     }
     return { ...DEFAULT_FORM }
   })
 
   // ── Form updaters ────────────────────────────────────────────────────────
+
+  /** Setter for the ped_stack array (separate from scalar updateField). */
+  const updatePedStack = useCallback((stack: PedStackEntry[]) => {
+    setForm((prev) => ({ ...prev, ped_stack: stack }))
+  }, [])
 
   const updateField = useCallback(
     (field: keyof WizardFormData, value: string | boolean | number) => {
@@ -367,11 +386,16 @@ export default function SetupWizard() {
       eating_pattern: form.eating_pattern || "standard",
       eating_window_hours: getEatingWindowHours(form.eating_pattern),
       ped_use: form.ped_use,
+      // Send ped_stack only when non-empty so callers that don't know the field get undefined.
+      // Empty array → undefined → engine falls back to ped_use bool path unchanged.
+      ped_stack: form.ped_stack.length > 0 ? form.ped_stack : undefined,
       exercise_type: form.exercise_type,
       sleep_quality: form.sleep_quality,
       waist: parseFloat(form.waist) || undefined,
       hip: parseFloat(form.hip) || undefined,
       neck: parseFloat(form.neck) || undefined,
+      goal_type: (form.goal_type || "cut") as "cut" | "recomp" | "lean_gain" | "maintain",
+      calorie_floor: parseInt(form.calorie_floor) || 1200,
     }
 
     setUserData(processedData as any)
@@ -458,7 +482,7 @@ export default function SetupWizard() {
         )}
         {step === 2 && <StepBodyMeasurements form={form} updateField={updateField} />}
         {step === 3 && <StepGoals form={form} updateField={updateField} />}
-        {step === 4 && <StepActivity form={form} updateField={updateField} />}
+        {step === 4 && <StepActivity form={form} updateField={updateField} updatePedStack={updatePedStack} />}
         {step === 5 && (
           <StepDiet
             form={form}
@@ -822,6 +846,71 @@ function StepGoals({
         </CardContent>
       </Card>
 
+      {/* Goal Type + Calorie Floor */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Goal Type &amp; Calorie Floor</CardTitle>
+          <CardDescription>
+            These inputs drive the engine&apos;s curve, partitioning model, and day-type calorie targets
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="wiz-goal-type">Goal Type</Label>
+            <Select
+              value={form.goal_type}
+              onValueChange={(v) => updateField("goal_type", v)}
+            >
+              <SelectTrigger id="wiz-goal-type">
+                <SelectValue placeholder="Select goal type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cut">
+                  Cut — aggressive fat loss, calorie deficit, PSMF anchor
+                </SelectItem>
+                <SelectItem value="recomp">
+                  Recomp — lose fat while building muscle at or near maintenance
+                </SelectItem>
+                <SelectItem value="lean_gain">
+                  Lean Gain — controlled calorie surplus, prioritize muscle with minimal fat
+                </SelectItem>
+                <SelectItem value="maintain">
+                  Maintain — hold current weight and body composition
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              &ldquo;Cut&rdquo; uses a front-loaded deficit with Protein-Sparing Modified Fast (PSMF) days as the primary deficit vehicle.
+              &ldquo;Recomp&rdquo; cycles calories around maintenance. &ldquo;Lean Gain&rdquo; ramps a modest surplus.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="wiz-calorie-floor">
+              Calorie Floor (kcal / day)
+            </Label>
+            <Input
+              id="wiz-calorie-floor"
+              type="number"
+              min={800}
+              max={2500}
+              step={50}
+              value={form.calorie_floor}
+              onChange={(e) => updateField("calorie_floor", e.target.value)}
+              placeholder="1200"
+            />
+            <p className="text-xs text-muted-foreground">
+              The engine will not prescribe fewer calories than this floor on any day type.
+              On a Protein-Sparing Modified Fast (PSMF) day the floor is automatically raised to
+              at least <strong>protein&thinsp;&times;&thinsp;4 kcal + 250 kcal for fats &amp; vegetables</strong> if that
+              value exceeds the floor you set here. Recommended minimum: <strong>1,200 kcal</strong>.
+              Sub-RMR intake on rest / PSMF days is intentional on the PED-assisted protocol and will be
+              flagged in-app — it is <em>not</em> an error.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Goal Projection Card */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <CardHeader className="pb-3">
@@ -869,9 +958,11 @@ function StepGoals({
 function StepActivity({
   form,
   updateField,
+  updatePedStack,
 }: {
   form: WizardFormData
   updateField: (field: keyof WizardFormData, value: string | boolean | number) => void
+  updatePedStack: (stack: PedStackEntry[]) => void
 }) {
   const activityDescriptions: Record<string, string> = {
     "1": "Sedentary (office job, no exercise)",
@@ -1012,8 +1103,55 @@ function StepActivity({
               </div>
             </RadioGroup>
           </div>
+
+          {/* PED use toggle — shows the stack picker when on */}
+          <div className="pt-2 border-t space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">PED / Compound Use</Label>
+                <p className="text-xs text-muted-foreground">
+                  Are you running any performance-enhancing compounds during this program?
+                </p>
+              </div>
+              <RadioGroup
+                value={form.ped_use ? "yes" : "no"}
+                onValueChange={(v) => {
+                  updateField("ped_use", v === "yes")
+                  // Clear the stack when user turns PED use off
+                  if (v === "no") updatePedStack([])
+                }}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="yes" id="ped-yes" />
+                  <Label htmlFor="ped-yes" className="font-normal cursor-pointer">Yes</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="no" id="ped-no" />
+                  <Label htmlFor="ped-no" className="font-normal cursor-pointer">No</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* PED Protocol — only visible when ped_use is true */}
+      {form.ped_use && (
+        <Card className="border-orange-200 bg-orange-50/30 dark:bg-orange-950/10 dark:border-orange-900/40">
+          <CardHeader>
+            <CardTitle className="text-base">PED Protocol Stack</CardTitle>
+            <CardDescription>
+              Add each compound you&apos;re running. Dose and phase are optional — the engine uses
+              them to apply compound-specific partitioning modifiers. Hover any evidence badge for
+              sourcing details.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PedStackPicker value={form.ped_stack} onChange={updatePedStack} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
@@ -1226,6 +1364,11 @@ function StepReview({
             <p><span className="text-muted-foreground">Goal Body Fat:</span> {form.goal_bf}%</p>
             <p><span className="text-muted-foreground">Timeline:</span> {form.timeline_weeks} weeks</p>
             <p><span className="text-muted-foreground">Est. Completion:</span> {estimatedDate}</p>
+            <p>
+              <span className="text-muted-foreground">Goal Type:</span>{" "}
+              {{ cut: "Cut", recomp: "Recomp", lean_gain: "Lean Gain", maintain: "Maintain" }[form.goal_type] ?? form.goal_type}
+            </p>
+            <p><span className="text-muted-foreground">Calorie Floor:</span> {form.calorie_floor} kcal/day</p>
           </CardContent>
         </Card>
 
@@ -1244,6 +1387,25 @@ function StepReview({
               <span className="text-muted-foreground">Resistance:</span>{" "}
               {form.resistance_training ? "Yes" : "No"}
             </p>
+            <p>
+              <span className="text-muted-foreground">PED Use:</span>{" "}
+              {form.ped_use ? "Yes" : "No"}
+            </p>
+            {form.ped_use && form.ped_stack.length > 0 && (
+              <div>
+                <span className="text-muted-foreground">Stack:</span>{" "}
+                <span>
+                  {form.ped_stack
+                    .filter((e) => e.compound)
+                    .map((e) =>
+                      [e.compound, e.dose_mg ? `${e.dose_mg}mg` : null, e.phase]
+                        .filter(Boolean)
+                        .join(" · ")
+                    )
+                    .join(", ")}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

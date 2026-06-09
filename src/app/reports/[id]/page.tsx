@@ -11,6 +11,7 @@ import { ArrowLeft, Download, FileDown, FileText, Calendar, Weight, Target, Tren
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { Report, WeeklyProgression } from "@/types"
+import { WeeklyProgressionDetail } from "@/components/reports/weekly-progression-detail"
 import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
 import { formatDate } from "@/lib/date-utils"
 // @ts-ignore
@@ -431,6 +432,20 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
                   <span className="text-muted-foreground">Diet Type:</span>
                   <Badge variant="outline">{userData.diet_type ?? '—'}</Badge>
                 </div>
+                {userData.goal_type && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Goal Type:</span>
+                    <Badge variant="outline">
+                      {{ cut: "Cut", recomp: "Recomp", lean_gain: "Lean Gain", maintain: "Maintain" }[userData.goal_type] ?? userData.goal_type}
+                    </Badge>
+                  </div>
+                )}
+                {userData.calorie_floor != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Calorie Floor:</span>
+                    <span>{userData.calorie_floor} kcal/day</span>
+                  </div>
+                )}
                 {calc.confidence_score && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">AI Confidence:</span>
@@ -524,6 +539,26 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Day-Type Breakdown (new engine fields — expandable per-week rows) */}
+      {calc.progression && calc.progression.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClientIcon icon={Target} className="h-5 w-5" />
+              Day-Type Calorie Breakdown by Week
+            </CardTitle>
+            <CardDescription>
+              Training-day, rest-day, and Protein-Sparing Modified Fast (PSMF) day calories,
+              protein target, phase, and feasibility assessment — click a week row to expand.
+              Only visible when the upgraded calc engine has emitted these fields.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <WeeklyProgressionDetail progression={calc.progression} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Metabolic Breakdown */}
       <div className="grid gap-4 lg:grid-cols-2">

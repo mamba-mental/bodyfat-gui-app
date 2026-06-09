@@ -219,7 +219,7 @@ export async function generateReport(
     const report: Report = {
       id: generateId(),
       user_id: updatedUserData.name,
-      title: `Progress Report #${reportNumber} - ${now.toLocaleDateString()}`,
+      title: `Initial Program Setup / Baseline Blueprint - ${now.toLocaleDateString()}`,
       generated_at: now,
       entry_date: entryDateForStatus, // Store which entry was used for this report
       calculation_result: calculationToUse,
@@ -266,6 +266,11 @@ export async function generateReport(
       protein_intake: updatedUserData.protein_intake ?? Math.round(updatedUserData.current_weight * 0.8),
       diet_type: updatedUserData.diet_type || 'balanced',
       ped_use: updatedUserData.ped_use ?? false,
+      // Pass ped_stack only when non-empty so legacy reports (no field) send undefined cleanly.
+      // Python engine: empty/undefined → ped_use bool path unchanged.
+      ...(updatedUserData.ped_stack && updatedUserData.ped_stack.length > 0
+        ? { ped_stack: updatedUserData.ped_stack }
+        : {}),
       exercise_type: updatedUserData.exercise_type || 'resistance',
       sleep_quality: updatedUserData.sleep_quality || 'good',
       timeline_weeks: typeof updatedUserData.timeline_weeks === 'string' ? parseInt(updatedUserData.timeline_weeks) : updatedUserData.timeline_weeks || 16

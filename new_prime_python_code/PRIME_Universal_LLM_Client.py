@@ -89,11 +89,27 @@ class UniversalLLMClient:
         self.model = model
         
         if self.provider not in self.PROVIDER_CONFIGS:
-            raise ValueError(f"Unsupported provider: {provider}. Supported: {list(self.PROVIDER_CONFIGS.keys())}")
-        
-        config = self.PROVIDER_CONFIGS[self.provider]
-        self.base_url = base_url or config['base_url']
-        self.chat_endpoint = config['chat_endpoint']
+            # Custom OpenAI-compatible endpoint (PRIME 2026-06-09): providers like
+            # 'custom1'/'custom2'/'custom3' (a user-defined cliproxy / self-hosted
+            # OpenAI-compatible server) are not in the hardcoded table. If a base_url
+            # is supplied, treat the endpoint as OpenAI-compatible (/chat/completions);
+            # otherwise it's a real misconfiguration → raise.
+            if not base_url:
+                raise ValueError(
+                    f"Unsupported provider '{provider}'. Supported: "
+                    f"{list(self.PROVIDER_CONFIGS.keys())} — or pass base_url for a "
+                    f"custom OpenAI-compatible endpoint."
+                )
+            self.base_url = base_url.rstrip('/')
+            self.chat_endpoint = '/chat/completions'
+            logger.info(
+                f"Initialized custom OpenAI-compatible client: provider={provider}, "
+                f"base_url={self.base_url}, model={model}"
+            )
+        else:
+            config = self.PROVIDER_CONFIGS[self.provider]
+            self.base_url = base_url or config['base_url']
+            self.chat_endpoint = config['chat_endpoint']
         
         logger.info(f"Initialized UniversalLLMClient: provider={provider}, model={model}")
     

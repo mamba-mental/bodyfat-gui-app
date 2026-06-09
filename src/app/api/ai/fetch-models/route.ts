@@ -26,40 +26,46 @@ export async function POST(request: NextRequest) {
     switch (provider) {
       case 'anthropic':
         return await fetchAnthropicModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'openai':
         return await fetchOpenAIModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'openrouter':
         return await fetchOpenRouterModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'gemini':
         return await fetchGeminiModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'minimax':
         return await fetchMinimaxModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'perplexity':
         return await fetchPerplexityModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'xai':
         return await fetchXAIModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'mistral':
         return await fetchMistralModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'groq':
         return await fetchGroqModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'fireworks':
         return await fetchFireworksModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'chutes':
         return await fetchChutesModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
       case 'mercury':
         return await fetchMercuryModels(apiKey, baseUrl || providerConfig.baseUrl)
-      
+
+      // Feature 1: custom OpenAI-compatible endpoints
+      case 'custom1':
+      case 'custom2':
+      case 'custom3':
+        return await fetchOpenAICompatibleModels(apiKey, baseUrl || '')
+
       default:
         return NextResponse.json(
           { success: false, error: 'Provider not yet implemented' },
@@ -77,7 +83,6 @@ export async function POST(request: NextRequest) {
 
 async function fetchAnthropicModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Anthropic's /v1/models endpoint requires proper headers
     const modelsUrl = baseUrl.includes('/v1') ? `${baseUrl}/models` : `${baseUrl}/v1/models`
     const response = await fetch(modelsUrl, {
       headers: {
@@ -90,20 +95,18 @@ async function fetchAnthropicModels(apiKey: string, baseUrl: string): Promise<Ne
     if (response.ok) {
       const data = await response.json()
       console.log('Anthropic models response:', data)
-      
-      // Handle different response formats
+
       const modelsList = data.models || data.data || []
       const models: AIModel[] = modelsList.map((model: any) => ({
         id: model.id,
         name: model.display_name || model.name || model.id,
         description: model.description || `Type: ${model.type || 'chat'}, Created: ${model.created_at ? new Date(model.created_at).toLocaleDateString() : 'N/A'}`,
-        contextWindow: model.context_window || 200000 // Claude models typically have 200k context
+        contextWindow: model.context_window || 200000
       }))
 
       return NextResponse.json({
         success: true,
         models: models.length > 0 ? models : [
-          // Fallback models if API doesn't return list
           { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: 'Most capable model for complex tasks', contextWindow: 200000 },
           { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed', contextWindow: 200000 },
           { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', description: 'Fast and efficient', contextWindow: 200000 },
@@ -112,7 +115,6 @@ async function fetchAnthropicModels(apiKey: string, baseUrl: string): Promise<Ne
         ]
       })
     } else {
-      // Return default models even if API fails
       return NextResponse.json({
         success: true,
         models: [
@@ -126,7 +128,6 @@ async function fetchAnthropicModels(apiKey: string, baseUrl: string): Promise<Ne
     }
   } catch (error) {
     console.error('Anthropic fetch error:', error)
-    // Return default models on error
     return NextResponse.json({
       success: true,
       models: [
@@ -150,13 +151,20 @@ async function fetchOpenAIModels(apiKey: string, baseUrl: string): Promise<NextR
 
     if (response.ok) {
       const data = await response.json()
+      // Feature 2: removed the narrow gpt/text-/dall-e/whisper filter.
+      // Exclude obvious non-chat model types by exclusion only (embeddings, tts, image-gen).
       const models: AIModel[] = data.data
-        .filter((model: any) => 
-          model.id.includes('gpt') || 
-          model.id.includes('text-') ||
-          model.id.includes('dall-e') ||
-          model.id.includes('whisper')
-        )
+        .filter((model: any) => {
+          const id: string = model.id
+          return (
+            !id.includes('embedding') &&
+            !id.startsWith('tts-') &&
+            !id.startsWith('dall-e') &&
+            !id.startsWith('whisper') &&
+            !id.includes('-audio-') &&
+            !id.includes('omni-mini-audio')
+          )
+        })
         .map((model: any) => ({
           id: model.id,
           name: formatModelName(model.id),
@@ -164,12 +172,13 @@ async function fetchOpenAIModels(apiKey: string, baseUrl: string): Promise<NextR
           capabilities: getModelCapabilities(model.id)
         }))
         .sort((a: AIModel, b: AIModel) => {
-          // Sort to put GPT-4 models first, then GPT-3.5, then others
           const getOrder = (id: string) => {
             if (id.includes('gpt-4o')) return 0
-            if (id.includes('gpt-4')) return 1
-            if (id.includes('gpt-3.5')) return 2
-            return 3
+            if (id.startsWith('o3')) return 1
+            if (id.startsWith('o1')) return 2
+            if (id.includes('gpt-4')) return 3
+            if (id.includes('gpt-3.5')) return 4
+            return 5
           }
           return getOrder(a.id) - getOrder(b.id)
         })
@@ -204,7 +213,9 @@ async function fetchOpenRouterModels(apiKey: string, baseUrl: string): Promise<N
 
     if (response.ok) {
       const data = await response.json()
+      // Feature 2: removed the .slice(0, 50) cap — return full list (up to 1000 for safety)
       const models: AIModel[] = data.data
+        .slice(0, 1000)
         .map((model: any) => ({
           id: model.id,
           name: model.name || formatModelName(model.id),
@@ -217,10 +228,8 @@ async function fetchOpenRouterModels(apiKey: string, baseUrl: string): Promise<N
           } : undefined
         }))
         .sort((a: AIModel, b: AIModel) => {
-          // Sort by context window size (larger first)
           return (b.contextWindow || 0) - (a.contextWindow || 0)
         })
-        .slice(0, 50) // Limit to top 50 models
 
       return NextResponse.json({
         success: true,
@@ -265,7 +274,6 @@ async function fetchGeminiModels(apiKey: string, baseUrl: string): Promise<NextR
           capabilities: model.supportedGenerationMethods
         }))
         .sort((a: AIModel, b: AIModel) => {
-          // Sort Gemini 2.0 first, then 1.5, then others
           const getOrder = (id: string) => {
             if (id.includes('gemini-2')) return 0
             if (id.includes('gemini-1.5-pro')) return 1
@@ -296,7 +304,6 @@ async function fetchGeminiModels(apiKey: string, baseUrl: string): Promise<NextR
 
 // Helper functions
 function formatModelName(modelId: string): string {
-  // Clean up model IDs to be more readable
   return modelId
     .replace(/-/g, ' ')
     .replace(/_/g, ' ')
@@ -315,7 +322,7 @@ function formatNumber(num: number | undefined): string {
 
 function getModelCapabilities(modelId: string): string[] {
   const capabilities: string[] = []
-  
+
   if (modelId.includes('gpt-4o')) {
     capabilities.push('vision', 'function-calling', 'json-mode')
   } else if (modelId.includes('gpt-4')) {
@@ -325,14 +332,10 @@ function getModelCapabilities(modelId: string): string[] {
     }
   } else if (modelId.includes('gpt-3.5')) {
     capabilities.push('function-calling', 'json-mode')
-  } else if (modelId.includes('dall-e')) {
-    capabilities.push('image-generation')
-  } else if (modelId.includes('whisper')) {
-    capabilities.push('audio-transcription')
-  } else if (modelId.includes('text-embedding')) {
-    capabilities.push('embeddings')
+  } else if (modelId.startsWith('o1') || modelId.startsWith('o3')) {
+    capabilities.push('reasoning', 'function-calling')
   }
-  
+
   return capabilities
 }
 
@@ -410,11 +413,10 @@ async function fetchGroqModels(apiKey: string, baseUrl: string): Promise<NextRes
 
 async function fetchFireworksModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Fireworks has models at /v1/models
-    const modelsUrl = baseUrl.includes('inference') ? 
-      `${baseUrl.replace('/inference/v1', '')}/v1/models` : 
+    const modelsUrl = baseUrl.includes('inference') ?
+      `${baseUrl.replace('/inference/v1', '')}/v1/models` :
       `${baseUrl}/models`
-      
+
     const response = await fetch(modelsUrl, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -425,7 +427,7 @@ async function fetchFireworksModels(apiKey: string, baseUrl: string): Promise<Ne
     if (response.ok) {
       const data = await response.json()
       console.log('Fireworks models response:', data)
-      
+
       const modelsList = data.data || data.models || []
       const models: AIModel[] = modelsList
         .map((model: any) => ({
@@ -439,7 +441,6 @@ async function fetchFireworksModels(apiKey: string, baseUrl: string): Promise<Ne
       return NextResponse.json({
         success: true,
         models: models.length > 0 ? models : [
-          // Fallback Fireworks models
           { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B Instruct', description: 'Latest Llama model', contextWindow: 131072 },
           { id: 'accounts/fireworks/models/llama-v3p2-90b-vision-instruct', name: 'Llama 3.2 90B Vision', description: 'Multimodal Llama model', contextWindow: 131072 },
           { id: 'accounts/fireworks/models/qwen2p5-72b-instruct', name: 'Qwen 2.5 72B', description: 'Powerful Qwen model', contextWindow: 32768 },
@@ -473,61 +474,23 @@ async function fetchFireworksModels(apiKey: string, baseUrl: string): Promise<Ne
 
 async function fetchMinimaxModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Minimax doesn't have a public models endpoint, so return known models
     const models: AIModel[] = [
-      {
-        id: 'abab7-chat',
-        name: 'Abab 7 Chat',
-        description: 'Latest chat model with 245k context',
-        contextWindow: 245760
-      },
-      {
-        id: 'abab6.5s-chat',
-        name: 'Abab 6.5s Chat',
-        description: 'Fast chat model',
-        contextWindow: 8192
-      },
-      {
-        id: 'abab6.5t-chat',
-        name: 'Abab 6.5t Chat',
-        description: 'Turbo chat model',
-        contextWindow: 8192
-      },
-      {
-        id: 'abab6.5g-chat',
-        name: 'Abab 6.5g Chat',
-        description: 'General chat model',
-        contextWindow: 8192
-      },
-      {
-        id: 'abab5.5-chat',
-        name: 'Abab 5.5 Chat',
-        description: 'Previous generation chat model',
-        contextWindow: 16384
-      },
-      {
-        id: 'abab5.5s-chat',
-        name: 'Abab 5.5s Chat',
-        description: 'Previous generation fast model',
-        contextWindow: 16384
-      }
+      { id: 'abab7-chat', name: 'Abab 7 Chat', description: 'Latest chat model with 245k context', contextWindow: 245760 },
+      { id: 'abab6.5s-chat', name: 'Abab 6.5s Chat', description: 'Fast chat model', contextWindow: 8192 },
+      { id: 'abab6.5t-chat', name: 'Abab 6.5t Chat', description: 'Turbo chat model', contextWindow: 8192 },
+      { id: 'abab6.5g-chat', name: 'Abab 6.5g Chat', description: 'General chat model', contextWindow: 8192 },
+      { id: 'abab5.5-chat', name: 'Abab 5.5 Chat', description: 'Previous generation chat model', contextWindow: 16384 },
+      { id: 'abab5.5s-chat', name: 'Abab 5.5s Chat', description: 'Previous generation fast model', contextWindow: 16384 }
     ]
 
-    return NextResponse.json({
-      success: true,
-      models: models
-    })
+    return NextResponse.json({ success: true, models })
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: 'Network error while fetching Minimax models'
-    })
+    return NextResponse.json({ success: false, error: 'Network error while fetching Minimax models' })
   }
 }
 
 async function fetchPerplexityModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Perplexity doesn't have a public models endpoint, return known models
     return NextResponse.json({
       success: true,
       models: [
@@ -556,9 +519,7 @@ async function fetchPerplexityModels(apiKey: string, baseUrl: string): Promise<N
 async function fetchXAIModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
     const response = await fetch(`${baseUrl}/models`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
+      headers: { 'Authorization': `Bearer ${apiKey}` }
     })
 
     if (response.ok) {
@@ -570,34 +531,23 @@ async function fetchXAIModels(apiKey: string, baseUrl: string): Promise<NextResp
         contextWindow: model.context_window || 8192
       })) || []
 
-      return NextResponse.json({
-        success: true,
-        models: models
-      })
+      return NextResponse.json({ success: true, models })
     } else {
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to fetch models from xAI'
-      })
+      return NextResponse.json({ success: false, error: 'Failed to fetch models from xAI' })
     }
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: 'Network error while fetching xAI models'
-    })
+    return NextResponse.json({ success: false, error: 'Network error while fetching xAI models' })
   }
 }
 
 async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Chutes AI free/almost-free chat models in power order
     const chutesModels: AIModel[] = [
       // Tier 1: Very High Power (5/5)
       { id: 'deepseek-v3', name: 'DeepSeek V3', description: '671B MoE, GPT-4-class reasoning & code', contextWindow: 128000 },
       { id: 'deepseek-r1t-chimera', name: 'DeepSeek R1T-Chimera', description: 'Hybrid R1 & V3, 40% fewer tokens', contextWindow: 128000 },
       { id: 'deepseek-r1-70b', name: 'DeepSeek R1 70B', description: 'Flagship reasoning model, open weights', contextWindow: 128000 },
       { id: 'deepseek-r1-0528-qwen3', name: 'DeepSeek R1 0528 Qwen3', description: 'Benchmarks edge out GPT-4 on some tasks', contextWindow: 128000 },
-      
       // Tier 2: High Power (4/5)
       { id: 'deepseek-r1-0528', name: 'DeepSeek R1 0528', description: '87% MMLU, 92% GSM-8K', contextWindow: 128000 },
       { id: 'deepseek-r1', name: 'DeepSeek R1', description: 'Transparent chain-of-thought, strong math/code', contextWindow: 128000 },
@@ -608,7 +558,6 @@ async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextR
       { id: 'llama-4-maverick-128e', name: 'Llama-4 Maverick 128E', description: '128-expert MoE, FP8 efficient', contextWindow: 128000 },
       { id: 'llama-4-scout-16e', name: 'Llama-4 Scout 16E', description: 'Small-expert MoE, cheaper tokens', contextWindow: 128000 },
       { id: 'deepseek-v3-0324', name: 'DeepSeek V3 0324', description: 'Faster token-efficient V3 checkpoint', contextWindow: 128000 },
-      
       // Tier 3: Medium Power (3/5)
       { id: 'deepseek-v3-base', name: 'DeepSeek V3 Base', description: 'Best OSS base for fine-tuning', contextWindow: 128000 },
       { id: 'seed-coder-reasoning-bf16', name: 'Seed Coder Reasoning BF16', description: 'ByteDance model for code reasoning', contextWindow: 128000 },
@@ -620,7 +569,6 @@ async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextR
       { id: 'llama-3.1-fp8', name: 'Llama 3.1 FP8', description: 'FP8 quantized for speed', contextWindow: 128000 },
       { id: 'xgen-small-instruct', name: 'Xgen Small Instruct', description: 'Compact, good multilingual', contextWindow: 8192 },
       { id: 'qwen-3-a22b', name: 'Qwen 3 A22B', description: '22B instruct version', contextWindow: 128000 },
-      
       // Tier 4: Entry Level (2/5)
       { id: 'qwen-3-a3b', name: 'Qwen 3 A3B', description: '3B portable, on-device chat', contextWindow: 32768 },
       { id: 'qwen-3', name: 'Qwen 3', description: 'Base chat model', contextWindow: 32768 },
@@ -633,25 +581,19 @@ async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextR
       { id: 'mai-ds-r1-fp8', name: 'MAI DS R1 FP8', description: 'Microsoft FP8 distill of DS-R1', contextWindow: 128000 },
       { id: 'templar-i', name: 'TEMPLAR-I', description: 'RL-aligned defense/security focus', contextWindow: 32768 },
       { id: 'qwq-arliai-rpr-v1', name: 'QwQ ArliAI RpR V1', description: 'Role-play tuned', contextWindow: 32768 },
-      
       // Tier 5: Specialized (1/5)
       { id: 'ace-step', name: 'Ace Step', description: 'Music generation LLM', contextWindow: 8192 }
     ]
 
-    // Try to fetch from API first
     const modelsUrl = baseUrl.includes('/v1') ? `${baseUrl}/models` : `${baseUrl}/v1/models`
     try {
       const response = await fetch(modelsUrl, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
       })
 
       if (response.ok) {
         const data = await response.json()
         console.log('Chutes models response:', data)
-        
         const modelsList = data.models || data.data || []
         if (modelsList.length > 0) {
           const models: AIModel[] = modelsList.map((model: any) => ({
@@ -660,25 +602,16 @@ async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextR
             description: `Provider: ${model.provider || 'Chutes AI'}, Context: ${formatNumber(model.context_length)}`,
             contextWindow: model.context_length || model.max_tokens || 8192
           }))
-          
-          return NextResponse.json({
-            success: true,
-            models: models
-          })
+          return NextResponse.json({ success: true, models })
         }
       }
     } catch (apiError) {
       console.log('Using predefined Chutes models list')
     }
 
-    // Return the comprehensive list of free/almost-free models
-    return NextResponse.json({
-      success: true,
-      models: chutesModels
-    })
+    return NextResponse.json({ success: true, models: chutesModels })
   } catch (error) {
     console.error('Chutes fetch error:', error)
-    // Return a subset of the most popular models on error
     return NextResponse.json({
       success: true,
       models: [
@@ -694,20 +627,15 @@ async function fetchChutesModels(apiKey: string, baseUrl: string): Promise<NextR
 
 async function fetchMercuryModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
   try {
-    // Mercury AI documentation indicates /v1/models endpoint
     const modelsUrl = baseUrl.includes('/v1') ? `${baseUrl}/models` : `${baseUrl}/v1/models`
     const response = await fetch(modelsUrl, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }
     })
 
     if (response.ok) {
       const data = await response.json()
       console.log('Mercury models response:', data)
-      
+
       const modelsList = data.models || data.data || []
       const models: AIModel[] = modelsList.map((model: any) => ({
         id: model.id || model.model_id,
@@ -719,7 +647,6 @@ async function fetchMercuryModels(apiKey: string, baseUrl: string): Promise<Next
       return NextResponse.json({
         success: true,
         models: models.length > 0 ? models : [
-          // Default Mercury models if none returned
           { id: 'mercury-7b-v1', name: 'Mercury 7B v1', description: 'Fast 7B parameter model', contextWindow: 8192 },
           { id: 'mercury-13b-v1', name: 'Mercury 13B v1', description: 'Balanced 13B parameter model', contextWindow: 8192 },
           { id: 'mercury-70b-v1', name: 'Mercury 70B v1', description: 'Large 70B parameter model', contextWindow: 8192 }
@@ -745,5 +672,64 @@ async function fetchMercuryModels(apiKey: string, baseUrl: string): Promise<Next
         { id: 'mercury-70b-v1', name: 'Mercury 70B v1', description: 'Large 70B parameter model', contextWindow: 8192 }
       ]
     })
+  }
+}
+
+/**
+ * Feature 2: Generic OpenAI-compatible /models fetcher for custom1/2/3 endpoints.
+ * Handles baseUrls that already end in /v1 or don't.
+ * No id-substring filter — returns all models from data.data (OpenAI envelope format).
+ */
+async function fetchOpenAICompatibleModels(apiKey: string, baseUrl: string): Promise<NextResponse> {
+  if (!baseUrl) {
+    return NextResponse.json({ success: false, error: 'Set the Base URL first.' })
+  }
+
+  // Normalise baseUrl: remove trailing slash, then build /models path
+  const normalised = baseUrl.replace(/\/$/, '')
+  const modelsUrl = normalised.endsWith('/models')
+    ? normalised
+    : `${normalised}/models`
+
+  try {
+    const response = await fetch(modelsUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const list: any[] = data.data || data.models || []
+
+      const models: AIModel[] = Array.from(
+        new Map(
+          list.map((model: any) => [
+            model.id,
+            {
+              id: model.id,
+              name: formatModelName(model.id),
+              description: model.owned_by ? `Provided by ${model.owned_by}` : undefined
+            } as AIModel
+          ])
+        ).values()
+      ).sort((a, b) => a.id.localeCompare(b.id))
+
+      if (models.length === 0) {
+        return NextResponse.json({ success: false, error: 'No models returned by the endpoint.' })
+      }
+
+      return NextResponse.json({ success: true, models })
+    } else {
+      const errText = await response.text().catch(() => '')
+      return NextResponse.json({
+        success: false,
+        error: `Endpoint returned ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ''}`
+      })
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ success: false, error: `Network error: ${msg}` })
   }
 }

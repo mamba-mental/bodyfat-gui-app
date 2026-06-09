@@ -412,7 +412,20 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
     
     # Calculate adherence metrics
     avg_deficit = sum(d['weekly_caloric_output'] for d in progression_data) / len(progression_data) if len(progression_data) > 0 else 0
-    avg_intake = sum(d['daily_calorie_intake'] for d in progression_data) / len(progression_data) if len(progression_data) > 0 else 0
+    # BUG #12 fix — make the "Daily Cal Intake" column TAPER per week.
+    # The cut-mode solver holds daily_calorie_intake ~flat across weeks, so the
+    # legacy table showed one constant number for every row. The engine also emits
+    # `reference_training_calories` — the phase-varying calibrated training-day
+    # intake from RECOMP_REF_CURVE (RESET->ADAPT->CYCLE->PEAK taper) — which is the
+    # value the Living Report's phase narrative reflects. Build immutable per-week
+    # copies whose daily_calorie_intake shows that real taper, falling back to the
+    # original field when the new one is absent (older engine / gain/maintain mode).
+    # Source progression_data is NOT mutated (other consumers keep the solver value).
+    weekly_progress_display = [
+        {**d, 'daily_calorie_intake': d.get('reference_training_calories', d['daily_calorie_intake'])}
+        for d in progression_data
+    ]
+    avg_intake = sum(d['daily_calorie_intake'] for d in weekly_progress_display) / len(weekly_progress_display) if len(weekly_progress_display) > 0 else 0
     
     # Prepare data for HTML template
     context = {
@@ -484,8 +497,8 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
         'tef': initial_tdee * 0.1,  # Thermic Effect of Food (~10% of TDEE)
         'neat': initial_tdee * 0.15,  # NEAT (~15% of TDEE)
         
-        # Weekly progress data for table
-        'weekly_progress': progression_data,
+        # Weekly progress data for table (BUG #12: per-week tapered intake)
+        'weekly_progress': weekly_progress_display,
         
         # Body composition changes (simplified for fast generation)
         'body_composition_changes': [
@@ -596,12 +609,13 @@ def generate_prime_report_terminal_fast(user_data, progression_data, output_dir=
 **Name:** {name}
 **Date:** {context['report_date']}
 
-## Summary
-- Week: {total_weeks}
-- Total Weight Loss: {total_weight_loss:.1f} lbs
-- Total Fat Loss: {total_fat_loss:.1f} lbs
-- Muscle Change: {muscle_change:+.1f} lbs
+## Projected Summary
+*These are PREDICTED outcomes of the plan over the timeline below — not results already achieved.*
+
 - Timeline: {total_weeks} weeks
+- Projected Total Weight Loss: {total_weight_loss:.1f} lbs
+- Projected Total Fat Loss: {total_fat_loss:.1f} lbs
+- Projected Muscle Change: {muscle_change:+.1f} lbs
 
 ## Charts
 

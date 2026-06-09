@@ -19,12 +19,13 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, entries, calculation, aiProvider, aiModel, aiApiKey } = await request.json()
+    const { user, entries, calculation, aiProvider, aiModel, aiApiKey, aiBaseUrl } = await request.json()
 
     console.log('AI Insights Request:', {
       aiProvider,
       aiModel,
       hasApiKey: !!aiApiKey,
+      hasBaseUrl: !!aiBaseUrl,
       hasUser: !!user,
       entriesCount: entries?.length || 0
     })
@@ -36,7 +37,8 @@ export async function POST(request: NextRequest) {
         aiProvider,
         aiModel,
         aiApiKey,
-        { user, entries, calculation }
+        { user, entries, calculation },
+        aiBaseUrl
       )
 
       console.log('AI Insights Response:', {
@@ -221,7 +223,8 @@ async function generateAIInsights(
   provider: string,
   model: string,
   apiKey: string,
-  context: { user: any, entries: any[], calculation: any }
+  context: { user: any, entries: any[], calculation: any },
+  baseUrl?: string
 ): Promise<{ success: boolean; insights: any[] }> {
   try {
     const systemPrompt = `You are an AI fitness coach analyzing user data to provide actionable insights.
@@ -278,6 +281,16 @@ Return ONLY a JSON array of insights.`
         break
       case 'fireworks':
         response = await callFireworksForInsights(apiKey, model, systemPrompt, context)
+        break
+      case 'custom1':
+      case 'custom2':
+      case 'custom3':
+        // OpenAI-compatible custom endpoints (e.g. cliproxy). Requires a baseUrl.
+        if (!baseUrl) {
+          console.error(`Custom provider ${provider} has no baseUrl configured`)
+          return { success: false, insights: [] }
+        }
+        response = await callOpenAICompatibleForInsights(baseUrl, apiKey, model, systemPrompt, context)
         break
       default:
         return { success: false, insights: [] }
@@ -545,6 +558,52 @@ async function callFireworksForInsights(apiKey: string, model: string, systemPro
     }
   } catch (error) {
     console.error('Fireworks API error:', error)
+  }
+  return { success: false, data: null }
+}
+
+/**
+ * Call an OpenAI-compatible custom endpoint (e.g. cliproxy at
+ * http://192.168.86.191:8317/v1). The baseUrl should be the API root that
+ * exposes /chat/completions; a trailing /chat/completions is appended if needed.
+ */
+async function callOpenAICompatibleForInsights(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  context: any
+) {
+  try {
+    const root = baseUrl.replace(/\/+$/, '')
+    const endpoint = root.endsWith('/chat/completions') ? root : `${root}/chat/completions`
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'Generate fitness insights based on the user data.' }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, data: data.choices?.[0]?.message?.content }
+    } else {
+      const errorData = await response.text()
+      console.error('Custom endpoint insights API error:', response.status, errorData)
+    }
+  } catch (error) {
+    console.error('Custom endpoint API error:', error)
   }
   return { success: false, data: null }
 }

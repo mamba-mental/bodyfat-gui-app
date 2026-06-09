@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200" />
+<title>Ap³xFit · Clinical Playbook — Living Progress Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Archivo+Narrow:ital,wght@0,400;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════
+   CLINICAL PLAYBOOK — DESIGN TOKENS
+   amber = coach/week/actions  |  teal = clinical truth
+   green/red = ahead/behind    |  NO gradients, NO emoji-icons
+══════════════════════════════════════════════ */
+:root {
+  /* Ink */
+  --ink:       #14181d;
+  --ink-mid:   #2b3039;
+  --ink-sub:   #4a5260;
+  --ink-3:     #6b7f8f;
+  /* Surfaces */
+  --paper:     #f7f5f0;
+  --white:     #ffffff;
+  --grey-lt:   #f1eeea;
+  /* Rules */
+  --rule:      #d6dde3;
+  --rule-lt:   #edf1f4;
+  /* Accents */
+  --amber:     #f59e0b;
+  --amber-d:   #d97706;
+  --amber-bg:  #fef3c7;
+  --teal:      #0f7c8a;
+  --teal-dim:  #d0eef1;
+  /* Status */
+  --green:     #0a6b3d;
+  --red:       #a3000f;
+  --warn:      #7a5500;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 400;
+  line-height: 1.55;
+  width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 0;
+}
+
+/* ── UTILS ── */
+.mono  { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.mono-sm { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.mono-xs { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-variant-numeric: tabular-nums; }
+.label {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.label-amber { font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber-d); }
+.label-teal  { font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--teal); }
+.delta-pos  { color: var(--green); }
+.delta-neg  { color: var(--red); }
+.delta-warn { color: var(--warn); }
+.ahead  { color: var(--green); }
+.behind { color: var(--warn); }
+
+/* ══ HEADER BAND (Playbook-B) ══ */
+.header-band {
+  background: var(--ink);
+  color: var(--white);
+  position: relative;
+}
+.header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: stretch;
+  min-height: 190px;
+}
+.header-left {
+  padding: 28px 44px 24px;
+  border-right: 3px solid var(--amber);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.brand-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+}
+.brand-logo {
+  font-family: 'Anton', sans-serif;
+  font-size: 22px; letter-spacing: 0.04em;
+  color: var(--amber); line-height: 1;
+}
+.brand-sep { width: 2px; height: 22px; background: rgba(255,255,255,0.22); }
+.brand-sub {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+}
+.header-report-title {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+.cycle-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 30px; letter-spacing: 0.03em;
+  color: var(--white); line-height: 1; margin-bottom: 14px;
+}
+.athlete-row {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.athlete-name {
+  font-family: 'Archivo', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--white);
+}
+.athlete-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.ath-stat {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 11.5px; font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  padding: 3px 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.cadence-tag {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 10px; color: rgba(255,255,255,0.32);
+  margin-top: 10px; letter-spacing: 0.04em;
+  font-style: italic;
+}
+/* Week number column */
+.header-right {
+  background: var(--amber);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px 40px; gap: 2px; min-width: 200px;
+}
+.week-num {
+  font-family: 'Anton', sans-serif;
+  font-size: 96px; line-height: 0.85;
+  color: var(--ink); letter-spacing: -0.01em;
+}
+.week-of {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink-mid);
+}
+.phase-badge {
+  margin-top: 8px; background: var(--ink);
+  color: var(--amber);
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.2em;
+  text-transform: uppercase; padding: 4px 14px;
+}
+
+/* ══ GOAL STRIP ══ */
+.goal-strip {
+  background: var(--ink-mid); color: var(--white);
+  padding: 11px 44px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 3px solid var(--amber);
+  flex-wrap: wrap;
+}
+.goal-label {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--amber); flex-shrink: 0;
+}
+.goal-text {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 12px; color: rgba(255,255,255,0.65);
+}
+.goal-text strong { color: var(--white); font-weight: 600; }
+.goal-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.15); margin: 0 4px; }
+
+/* ══ TRACKER BAR ══ */
+.tracker-wrap {
+  background: var(--white);
+  border-bottom: 2px solid var(--ink);
+  padding: 14px 44px;
+}
+.tracker-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tracker-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink);
+}
+.tracker-caption {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 10px; color: var(--ink-3);
+}
+.tracker-strip {
+  display: flex; gap: 3px; align-items: stretch; height: 28px;
+}
+.tracker-cell {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px; font-weight: 500; letter-spacing: 0.05em;
+  position: relative; cursor: default;
+}
+.tracker-cell.phase-reset   { background: rgba(107,127,143,0.18); color: var(--ink-sub); border: 1px solid rgba(107,127,143,0.25); }
+.tracker-cell.phase-adapt   { background: rgba(245,158,11,0.15);  color: var(--amber-d); border: 1px solid rgba(245,158,11,0.3); }
+.tracker-cell.phase-cycle   { background: rgba(15,124,138,0.12);  color: var(--teal);    border: 1px solid rgba(15,124,138,0.25); }
+.tracker-cell.phase-peak    { background: rgba(163,0,15,0.10);    color: var(--red);     border: 1px solid rgba(163,0,15,0.2); }
+.tracker-cell.has-data::after {
+  content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: var(--amber);
+}
+.tracker-cell.current {
+  outline: 2px solid var(--amber); outline-offset: -1px; font-weight: 700;
+}
+.tracker-legend {
+  display: flex; gap: 16px; margin-top: 8px;
+}
+.tleg { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--ink-3); }
+.tleg-dot { width: 9px; height: 9px; border-radius: 1px; }
+
+/* ══ MAIN WRAPPER ══ */
+.main { padding: 32px 44px 40px; display: flex; flex-direction: column; gap: 28px; }
+
+/* ══ SECTION HEADER ══ */
+.section-head {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.section-rule { flex: 1; height: 2px; background: var(--ink); }
+.section-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink); white-space: nowrap;
+}
+.section-label-sm {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink);
+  font-family: 'Archivo Narrow', sans-serif;
+}
+
+/* ══ SUMMARY GRID (4 cells, Clinical-A mono numbers) ══ */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 0; border: 2px solid var(--ink);
+}
+.summary-cell {
+  padding: 20px 22px; border-right: 2px solid var(--ink);
+  background: var(--white);
+}
+.summary-cell:last-child { border-right: none; background: var(--ink); color: var(--white); }
+.sc-label {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--ink-sub); margin-bottom: 6px;
+}
+.summary-cell:last-child .sc-label { color: rgba(255,255,255,0.45); }
+.sc-main {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 28px; font-weight: 500; line-height: 1;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.summary-cell:last-child .sc-main { color: var(--amber); font-size: 22px; padding-top: 4px; }
+.sc-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--ink-sub); margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.summary-cell:last-child .sc-sub { color: rgba(255,255,255,0.5); }
+.sc-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 500;
+}
+.status-pill {
+  display: inline-block;
+  background: var(--amber); color: var(--ink);
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 4px 10px; margin-top: 8px;
+}
+
+/* ══ TRAJECTORY CHART ══ */
+.chart-wrap {
+  background: var(--white); border: 2px solid var(--ink); overflow: hidden;
+}
+.chart-head {
+  background: var(--ink); padding: 11px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid var(--amber);
+}
+.chart-title {
+  font-family: 'Anton', sans-serif; font-size: 13px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--white);
+}
+.chart-caption { font-family: 'Inter Tight', sans-serif; font-size: 10px; color: rgba(255,255,255,0.4); }
+.chart-body { padding: 18px 20px; }
+.chart-legend {
+  display: flex; gap: 20px; margin-bottom: 10px;
+}
+.cl-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--ink-sub); }
+.cl-line { width: 24px; height: 2px; }
+
+/* ══ AI COACH PANEL (fused: B dark header + A keyed rows) ══ */
+.coach-panel {
+  border: 2px solid var(--ink); background: var(--white); overflow: hidden;
+}
+.cp-header {
+  background: var(--ink); padding: 16px 22px;
+  border-bottom: 3px solid var(--amber);
+}
+.cp-eyebrow {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 3px;
+}
+.cp-title {
+  font-family: 'Anton', sans-serif; font-size: 22px;
+  letter-spacing: 0.04em; color: var(--white); line-height: 1.1;
+}
+.cp-directive {
+  padding: 16px 22px;
+  background: #fafaf8; border-bottom: 1.5px solid var(--rule);
+  font-family: 'Archivo', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.5;
+}
+.cp-directive em { color: var(--amber-d); font-style: normal; }
+.cp-bullets { padding: 0; }
+.cp-bullet {
+  display: flex; gap: 12px; padding: 13px 22px;
+  border-bottom: 1px solid var(--rule); align-items: flex-start;
+}
+.cp-bullet:last-child { border-bottom: none; }
+.cb-num {
+  width: 22px; height: 22px; background: var(--amber); color: var(--ink);
+  font-family: 'Anton', sans-serif; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.cb-content { flex: 1; }
+.cb-label {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--ink-sub); margin-bottom: 2px;
+}
+.cb-text {
+  font-family: 'Archivo', sans-serif;
+  font-size: 12px; font-weight: 500; color: var(--ink); line-height: 1.45;
+}
+.cb-text strong { font-weight: 700; }
+.cp-footer {
+  background: var(--grey-lt); padding: 12px 22px;
+  border-top: 1.5px solid var(--rule);
+  display: flex; gap: 12px;
+}
+.cpf-item { flex: 1; text-align: center; }
+.cpf-label {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-sub); margin-bottom: 2px;
+}
+.cpf-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 500; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cpf-sep { width: 1px; background: var(--rule); align-self: stretch; }
+
+/* ══ WEEK CARDS ══ */
+.week-cards { display: flex; flex-direction: column; gap: 16px; }
+
+.wk-card {
+  border: 2px solid var(--ink); background: var(--white); overflow: hidden;
+  page-break-inside: avoid; break-inside: avoid;
+}
+.wk-header {
+  background: var(--ink); color: var(--white);
+  padding: 12px 20px;
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  align-items: center; gap: 16px;
+}
+.wk-num {
+  font-family: 'Anton', sans-serif;
+  font-size: 20px; letter-spacing: 0.04em; color: var(--amber);
+}
+.wk-meta { display: flex; flex-direction: column; gap: 1px; }
+.wk-dates {
+  font-family: 'Archivo', sans-serif;
+  font-size: 12.5px; font-weight: 600; color: var(--white);
+}
+.wk-phase-label {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+.wk-feasibility {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 3px 8px;
+  color: var(--amber); background: rgba(245,158,11,0.15);
+  border: 1px solid var(--amber);
+}
+.wk-phase-pill {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 3px 8px;
+  background: var(--amber); color: var(--ink);
+}
+
+/* full week body (wks 1-3) */
+.wk-body-full {
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+.wk-col-l { padding: 16px 20px; border-right: 1px solid var(--rule); }
+.wk-col-r { padding: 16px 20px; }
+
+/* planned-vs-actual table (Clinical-A) */
+.pva-table { width: 100%; border-collapse: collapse; }
+.pva-table th {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+  text-align: right; padding: 4px 0 6px; border-bottom: 1px solid var(--rule);
+}
+.pva-table th:first-child { text-align: left; }
+.pva-table td {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px; font-variant-numeric: tabular-nums;
+  color: var(--ink); text-align: right;
+  padding: 5px 0; border-bottom: 1px solid var(--rule-lt);
+}
+.pva-table td:first-child {
+  font-family: 'Archivo', sans-serif; font-size: 11px;
+  color: var(--ink-sub); text-align: left;
+}
+.pva-table tr:last-child td { border-bottom: none; }
+
+/* weigh-in table */
+.wi-table { width: 100%; border-collapse: collapse; }
+.wi-table th {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+  text-align: left; padding: 4px 0 6px; border-bottom: 1px solid var(--rule);
+}
+.wi-table th:not(:first-child) { text-align: right; }
+.wi-table td {
+  font-size: 11.5px; color: var(--ink);
+  padding: 5px 0; border-bottom: 1px solid var(--rule-lt);
+}
+.wi-table td:not(:first-child) {
+  font-family: 'IBM Plex Mono', monospace;
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.wi-table tr:last-child td { border-bottom: none; }
+.report-tag {
+  display: inline-block; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--teal-dim); color: var(--teal);
+  padding: 1px 5px; margin-left: 6px; vertical-align: middle;
+  border: 1px solid var(--teal);
+}
+
+/* photo slot */
+.photo-slot {
+  width: 100%; height: 72px;
+  background: var(--grey-lt); border: 1.5px dashed var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 10px;
+}
+.photo-slot-text {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+/* coach note */
+.coach-note {
+  margin-top: 10px; padding: 10px 12px;
+  border-left: 2px solid var(--amber); background: var(--amber-bg);
+  font-family: 'Archivo', sans-serif; font-size: 11.5px;
+  color: var(--ink-mid); font-style: italic; line-height: 1.45;
+}
+
+/* pending week body (wks 4-16) */
+.wk-body-pending {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 0;
+}
+.wk-pending-table { flex: 1; padding: 12px 20px; }
+.wk-pending-photo {
+  width: 140px; border-left: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--grey-lt);
+}
+.wk-pending-photo-text {
+  font-size: 8.5px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-3);
+  writing-mode: vertical-lr; transform: rotate(180deg);
+}
+
+/* ══ DATA SECTIONS (Clinical-A styling) ══ */
+.data-section { border: 1px solid var(--rule); background: var(--white); }
+.ds-head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 13px 20px 10px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--grey-lt);
+}
+.ds-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink);
+}
+.ds-rule { flex: 1; height: 1px; background: var(--rule-lt); }
+.ds-body { padding: 16px 20px; }
+
+/* two-col data grid */
+.data-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.data-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+/* metric rows */
+.metric-row {
+  display: grid; grid-template-columns: 200px 1fr;
+  gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--rule-lt);
+  font-size: 12px;
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-key { color: var(--ink-sub); font-size: 11px; }
+.metric-val { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* teal accent stat */
+.teal-stat { color: var(--teal); font-weight: 500; }
+
+/* ══ COLLAPSIBLE APPENDIX ══ */
+details { border: 1px solid var(--rule); background: var(--white); margin-top: 0; }
+details > summary {
+  padding: 12px 20px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--grey-lt); border-bottom: 1px solid var(--rule);
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink);
+}
+details > summary::after { content: '▾'; margin-left: auto; color: var(--ink-3); }
+details[open] > summary::after { content: '▴'; }
+details > summary::-webkit-details-marker { display: none; }
+.appendix-body { padding: 20px; }
+.appendix-section { margin-bottom: 18px; }
+.appendix-section:last-child { margin-bottom: 0; }
+.appendix-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule-lt);
+}
+.appendix-text {
+  font-size: 11.5px; color: var(--ink-sub); line-height: 1.6;
+}
+
+/* ══ FOOTER ══ */
+.report-footer {
+  background: var(--ink); color: rgba(255,255,255,0.5);
+  padding: 14px 44px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-brand {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--amber);
+}
+.footer-meta {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+}
+.footer-cadence {
+  font-family: 'Inter Tight', sans-serif; font-size: 10px;
+  color: rgba(255,255,255,0.35); font-style: italic; max-width: 420px;
+  text-align: center;
+}
+
+/* ══ PRINT ══ */
+@media print {
+  body { width: 100%; }
+  .wk-card, .data-section, .chart-wrap, .coach-panel, details { page-break-inside: avoid; break-inside: avoid; }
+  .report-footer, .tracker-wrap, .goal-strip { page-break-inside: avoid; break-inside: avoid; }
+  nav, .no-print { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     HEADER BAND
+══════════════════════════════════════════ -->
+<header class="header-band">
+  <div class="header-inner">
+    <div class="header-left">
+      <div>
+        <div class="brand-row">
+          <span class="brand-logo">AP³XFIT</span>
+          <div class="brand-sep"></div>
+          <span class="brand-sub">Living Progress Report</span>
+        </div>
+        <div class="header-report-title">Clinical Playbook · 16-Week Recomposition Cut · Full Report</div>
+        <div class="cycle-label">PRIME.TIME — 06.2026</div>
+      </div>
+      <div>
+        <div class="athlete-row">
+          <span class="athlete-name">MJ PRIME</span>
+          <div class="athlete-stats">
+            <span class="ath-stat">47 yrs</span>
+            <span class="ath-stat">5′ 9″</span>
+            <span class="ath-stat">Goal 217 lb @ 13% BF</span>
+            <span class="ath-stat">16-wk CUT</span>
+            <span class="ath-stat">Mon / Thu / Sat</span>
+          </div>
+        </div>
+        <div class="cadence-tag">Full report — generated on the week's first weigh-in (Mon) · Thu/Sat = AI Coach check-ins</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="week-num">3</div>
+      <div class="week-of">of 16</div>
+      <div class="phase-badge">ADAPT</div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ GOAL STRIP ══ -->
+<div class="goal-strip">
+  <span class="goal-label">Objective</span>
+  <span class="goal-text">Target <strong>217 lb @ 13% BF</strong></span>
+  <div class="goal-sep"></div>
+  <span class="goal-text">Start <strong>266.8 lb / 39.2%</strong></span>
+  <div class="goal-sep"></div>
+  <span class="goal-text">Protocol <strong>16-week aggressive cut</strong></span>
+  <div class="goal-sep"></div>
+  <span class="goal-text">Weigh-ins <strong>Mon / Thu / Sat</strong></span>
+</div>
+
+<!-- ══ 16-WEEK TRACKER BAR ══ -->
+<div class="tracker-wrap">
+  <div class="tracker-header">
+    <span class="tracker-title">16-Week Progress Tracker</span>
+    <span class="tracker-caption">Phase · photo-on-file dot · current week outlined</span>
+  </div>
+  <div class="tracker-strip">
+    <!-- RESET wk1-4 -->
+    <div class="tracker-cell phase-reset has-data" title="Wk 1 · RESET">1</div>
+    <div class="tracker-cell phase-reset has-data" title="Wk 2 · RESET">2</div>
+    <div class="tracker-cell phase-reset has-data current" title="Wk 3 · RESET/ADAPT (current)">3</div>
+    <div class="tracker-cell phase-reset" title="Wk 4 · RESET">4</div>
+    <!-- ADAPT wk5-8 -->
+    <div class="tracker-cell phase-adapt" title="Wk 5 · ADAPT">5</div>
+    <div class="tracker-cell phase-adapt" title="Wk 6 · ADAPT">6</div>
+    <div class="tracker-cell phase-adapt" title="Wk 7 · ADAPT">7</div>
+    <div class="tracker-cell phase-adapt" title="Wk 8 · ADAPT">8</div>
+    <!-- CYCLE wk9-12 -->
+    <div class="tracker-cell phase-cycle" title="Wk 9 · CYCLE">9</div>
+    <div class="tracker-cell phase-cycle" title="Wk 10 · CYCLE">10</div>
+    <div class="tracker-cell phase-cycle" title="Wk 11 · CYCLE">11</div>
+    <div class="tracker-cell phase-cycle" title="Wk 12 · CYCLE">12</div>
+    <!-- PEAK wk13-16 -->
+    <div class="tracker-cell phase-peak" title="Wk 13 · PEAK">13</div>
+    <div class="tracker-cell phase-peak" title="Wk 14 · PEAK">14</div>
+    <div class="tracker-cell phase-peak" title="Wk 15 · PEAK">15</div>
+    <div class="tracker-cell phase-peak" title="Wk 16 · PEAK">16</div>
+  </div>
+  <div class="tracker-legend">
+    <div class="tleg"><div class="tleg-dot" style="background:rgba(107,127,143,0.4);"></div>RESET (Wk 1–4)</div>
+    <div class="tleg"><div class="tleg-dot" style="background:rgba(245,158,11,0.5);"></div>ADAPT (Wk 5–8)</div>
+    <div class="tleg"><div class="tleg-dot" style="background:rgba(15,124,138,0.45);"></div>CYCLE (Wk 9–12)</div>
+    <div class="tleg"><div class="tleg-dot" style="background:rgba(163,0,15,0.35);"></div>PEAK (Wk 13–16)</div>
+    <div class="tleg"><div class="tleg-dot" style="background:var(--amber); border-radius:50%;"></div>Weigh-in data on file</div>
+    <div class="tleg"><div class="tleg-dot" style="outline:2px solid var(--amber); background:transparent;"></div>Current week</div>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+<!-- ── STATUS SUMMARY ── -->
+<div>
+  <div class="section-head">
+    <span class="section-label">Status Summary</span>
+    <div class="section-rule"></div>
+    <span class="section-label">Week 3 of 16</span>
+  </div>
+  <div class="summary-grid">
+    <div class="summary-cell">
+      <div class="sc-label">Baseline · Wk 0</div>
+      <div class="sc-main mono">266.8<span style="font-size:14px; font-weight:300"> lb</span></div>
+      <div class="sc-sub">39.2% BF</div>
+    </div>
+    <div class="summary-cell">
+      <div class="sc-label">Current · Wk 3 Actual</div>
+      <div class="sc-main mono">258.4<span style="font-size:14px; font-weight:300"> lb</span></div>
+      <div class="sc-sub delta-pos">▼ 8.4 lb &nbsp;·&nbsp; ▼ 2.4% BF</div>
+    </div>
+    <div class="summary-cell">
+      <div class="sc-label">vs. Plan</div>
+      <div class="sc-main mono" style="font-size:20px; padding-top:3px; color:var(--warn);">+1.1 lb behind</div>
+      <div class="sc-sub delta-warn">Fat-loss 0.3%/wk under plan</div>
+    </div>
+    <div class="summary-cell">
+      <div class="sc-label">Goal Status</div>
+      <div class="sc-main">217 lb / 13%</div>
+      <div class="sc-sub">13 weeks remaining</div>
+      <div class="status-pill">On Track · Minor Correction</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRAJECTORY CHART ── -->
+<div>
+  <div class="section-head">
+    <span class="section-label">Trajectory</span>
+    <div class="section-rule"></div>
+    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-3);">Planned (steel dashed) · Actual (amber dots) · BF% (right axis)</span>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-head">
+      <span class="chart-title">16-Week Weight + BF% Trajectory</span>
+      <span class="chart-caption">Week-indexed · photo markers on Wk 1-3</span>
+    </div>
+    <div class="chart-body">
+      <div class="chart-legend">
+        <div class="cl-item"><div class="cl-line" style="background:var(--teal); border-top:2px dashed var(--teal);"></div> Planned Weight</div>
+        <div class="cl-item"><div class="cl-line" style="background:var(--amber);"></div> Actual Weight</div>
+        <div class="cl-item"><div class="cl-line" style="background:var(--red); border-top:2px dashed var(--red);"></div> Planned BF%</div>
+        <div class="cl-item"><div class="cl-line" style="background:rgba(163,0,15,0.55);"></div> Actual BF%</div>
+        <div class="cl-item" style="margin-left:8px;">📷 = photo on file</div>
+      </div>
+      <canvas id="trajChart" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── AI COACH — NEXT SESSION PLAN ── -->
+<div>
+  <div class="section-head">
+    <span class="section-label">AI Coach</span>
+    <div class="section-rule"></div>
+  </div>
+  <div class="coach-panel">
+    <div class="cp-header">
+      <div class="cp-eyebrow">Next Session Plan</div>
+      <div class="cp-title">COACH'S DIRECTIVES</div>
+    </div>
+    <div class="cp-directive">
+      You're <em>1.1 lb ahead on the scale</em> but fat-loss is ~0.3%/wk under plan. Minor caloric correction + 1 added LISS closes the gap without disrupting momentum.
+    </div>
+    <div class="cp-bullets">
+      <div class="cp-bullet">
+        <div class="cb-num">1</div>
+        <div class="cb-content">
+          <div class="cb-label">Calories — Next 2 Weigh-ins</div>
+          <div class="cb-text">Hold training days at <strong>1,700 kcal</strong>. Drop rest-day <strong>1,350 → 1,250 kcal</strong>.</div>
+        </div>
+      </div>
+      <div class="cp-bullet">
+        <div class="cb-num">2</div>
+        <div class="cb-content">
+          <div class="cb-label">PSMF (Mon)</div>
+          <div class="cb-text">Hold floor at <strong>1,200 kcal</strong>. Minimum protein <strong>237 g</strong>. Zero negotiation on this floor.</div>
+        </div>
+      </div>
+      <div class="cp-bullet">
+        <div class="cb-num">3</div>
+        <div class="cb-content">
+          <div class="cb-label">Cardio Adjustment</div>
+          <div class="cb-text">Add <strong>1 × 25-min LISS</strong> session this week. Fasted AM preferred.</div>
+        </div>
+      </div>
+      <div class="cp-bullet">
+        <div class="cb-num">4</div>
+        <div class="cb-content">
+          <div class="cb-label">Protein — Non-Negotiable</div>
+          <div class="cb-text">Hold at <strong>1.4 g/lb lean mass</strong> ≈ <strong>235 g/day</strong>. Prioritize animal sources.</div>
+        </div>
+      </div>
+      <div class="cp-bullet" style="border-bottom:none;">
+        <div class="cb-num">5</div>
+        <div class="cb-content">
+          <div class="cb-label">Recheck Trigger</div>
+          <div class="cb-text">If still running under by Mon Jun 22, add 2nd LISS before cutting calories further.</div>
+        </div>
+      </div>
+    </div>
+    <div class="cp-footer">
+      <div class="cpf-item"><div class="cpf-label">Goal</div><div class="cpf-val">CUT</div></div>
+      <div class="cpf-sep"></div>
+      <div class="cpf-item"><div class="cpf-label">RMR Method</div><div class="cpf-val">Cunningham</div></div>
+      <div class="cpf-sep"></div>
+      <div class="cpf-item"><div class="cpf-label">RMR (InBody LBM)</div><div class="cpf-val">2,180 kcal</div></div>
+      <div class="cpf-sep"></div>
+      <div class="cpf-item"><div class="cpf-label">TDEE est.</div><div class="cpf-val">~2,830 kcal</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     WEEK-BY-WEEK RECORD — ALL 16 WEEKS
+══════════════════════════════════════════ -->
+<div>
+  <div class="section-head">
+    <span class="section-label">Week-by-Week Record</span>
+    <div class="section-rule"></div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-3);">Wk 1–3 = actuals · Wk 4–16 = planned targets</span>
+  </div>
+  <div class="week-cards">
+
+    <!-- ═══ WEEK 1 — ACTUAL ═══ -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 1</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jun 2 – Jun 8, 2026</div>
+          <div class="wk-phase-label">RESET Phase — Baseline Calibration</div>
+        </div>
+        <div class="wk-feasibility">MODERATE</div>
+        <div class="wk-phase-pill">RESET</div>
+      </div>
+      <div class="wk-body-full">
+        <div class="wk-col-l">
+          <div class="label" style="margin-bottom:8px;">Planned vs. Actual</div>
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned</th><th>Actual</th><th>Delta</th></tr></thead>
+            <tbody>
+              <tr><td>Weight (Mon)</td><td>264.0 lb</td><td>264.8 lb</td><td class="behind">+0.8</td></tr>
+              <tr><td>Body Fat</td><td>38.8%</td><td>39.0%</td><td class="behind">+0.2%</td></tr>
+              <tr><td>Train kcal</td><td>1,750</td><td>1,734</td><td class="ahead">−16</td></tr>
+              <tr><td>Rest kcal</td><td>1,350</td><td>1,360</td><td class="behind">+10</td></tr>
+              <tr><td>PSMF kcal</td><td>1,200</td><td>1,200</td><td class="ahead">on target</td></tr>
+              <tr><td>Protein</td><td>237 g</td><td>240 g</td><td class="ahead">+3 g</td></tr>
+            </tbody>
+          </table>
+          <div class="label" style="margin:12px 0 8px;">Weigh-In Log</div>
+          <table class="wi-table">
+            <thead><tr><th>Date</th><th>Weight</th><th>BF%</th></tr></thead>
+            <tbody>
+              <tr><td>Mon Jun 2<span class="report-tag">REPORT</span></td><td>266.8 lb</td><td>39.2%</td></tr>
+              <tr><td>Thu Jun 5</td><td>264.9 lb</td><td>39.1%</td></tr>
+              <tr><td>Sat Jun 7</td><td>264.8 lb</td><td>39.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-col-r">
+          <div class="label" style="margin-bottom:6px;">Progress Photo</div>
+          <div class="photo-slot"><span class="photo-slot-text">Progress photo · Mon Jun 2</span></div>
+          <div class="label" style="margin:10px 0 6px;">Coach Note</div>
+          <div class="coach-note">Baseline week. Scale dropped 2.0 lb from starting 266.8 — typical water + glycogen purge. BF% trending correctly. Caloric compliance solid. Momentum established.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WEEK 2 — ACTUAL ═══ -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 2</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jun 9 – Jun 15, 2026</div>
+          <div class="wk-phase-label">RESET Phase — Deficit Establishment</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">RESET</div>
+      </div>
+      <div class="wk-body-full">
+        <div class="wk-col-l">
+          <div class="label" style="margin-bottom:8px;">Planned vs. Actual</div>
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned</th><th>Actual</th><th>Delta</th></tr></thead>
+            <tbody>
+              <tr><td>Weight (Mon)</td><td>261.5 lb</td><td>262.1 lb</td><td class="behind">+0.6</td></tr>
+              <tr><td>Body Fat</td><td>38.3%</td><td>38.4%</td><td class="behind">+0.1%</td></tr>
+              <tr><td>Train kcal</td><td>1,734</td><td>1,800</td><td class="behind">+66 (2 high days)</td></tr>
+              <tr><td>Rest kcal</td><td>1,335</td><td>1,350</td><td class="behind">+15</td></tr>
+              <tr><td>PSMF kcal</td><td>1,200</td><td>1,200</td><td class="ahead">on target</td></tr>
+              <tr><td>Protein</td><td>237 g</td><td>235 g</td><td style="color:var(--ink-3);">−2 g</td></tr>
+            </tbody>
+          </table>
+          <div class="label" style="margin:12px 0 8px;">Weigh-In Log</div>
+          <table class="wi-table">
+            <thead><tr><th>Date</th><th>Weight</th><th>BF%</th></tr></thead>
+            <tbody>
+              <tr><td>Mon Jun 9<span class="report-tag">REPORT</span></td><td>262.1 lb</td><td>38.4%</td></tr>
+              <tr><td>Thu Jun 12</td><td>260.6 lb</td><td>38.1%</td></tr>
+              <tr><td>Sat Jun 14</td><td>260.4 lb</td><td>37.9%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-col-r">
+          <div class="label" style="margin-bottom:6px;">Progress Photo</div>
+          <div class="photo-slot"><span class="photo-slot-text">Progress photo · Mon Jun 9</span></div>
+          <div class="label" style="margin:10px 0 6px;">Coach Note</div>
+          <div class="coach-note">Two training days ran over calorie floor — scale reflects the compliance slip. BF% delta minor; lean mass holding well. Rest-day tightening is the Wk 3 priority.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WEEK 3 — ACTUAL (current) ═══ -->
+    <div class="wk-card" style="outline:2px solid var(--amber); outline-offset:-1px;">
+      <div class="wk-header">
+        <div class="wk-num">WK 3</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jun 16 – Jun 22, 2026 &nbsp;<span style="color:var(--amber);font-size:10px;font-weight:700;">← CURRENT</span></div>
+          <div class="wk-phase-label">RESET→ADAPT Transition — Deficit Correction</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">ADAPT</div>
+      </div>
+      <div class="wk-body-full">
+        <div class="wk-col-l">
+          <div class="label" style="margin-bottom:8px;">Planned vs. Actual</div>
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned</th><th>Actual</th><th>Delta</th></tr></thead>
+            <tbody>
+              <tr><td>Weight (Mon)</td><td>257.3 lb</td><td>258.4 lb</td><td class="behind">+1.1</td></tr>
+              <tr><td>Body Fat</td><td>37.4%</td><td>36.8%</td><td class="ahead">−0.6% ahead</td></tr>
+              <tr><td>Train kcal</td><td>1,725</td><td>1,700</td><td class="ahead">−25 ✓</td></tr>
+              <tr><td>Rest kcal</td><td>1,325</td><td>1,250</td><td class="ahead">−75 (corrected)</td></tr>
+              <tr><td>PSMF kcal</td><td>1,200</td><td>1,200</td><td class="ahead">on target</td></tr>
+              <tr><td>Protein</td><td>237 g</td><td>235 g</td><td style="color:var(--ink-3);">−2 g</td></tr>
+            </tbody>
+          </table>
+          <div class="label" style="margin:12px 0 8px;">Weigh-In Log</div>
+          <table class="wi-table">
+            <thead><tr><th>Date</th><th>Weight</th><th>BF%</th></tr></thead>
+            <tbody>
+              <tr><td>Mon Jun 16<span class="report-tag">REPORT</span></td><td>258.4 lb</td><td>36.8%</td></tr>
+              <tr><td>Thu Jun 19</td><td>— (pending)</td><td>—</td></tr>
+              <tr><td>Sat Jun 21</td><td>— (pending)</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-col-r">
+          <div class="label" style="margin-bottom:6px;">Progress Photo</div>
+          <div class="photo-slot"><span class="photo-slot-text">Progress photo · Mon Jun 16</span></div>
+          <div class="label" style="margin:10px 0 6px;">Coach Note</div>
+          <div class="coach-note">Scale is 1.1 lb behind plan but BF% is actually ahead. Body composition improving — this is the nuance a scale-only approach misses. Caloric correction applied this week. Stay the course.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WEEKS 4–16 — PLANNED ═══ -->
+    <!-- Helper macro: pending week card -->
+
+    <!-- WK 4 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 4</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jun 23 – Jun 29, 2026</div>
+          <div class="wk-phase-label">RESET Phase — Consolidation</div>
+        </div>
+        <div class="wk-feasibility">MODERATE</div>
+        <div class="wk-phase-pill">RESET</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight (Mon target)</td><td class="mono-sm">254.5 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">36.8%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,716 / 1,240 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">237 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jun 23</div></div>
+      </div>
+    </div>
+
+    <!-- WK 5 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 5</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jun 30 – Jul 6, 2026</div>
+          <div class="wk-phase-label">ADAPT Phase — Metabolic Pressure</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">ADAPT</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">251.3 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">36.2%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,706 / 1,230 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">240 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jun 30</div></div>
+      </div>
+    </div>
+
+    <!-- WK 6 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 6</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jul 7 – Jul 13, 2026</div>
+          <div class="wk-phase-label">ADAPT Phase — Deficit Deepening</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">ADAPT</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">248.0 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">35.5%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,695 / 1,215 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">243 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jul 7</div></div>
+      </div>
+    </div>
+
+    <!-- WK 7 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 7</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jul 14 – Jul 20, 2026</div>
+          <div class="wk-phase-label">ADAPT Phase — Diet Break Prep</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">ADAPT</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">244.6 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">34.7%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,683 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">248 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jul 14</div></div>
+      </div>
+    </div>
+
+    <!-- WK 8 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 8</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jul 21 – Jul 27, 2026</div>
+          <div class="wk-phase-label">ADAPT Phase — Midpoint Check</div>
+        </div>
+        <div class="wk-feasibility">MODERATE</div>
+        <div class="wk-phase-pill">ADAPT</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">241.1 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">33.9%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,670 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">252 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jul 21</div></div>
+      </div>
+    </div>
+
+    <!-- WK 9 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 9</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Jul 28 – Aug 3, 2026</div>
+          <div class="wk-phase-label">CYCLE Phase — Diet Break / Refeed Entry</div>
+        </div>
+        <div class="wk-feasibility">MODERATE</div>
+        <div class="wk-phase-pill">CYCLE</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">237.6 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">33.0%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,655 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">258 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Jul 28</div></div>
+      </div>
+    </div>
+
+    <!-- WK 10 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 10</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Aug 4 – Aug 10, 2026</div>
+          <div class="wk-phase-label">CYCLE Phase — Hormonal Reset</div>
+        </div>
+        <div class="wk-feasibility">MODERATE</div>
+        <div class="wk-phase-pill">CYCLE</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">234.0 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">32.1%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,638 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">263 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Aug 4</div></div>
+      </div>
+    </div>
+
+    <!-- WK 11 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 11</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Aug 11 – Aug 17, 2026</div>
+          <div class="wk-phase-label">CYCLE Phase — Re-Entry Deficit</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">CYCLE</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">230.3 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">31.0%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,618 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">268 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Aug 11</div></div>
+      </div>
+    </div>
+
+    <!-- WK 12 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 12</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Aug 18 – Aug 24, 2026</div>
+          <div class="wk-phase-label">CYCLE Phase — Final Push Before PEAK</div>
+        </div>
+        <div class="wk-feasibility">AGGRESSIVE</div>
+        <div class="wk-phase-pill">CYCLE</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">226.5 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">29.8%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,595 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">273 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Aug 18</div></div>
+      </div>
+    </div>
+
+    <!-- WK 13 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 13</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Aug 25 – Aug 31, 2026</div>
+          <div class="wk-phase-label">PEAK Phase — Final 4 Weeks</div>
+        </div>
+        <div class="wk-feasibility" style="color:var(--red);border-color:var(--red);background:rgba(163,0,15,0.08);">EXTREME</div>
+        <div class="wk-phase-pill" style="background:var(--red);color:#fff;">PEAK</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">222.6 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">28.4%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,568 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">278 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Aug 25</div></div>
+      </div>
+    </div>
+
+    <!-- WK 14 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 14</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Sep 1 – Sep 7, 2026</div>
+          <div class="wk-phase-label">PEAK Phase — Maximum Deficit</div>
+        </div>
+        <div class="wk-feasibility" style="color:var(--red);border-color:var(--red);background:rgba(163,0,15,0.08);">EXTREME</div>
+        <div class="wk-phase-pill" style="background:var(--red);color:#fff;">PEAK</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">220.0 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">26.5%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,538 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">283 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Sep 1</div></div>
+      </div>
+    </div>
+
+    <!-- WK 15 -->
+    <div class="wk-card">
+      <div class="wk-header">
+        <div class="wk-num">WK 15</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Sep 8 – Sep 14, 2026</div>
+          <div class="wk-phase-label">PEAK Phase — Lean-Out Protocol</div>
+        </div>
+        <div class="wk-feasibility" style="color:var(--red);border-color:var(--red);background:rgba(163,0,15,0.08);">EXTREME</div>
+        <div class="wk-phase-pill" style="background:var(--red);color:#fff;">PEAK</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">218.2 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">24.1%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,505 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">288 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">Photo slot · Sep 8</div></div>
+      </div>
+    </div>
+
+    <!-- WK 16 -->
+    <div class="wk-card" style="border-color:var(--red);">
+      <div class="wk-header" style="background:var(--red);">
+        <div class="wk-num">WK 16</div>
+        <div class="wk-meta">
+          <div class="wk-dates">Sep 15 – Sep 21, 2026</div>
+          <div class="wk-phase-label">PEAK Phase — Final Goal Week</div>
+        </div>
+        <div class="wk-feasibility" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.1);">FINAL</div>
+        <div class="wk-phase-pill" style="background:var(--amber);color:var(--ink);">PEAK</div>
+      </div>
+      <div class="wk-body-pending">
+        <div class="wk-pending-table">
+          <table class="pva-table">
+            <thead><tr><th>Metric</th><th>Planned Target</th><th>Actual</th></tr></thead>
+            <tbody>
+              <tr><td>Weight target</td><td class="mono-sm">217.0 lb</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Body Fat target</td><td class="mono-sm">13.0%</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Train / Rest / PSMF kcal</td><td class="mono-sm">1,470 / 1,200 / 1,200</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+              <tr><td>Protein target</td><td class="mono-sm">290 g</td><td style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-align:right;">— pending</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wk-pending-photo"><div class="wk-pending-photo-text">FINAL Photo · Sep 15</div></div>
+      </div>
+    </div>
+
+  </div><!-- /week-cards -->
+</div>
+
+<!-- ══ DATA SECTIONS ══ -->
+
+<!-- Metabolic Profile -->
+<div>
+  <div class="section-head">
+    <span class="section-label">Clinical Data</span>
+    <div class="section-rule"></div>
+  </div>
+  <div class="data-2col" style="gap:16px;">
+
+    <div class="data-section">
+      <div class="ds-head"><span class="ds-title">Metabolic Profile</span><span class="ds-rule"></span><span class="label-teal">Cunningham · InBody LBM</span></div>
+      <div class="ds-body">
+        <div class="metric-row"><div class="metric-key">RMR (Cunningham)</div><div class="metric-val teal-stat">2,180 kcal</div></div>
+        <div class="metric-row"><div class="metric-key">TDEE est. (Mod. Active)</div><div class="metric-val">~2,830 kcal</div></div>
+        <div class="metric-row"><div class="metric-key">TEF (10% of intake)</div><div class="metric-val">~170–175 kcal</div></div>
+        <div class="metric-row"><div class="metric-key">NEAT est.</div><div class="metric-val">~400 kcal</div></div>
+        <div class="metric-row"><div class="metric-key">Target deficit / day</div><div class="metric-val delta-warn">~550–700 kcal</div></div>
+        <div class="metric-row"><div class="metric-key">Measured LBM (InBody)</div><div class="metric-val">168 lb</div></div>
+        <p style="font-size:10.5px;color:var(--ink-3);margin-top:10px;line-height:1.5;">
+          <strong>RMR</strong> = calories your body burns at rest. <strong>TDEE</strong> = total daily energy expenditure including activity. <strong>TEF</strong> = energy cost of digesting food. <strong>NEAT</strong> = non-exercise movement.
+        </p>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <div class="ds-head"><span class="ds-title">Body Composition Changes</span><span class="ds-rule"></span></div>
+      <div class="ds-body">
+        <div class="metric-row"><div class="metric-key">Start fat mass</div><div class="metric-val">104.6 lb (39.2%)</div></div>
+        <div class="metric-row"><div class="metric-key">Current fat mass est.</div><div class="metric-val delta-pos">95.1 lb (36.8%)</div></div>
+        <div class="metric-row"><div class="metric-key">Fat lost to date</div><div class="metric-val delta-pos">▼ 9.5 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Start lean mass</div><div class="metric-val">162.2 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Current lean mass est.</div><div class="metric-val">163.3 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Lean mass change</div><div class="metric-val delta-pos">+1.1 lb (preserved)</div></div>
+        <div class="metric-row"><div class="metric-key">Goal fat mass (13%)</div><div class="metric-val">28.2 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Fat still to lose</div><div class="metric-val delta-warn">~66.9 lb remaining</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="data-2col" style="gap:16px;">
+
+  <div class="data-section">
+    <div class="ds-head"><span class="ds-title">Predicted Results</span><span class="ds-rule"></span></div>
+    <div class="ds-body">
+      <div class="metric-row"><div class="metric-key">Avg weekly weight loss</div><div class="metric-val">~2.8 lb/wk</div></div>
+      <div class="metric-row"><div class="metric-key">Avg weekly fat loss</div><div class="metric-val">~0.6–0.7%/wk BF</div></div>
+      <div class="metric-row"><div class="metric-key">Time to goal (on plan)</div><div class="metric-val">~13 weeks</div></div>
+      <div class="metric-row"><div class="metric-key">Projected end weight</div><div class="metric-val">217 lb</div></div>
+      <div class="metric-row"><div class="metric-key">Projected end BF%</div><div class="metric-val">13%</div></div>
+      <div class="metric-row"><div class="metric-key">Lean mass preservation</div><div class="metric-val delta-pos">&gt;95% target</div></div>
+    </div>
+  </div>
+
+  <div class="data-section">
+    <div class="ds-head"><span class="ds-title">Metabolic Adaptation Forecast</span><span class="ds-rule"></span></div>
+    <div class="ds-body">
+      <div class="metric-row"><div class="metric-key">Adaptive thermogenesis (est.)</div><div class="metric-val delta-warn">−100 to −200 kcal by Wk 8</div></div>
+      <div class="metric-row"><div class="metric-key">Diet break timing (CYCLE)</div><div class="metric-val">Wk 9–10 (1–2 wk at TDEE)</div></div>
+      <div class="metric-row"><div class="metric-key">RMR re-check point</div><div class="metric-val">Wk 8 (InBody recommended)</div></div>
+      <div class="metric-row"><div class="metric-key">Protein increase (PEAK)</div><div class="metric-val">278→290 g/day</div></div>
+      <div class="metric-row"><div class="metric-key">Calorie floor (absolute)</div><div class="metric-val">1,200 kcal (PSMF days)</div></div>
+      <p style="font-size:10.5px;color:var(--ink-3);margin-top:10px;line-height:1.5;">
+        The body adapts to sustained deficits by reducing RMR. CYCLE phase diet breaks mitigate leptin drop and prevent plateau. Protein increase during PEAK preserves muscle when deficit is deepest.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<div class="data-2col" style="gap:16px;">
+
+  <div class="data-section">
+    <div class="ds-head"><span class="ds-title">Final Phase Targets (PEAK Wk 13–16)</span><span class="ds-rule"></span></div>
+    <div class="ds-body">
+      <div class="metric-row"><div class="metric-key">Wk 13 target weight</div><div class="metric-val mono">222.6 lb</div></div>
+      <div class="metric-row"><div class="metric-key">Wk 14 target weight</div><div class="metric-val mono">220.0 lb</div></div>
+      <div class="metric-row"><div class="metric-key">Wk 15 target weight</div><div class="metric-val mono">218.2 lb</div></div>
+      <div class="metric-row"><div class="metric-key">Wk 16 target weight</div><div class="metric-val mono delta-pos">217.0 lb ← GOAL</div></div>
+      <div class="metric-row"><div class="metric-key">PEAK calorie range</div><div class="metric-val mono">1,470–1,568 / 1,200 / 1,200</div></div>
+      <div class="metric-row"><div class="metric-key">PEAK protein target</div><div class="metric-val mono">278–290 g/day</div></div>
+      <div class="metric-row"><div class="metric-key">PEAK BF% target</div><div class="metric-val mono delta-pos">13.0% final</div></div>
+    </div>
+  </div>
+
+  <div class="data-section">
+    <div class="ds-head"><span class="ds-title">Workout + Lifestyle Factors</span><span class="ds-rule"></span></div>
+    <div class="ds-body">
+      <div class="metric-row"><div class="metric-key">Training schedule</div><div class="metric-val">Mon / Thu / Sat (3×/wk)</div></div>
+      <div class="metric-row"><div class="metric-key">Training style</div><div class="metric-val">Full-body resistance (Zane-inspired)</div></div>
+      <div class="metric-row"><div class="metric-key">Cardio baseline</div><div class="metric-val">Fasted AM LISS</div></div>
+      <div class="metric-row"><div class="metric-key">Cardio adjustment (Wk 3)</div><div class="metric-val delta-warn">+1 × 25-min LISS added</div></div>
+      <div class="metric-row"><div class="metric-key">Sleep target</div><div class="metric-val">7–8 hrs/night</div></div>
+      <div class="metric-row"><div class="metric-key">Steps / NEAT target</div><div class="metric-val">8,000+ steps/day</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Input Parameters -->
+<div class="data-section">
+  <div class="ds-head"><span class="ds-title">Input Parameters</span><span class="ds-rule"></span><span class="label">Engine calibration reference</span></div>
+  <div class="ds-body">
+    <div class="data-3col">
+      <div>
+        <div class="metric-row"><div class="metric-key">Age</div><div class="metric-val">47</div></div>
+        <div class="metric-row"><div class="metric-key">Height</div><div class="metric-val">5′ 9″ (69 in)</div></div>
+        <div class="metric-row"><div class="metric-key">Start weight</div><div class="metric-val">266.8 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Start BF%</div><div class="metric-val">39.2%</div></div>
+      </div>
+      <div>
+        <div class="metric-row"><div class="metric-key">Goal weight</div><div class="metric-val">217 lb</div></div>
+        <div class="metric-row"><div class="metric-key">Goal BF%</div><div class="metric-val">13%</div></div>
+        <div class="metric-row"><div class="metric-key">Protocol duration</div><div class="metric-val">16 weeks</div></div>
+        <div class="metric-row"><div class="metric-key">Activity level</div><div class="metric-val">Moderately active</div></div>
+      </div>
+      <div>
+        <div class="metric-row"><div class="metric-key">RMR formula</div><div class="metric-val teal-stat">Cunningham</div></div>
+        <div class="metric-row"><div class="metric-key">LBM source</div><div class="metric-val">InBody scan</div></div>
+        <div class="metric-row"><div class="metric-key">Protein target</div><div class="metric-val">1.4 g/lb LBM</div></div>
+        <div class="metric-row"><div class="metric-key">PSMF floor</div><div class="metric-val">1,200 kcal</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APPENDIX ══ -->
+<details>
+  <summary>Appendix — Methodology, Explainers &amp; Code Reference</summary>
+  <div class="appendix-body">
+
+    <div class="appendix-section">
+      <div class="appendix-title">Understanding Your Metabolic Numbers</div>
+      <div class="appendix-text">
+        <strong>RMR (Resting Metabolic Rate):</strong> The Cunningham equation is used here because it takes measured lean body mass from InBody as its primary input — making it significantly more accurate than Harris-Benedict or Mifflin-St Jeor, which use total weight and height. Formula: RMR = 500 + (22 × LBM in kg). At 168 lb LBM (76.2 kg): 500 + (22 × 76.2) = 2,176 kcal ≈ 2,180 kcal.
+        <br><br>
+        <strong>TDEE:</strong> Total Daily Energy Expenditure = RMR × activity multiplier + TEF + NEAT. Moderate activity (3× training/week) ≈ 1.3× RMR = 2,834 kcal.
+        <br><br>
+        <strong>PSMF (Protein-Sparing Modified Fast):</strong> A Monday protocol of ~1,200 kcal composed primarily of lean protein to accelerate fat oxidation while preserving lean mass. The 1,200 kcal floor is a hard limit — going lower risks muscle catabolism at the current lean mass level.
+      </div>
+    </div>
+
+    <div class="appendix-section">
+      <div class="appendix-title">Calorie Taper Logic (16-Week Progression)</div>
+      <div class="appendix-text">
+        Training calories taper from ~1,750 (Wk 1) to ~1,470 (Wk 16) following a front-loaded geometric curve — the sharpest drop occurs in Wks 1–4 (RESET) when glycogen and water loss accelerates scale movement. The curve flattens in CYCLE (Wks 9–12) during the diet break, then steepens again for PEAK. Rest-day calories taper in lockstep. PSMF floor remains 1,200 throughout — this is the metabolic floor given current LBM.
+      </div>
+    </div>
+
+    <div class="appendix-section">
+      <div class="appendix-title">Why Fat Loss ≠ Weight Loss</div>
+      <div class="appendix-text">
+        Week 3 demonstrates this clearly: scale is 1.1 lb behind plan but BF% is 0.6% ahead. This means lean mass was preserved (or marginally gained) while fat was lost at target rate. A scale-only protocol would trigger an unnecessary caloric cut here. The BF% data (estimated from InBody or calipers) is the primary performance indicator; scale weight is secondary.
+      </div>
+    </div>
+
+    <div class="appendix-section">
+      <div class="appendix-title">Phase Structure Rationale</div>
+      <div class="appendix-text">
+        <strong>RESET (Wk 1–4):</strong> Establish baseline compliance, calibrate caloric response, purge glycogen and excess water. Aggressive deficit tolerable because glycogen depletion amplifies scale movement without true fat-loss velocity.
+        <br><strong>ADAPT (Wk 5–8):</strong> True fat-loss phase. Body adapted to new intake. Compliance tighter. Cardio added if fat-loss rate under plan.
+        <br><strong>CYCLE (Wk 9–10 diet break + 11–12 re-entry):</strong> Hormonal reset. Leptin, T3, cortisol normalize. Prevents adaptive thermogenesis stall. Scale may rise 2–4 lb from glycogen refill — expected, not failure.
+        <br><strong>PEAK (Wk 13–16):</strong> Deepest deficit. Protein at maximum. Cardio at maximum. Minimum training volume to preserve strength. Duration limited to 4 weeks to minimize muscle loss risk at extreme deficit.
+      </div>
+    </div>
+
+    <div class="appendix-section">
+      <div class="appendix-title">Formula &amp; Code Reference</div>
+      <div class="appendix-text">
+        Calorie engine source: <code>bodyfat-gui-app/src/core/calc_engine.py</code> (or equivalent module). Cunningham RMR: <code>rmr = 500 + 22 * lbm_kg</code>. TDEE: <code>tdee = rmr * activity_multiplier</code>. Weekly weight targets: front-loaded geometric interpolation from start to goal over 16 weeks. Report generation: <code>docs/mockups/living-progress-report-v2.html</code> (self-contained, file:// compatible).
+      </div>
+    </div>
+
+  </div>
+</details>
+
+</div><!-- /main -->
+
+<!-- ══ FOOTER ══ -->
+<footer class="report-footer">
+  <div class="footer-brand">Ap³xFit Clinical Playbook</div>
+  <div class="footer-cadence">Full report generates Mon (first weigh-in of week) · Thu/Sat = AI Coach check-ins only · Saves compute, storage &amp; paper</div>
+  <div class="footer-meta">PRIME.TIME-06.2026 · generated 2026-06-08 · Wk 3 of 16</div>
+</footer>
+
+<!-- ══ CHART.JS INIT ══ -->
+<script>
+(function() {
+  // Planned weight: front-loaded geometric curve 266.8 → 217 over 16 wks
+  const startW = 266.8, goalW = 217, weeks = 16;
+  const plannedW = [];
+  for (let i = 0; i <= weeks; i++) {
+    const t = i / weeks;
+    // front-loaded: use quadratic ease-in
+    const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+    plannedW.push(+(startW - (startW - goalW) * ease).toFixed(1));
+  }
+  // Actual weights (wk0–3 only)
+  const actualW = [266.8, 264.8, 260.4, 258.4, null,null,null,null,null,null,null,null,null,null,null,null,null];
+
+  // Planned BF%: 39.2 → 13 over 16 wks (same ease curve)
+  const startBF = 39.2, goalBF = 13;
+  const plannedBF = [];
+  for (let i = 0; i <= weeks; i++) {
+    const t = i / weeks;
+    const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+    plannedBF.push(+(startBF - (startBF - goalBF) * ease).toFixed(1));
+  }
+  // Actual BF% (wk0–3)
+  const actualBF = [39.2, 39.0, 37.9, 36.8, null,null,null,null,null,null,null,null,null,null,null,null,null];
+
+  const labels = Array.from({length:17}, (_,i) => i === 0 ? 'Start' : `Wk${i}`);
+  // Photo markers at wk 1,2,3
+  const photoWks = new Set([1,2,3]);
+
+  const ctx = document.getElementById('trajChart').getContext('2d');
+
+  // Custom plugin: photo camera markers
+  const photoPlugin = {
+    id: 'photoMarkers',
+    afterDatasetsDraw(chart) {
+      const {ctx, scales} = chart;
+      photoWks.forEach(wk => {
+        const x = scales.x.getPixelForValue(wk);
+        const y = scales.y.getPixelForValue(actualW[wk]) - 18;
+        ctx.save();
+        ctx.font = '12px sans-serif';
+        ctx.fillStyle = '#0f7c8a';
+        ctx.textAlign = 'center';
+        ctx.fillText('📷', x, y);
+        ctx.restore();
+      });
+    }
+  };
+
+  new Chart(ctx, {
+    plugins: [photoPlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line',
+          label: 'Planned Weight (lb)',
+          data: plannedW,
+          borderColor: '#0f7c8a',
+          borderDash: [5,4],
+          borderWidth: 2,
+          pointRadius: 2,
+          pointBackgroundColor: '#0f7c8a',
+          fill: false,
+          yAxisID: 'y',
+          tension: 0.3,
+        },
+        {
+          type: 'line',
+          label: 'Actual Weight (lb)',
+          data: actualW,
+          borderColor: '#f59e0b',
+          borderWidth: 2.5,
+          pointRadius: (ctx) => ctx.dataIndex <= 3 && actualW[ctx.dataIndex] !== null ? 5 : 0,
+          pointBackgroundColor: '#f59e0b',
+          pointBorderColor: '#14181d',
+          pointBorderWidth: 1.5,
+          fill: false,
+          yAxisID: 'y',
+          tension: 0.2,
+          spanGaps: false,
+        },
+        {
+          type: 'line',
+          label: 'Planned BF%',
+          data: plannedBF,
+          borderColor: '#a3000f',
+          borderDash: [4,3],
+          borderWidth: 1.5,
+          pointRadius: 1.5,
+          pointBackgroundColor: '#a3000f',
+          fill: false,
+          yAxisID: 'y2',
+          tension: 0.3,
+        },
+        {
+          type: 'line',
+          label: 'Actual BF%',
+          data: actualBF,
+          borderColor: 'rgba(163,0,15,0.6)',
+          borderWidth: 2,
+          pointRadius: (ctx) => ctx.dataIndex <= 3 && actualBF[ctx.dataIndex] !== null ? 4 : 0,
+          pointBackgroundColor: 'rgba(163,0,15,0.7)',
+          fill: false,
+          yAxisID: 'y2',
+          tension: 0.2,
+          spanGaps: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              if (ctx.parsed.y === null) return null;
+              const u = ctx.datasetIndex < 2 ? ' lb' : '%';
+              return `${ctx.dataset.label}: ${ctx.parsed.y}${u}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: {
+            font: { family: "'IBM Plex Mono', monospace", size: 10 },
+            color: '#6b7f8f',
+          },
+        },
+        y: {
+          position: 'left',
+          title: { display: true, text: 'Weight (lb)', font: { family: "'IBM Plex Mono',monospace", size: 10 }, color: '#0f7c8a' },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: { font: { family: "'IBM Plex Mono',monospace", size: 10 }, color: '#6b7f8f' },
+          min: 210, max: 275,
+        },
+        y2: {
+          position: 'right',
+          title: { display: true, text: 'BF%', font: { family: "'IBM Plex Mono',monospace", size: 10 }, color: '#a3000f' },
+          grid: { display: false },
+          ticks: {
+            font: { family: "'IBM Plex Mono',monospace", size: 10 }, color: '#a3000f',
+            callback: v => v + '%',
+          },
+          min: 10, max: 42,
+        },
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

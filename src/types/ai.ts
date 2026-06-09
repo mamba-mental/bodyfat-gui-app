@@ -2,7 +2,22 @@
  * AI Provider Types and Interfaces
  */
 
-export type AIProvider = 'anthropic' | 'chutes' | 'openai' | 'openrouter' | 'gemini' | 'minimax' | 'mercury' | 'perplexity' | 'mistral' | 'xai' | 'groq' | 'fireworks'
+export type AIProvider =
+  | 'anthropic'
+  | 'chutes'
+  | 'openai'
+  | 'openrouter'
+  | 'gemini'
+  | 'minimax'
+  | 'mercury'
+  | 'perplexity'
+  | 'mistral'
+  | 'xai'
+  | 'groq'
+  | 'fireworks'
+  | 'custom1'
+  | 'custom2'
+  | 'custom3'
 
 export interface AIModel {
   id: string
@@ -25,6 +40,8 @@ export interface AIProviderConfig {
   models?: AIModel[]
   connectionStatus?: 'success' | 'failed'
   connectionError?: string
+  /** User-editable label for custom OpenAI-compatible slots */
+  displayName?: string
 }
 
 export interface AIAreaConfig {
@@ -76,8 +93,16 @@ export const AI_AREAS = [
   }
 ] as const
 
+// Provider configuration shape (not `as const` so string fields remain mutable)
+export interface AIProviderStaticConfig {
+  name: string
+  baseUrl: string
+  headers: (apiKey: string) => Record<string, string>
+  models: AIModel[]
+}
+
 // Provider configurations
-export const AI_PROVIDERS = {
+export const AI_PROVIDERS: Record<AIProvider, AIProviderStaticConfig> = {
   anthropic: {
     name: 'Anthropic (Claude)',
     baseUrl: 'https://api.anthropic.com/v1',
@@ -86,7 +111,7 @@ export const AI_PROVIDERS = {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json'
     }),
-    models: [] // Will be populated from API or manually
+    models: []
   },
   chutes: {
     name: 'Chutes AI',
@@ -95,7 +120,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Will be fetched dynamically
+    models: []
   },
   openai: {
     name: 'OpenAI',
@@ -104,7 +129,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Will be fetched from OpenAI API
+    models: []
   },
   openrouter: {
     name: 'OpenRouter',
@@ -115,7 +140,7 @@ export const AI_PROVIDERS = {
       'HTTP-Referer': 'https://apexfit.ai',
       'X-Title': 'ApexFit AI'
     }),
-    models: [] // Will be fetched from their models endpoint
+    models: []
   },
   gemini: {
     name: 'Google Gemini',
@@ -124,7 +149,7 @@ export const AI_PROVIDERS = {
       'Content-Type': 'application/json',
       'x-goog-api-key': apiKey
     }),
-    models: [] // Will be fetched from Google API
+    models: []
   },
   minimax: {
     name: 'MiniMax',
@@ -133,7 +158,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // MiniMax doesn't provide models endpoint
+    models: []
   },
   mercury: {
     name: 'Mercury AI',
@@ -142,7 +167,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Mercury API endpoint unknown
+    models: []
   },
   perplexity: {
     name: 'Perplexity AI',
@@ -151,7 +176,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Perplexity doesn't provide models endpoint
+    models: []
   },
   mistral: {
     name: 'Mistral AI',
@@ -160,7 +185,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Will be fetched from Mistral API
+    models: []
   },
   xai: {
     name: 'xAI (Grok)',
@@ -169,7 +194,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // xAI doesn't provide models endpoint
+    models: []
   },
   groq: {
     name: 'Groq',
@@ -178,7 +203,7 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Will be fetched from Groq API
+    models: []
   },
   fireworks: {
     name: 'Fireworks AI',
@@ -187,6 +212,33 @@ export const AI_PROVIDERS = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    models: [] // Will be fetched from Fireworks API
+    models: []
+  },
+  custom1: {
+    name: 'Custom Endpoint 1',
+    baseUrl: '',
+    headers: (apiKey: string) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    models: []
+  },
+  custom2: {
+    name: 'Custom Endpoint 2',
+    baseUrl: '',
+    headers: (apiKey: string) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    models: []
+  },
+  custom3: {
+    name: 'Custom Endpoint 3',
+    baseUrl: '',
+    headers: (apiKey: string) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    models: []
   }
-} as const
+}

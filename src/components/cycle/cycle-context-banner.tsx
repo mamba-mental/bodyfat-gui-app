@@ -120,7 +120,8 @@ export function CycleContextBanner({ entryDates = [], className }: CycleContextB
                 month: "short",
                 day: "numeric",
               })}
-              . Logging today gets you back on schedule.
+              . Past misses stay on the record; just log your next scheduled day to resume —
+              they won&apos;t count against your trend.
             </span>
           </div>
         </div>

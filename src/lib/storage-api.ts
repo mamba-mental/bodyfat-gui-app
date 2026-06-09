@@ -203,3 +203,27 @@ export async function fetchGeneratedReport(
     file_base?: string;
   }>('/generate-report', 'POST', userData);
 }
+
+// Living Report — week-by-week coaching report with PED timeline, macro breakdown,
+// and progress photo embedding. Body MUST be { user_data, actual_entries? } (not bare
+// UserData) — the /generate-living-report endpoint requires this shape.
+export async function fetchGeneratedLivingReport(
+  userData: UserData,
+  actualEntries?: Array<{ week: number; weight: number; bf: number; date?: string; photo?: string }>
+): Promise<{
+  success?: boolean;
+  id?: string;
+  html_content: string;
+  md_content: string;
+  html_path?: string;
+  md_path?: string;
+}> {
+  return await callApi<{
+    success?: boolean;
+    id?: string;
+    html_content: string;
+    md_content: string;
+    html_path?: string;
+    md_path?: string;
+  }>('/generate-living-report', 'POST', { user_data: userData, actual_entries: actualEntries });
+}

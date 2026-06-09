@@ -49,7 +49,10 @@ export function nextWeighIn(today: string, weighinDays: number[]): string | null
 
 /**
  * Expected weigh-in dates strictly before `today` that have no entry within
- * +/-1 day. Used to flag missed check-ins on the New Entry page.
+ * +/-2 days. The +2 day forward window lets a weigh-in logged up to 2 days
+ * after the scheduled date satisfy it (e.g. scheduled Fri, logged Sun = OK).
+ * Past misses outside the window remain on record.
+ * Used to flag missed check-ins on the New Entry page.
  */
 export function missedWeighIns(
   startDate: string,
@@ -64,7 +67,11 @@ export function missedWeighIns(
   const missed: string[] = []
   for (let ms = toUTC(startDate); ms < todayMs; ms += DAY) {
     if (!set.has(new Date(ms).getUTCDay())) continue
-    const met = entries.has(ms) || entries.has(ms - DAY) || entries.has(ms + DAY)
+    const met =
+      entries.has(ms) ||
+      entries.has(ms - DAY) ||
+      entries.has(ms + DAY) ||
+      entries.has(ms + 2 * DAY)
     if (!met) missed.push(fromUTC(ms))
   }
   return missed
