@@ -140,14 +140,27 @@ def ingest_legacy_reports():
         return
 
     try:
-        existing_reports = {report["id"] for report in db.get_reports("default")}  # type: ignore
+        stored_reports = db.get_reports("default")
+        existing_reports = {report["id"] for report in stored_reports}  # type: ignore
+        # Modern generators persist a canonical row whose id differs from the
+        # artifact filename. A later service restart must not ingest that same
+        # HTML file again as a second "legacy" report row.
+        existing_artifacts = set()
+        for report in stored_reports:
+            file_base = report.get("file_base")
+            html_path = report.get("html_path")
+            if file_base:
+                existing_artifacts.add(str(file_base))
+            if html_path:
+                existing_artifacts.add(Path(str(html_path)).stem)
     except Exception:
         existing_reports = set()
+        existing_artifacts = set()
 
     new_reports = 0
     for html_file in REPORTS_DIR.glob("*.html"):
         report_id = html_file.stem
-        if report_id in existing_reports:
+        if report_id in existing_reports or report_id in existing_artifacts:
             continue
 
         try:

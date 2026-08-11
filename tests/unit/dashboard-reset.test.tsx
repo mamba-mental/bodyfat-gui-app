@@ -5,6 +5,8 @@ import { render, screen } from '@testing-library/react'
 import { Dashboard } from '@/components/dashboard'
 import { AppContext } from '@/contexts/app-context'
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+
 // Mock child components to avoid rendering complexity
 vi.mock('@/components/charts/lazy-chart-components', () => ({
   ProgressTrendChart: () => <div data-testid="progress-trend-chart" />,
@@ -55,7 +57,7 @@ describe('Dashboard Reset Logic', () => {
       clearAllData: vi.fn(),
       refreshWidgets: vi.fn(),
       subscribeToDataChanges: vi.fn(() => () => { }),
-      createNewProgram: vi.fn(() => 'mock-program-id'),
+      createNewProgram: vi.fn(async () => 'mock-program-id'),
       refreshKey: 0
     }
 

@@ -56,7 +56,6 @@ const navigationItems = [
     title: "Setup Profile",
     url: "/setup",
     icon: Settings,
-    conditional: "setup"
   },
   {
     title: "New Entry",
@@ -161,44 +160,25 @@ function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu role="menu" aria-labelledby="navigation-section">
               {navigationItems.map((item) => {
-                // Check if this is the setup item and user has data
-                const isSetupComplete = item.conditional === "setup" && typeof window !== "undefined" && localStorage.getItem('userData')
-                const isDisabled = item.conditional === "setup" && isSetupComplete
-
                 return (
                   <SidebarMenuItem key={item.title} role="menuitem">
                     <SidebarMenuButton
-                      asChild={!isDisabled}
+                      asChild
                       isActive={pathname === item.url}
-                      className={cn(
-                        "border border-transparent text-foreground hover:border-border hover:bg-accent data-[active=true]:border-primary/30 data-[active=true]:bg-accent data-[active=true]:text-foreground",
-                        isDisabled ? "opacity-50 cursor-not-allowed" : ""
-                      )}
+                      className={cn("border border-transparent text-foreground hover:border-border hover:bg-accent data-[active=true]:border-primary/30 data-[active=true]:bg-accent data-[active=true]:text-foreground")}
                       aria-current={pathname === item.url ? "page" : undefined}
-                      aria-disabled={isDisabled ? "true" : undefined}
                     >
-                      {isDisabled ? (
-                        <div
-                          className="flex items-center gap-2"
-                          aria-label={`${item.title} - Already completed`}
-                        >
-                          <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
-                          <span>{item.title}</span>
-                          <span className="ml-auto text-xs text-muted-foreground" aria-label="Completed">✓</span>
-                        </div>
-                      ) : (
-                        <Link
-                          href={item.url}
-                          aria-label={`Navigate to ${item.title}`}
-                          onClick={(event) => {
-                            event.preventDefault()
-                            handleNavigation(item.url)
-                          }}
-                        >
-                          <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
-                          <span>{item.title}</span>
-                        </Link>
-                      )}
+                      <Link
+                        href={item.url}
+                        aria-label={`Navigate to ${item.title}`}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          handleNavigation(item.url)
+                        }}
+                      >
+                        <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
+                        <span>{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

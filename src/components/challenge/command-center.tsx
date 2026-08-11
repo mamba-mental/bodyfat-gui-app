@@ -6,6 +6,7 @@ import { AlertTriangle, CalendarDays, Check, ChevronRight, ClipboardCheck, FileT
 import { toast } from "sonner"
 
 import { challengeApi } from "@/lib/challenge-api"
+import { useApp } from "@/contexts/app-context"
 import type { ChallengeCycle, ChallengeDailyLog, ChallengePlanDay } from "@/types/challenge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,6 +34,7 @@ function emptyLog(day: ChallengePlanDay, revision: number): ChallengeDailyLog {
 }
 
 export function CommandCenter() {
+  const { dispatch, refreshWidgets } = useApp()
   const [cycle, setCycle] = React.useState<ChallengeCycle | null>(null)
   const [logs, setLogs] = React.useState<ChallengeDailyLog[]>([])
   const [selectedDay, setSelectedDay] = React.useState(1)
@@ -112,7 +114,9 @@ export function CommandCenter() {
     if (!cycle) return
     setBusy(true)
     try {
-      await challengeApi.report(cycle.id)
+      const generated = await challengeApi.report(cycle.id)
+      dispatch({ type: 'ADD_REPORT', payload: generated as any })
+      refreshWidgets()
       toast.success("Revision-bound 14-day report generated")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Report generation failed")

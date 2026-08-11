@@ -13,13 +13,13 @@ describe('defaultSelectedCycle', () => {
       ])
     ).toBe('c2')
   })
-  it('falls back to the most recent by startDate when none active', () => {
+  it('falls back to the aggregate view when none are active', () => {
     expect(
       defaultSelectedCycle([
         { id: 'c1', status: 'stopped', startDate: '2026-01-01' },
         { id: 'c2', status: 'archived', startDate: '2026-05-01' },
       ])
-    ).toBe('c2')
+    ).toBe(ALL_CYCLES)
   })
   it('returns ALL_CYCLES when there are no cycles', () => {
     expect(defaultSelectedCycle([])).toBe(ALL_CYCLES)

@@ -19,18 +19,17 @@ interface EntryActionDeps {
   currentUser: UserData | null
   mountedRef: React.RefObject<boolean>
   refreshWidgets: () => void
-  generateNewReport: (userData: UserData) => Promise<void>
 }
 
 export async function addEntry(
   entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
   deps: EntryActionDeps
-): Promise<void> {
-  const { dispatch, currentUser, mountedRef, refreshWidgets, generateNewReport } = deps
+): Promise<boolean> {
+  const { dispatch, currentUser, mountedRef, refreshWidgets } = deps
 
   if (!currentUser) {
     dispatch({ type: 'SET_ERROR', payload: 'No user data available' })
-    return
+    return false
   }
 
   const now = new Date()
@@ -50,7 +49,7 @@ export async function addEntry(
     const message = error instanceof Error ? error.message : 'Failed to save entry'
     dispatch({ type: 'SET_ERROR', payload: message })
     console.error('Error saving entry:', error)
-    return
+    return false
   }
 
   dispatch({ type: 'ADD_ENTRY', payload: persistedEntry })
@@ -58,7 +57,7 @@ export async function addEntry(
 
   // Trigger recalculation with new entry
   try {
-    if (!mountedRef.current) return
+    if (!mountedRef.current) return true
     dispatch({ type: 'SET_LOADING', payload: true })
 
     const entryForRecalc = {
@@ -70,19 +69,16 @@ export async function addEntry(
 
     const result = await fetchRecalculation(currentUser, entryForRecalc)
 
-    if (!mountedRef.current) return
+    if (!mountedRef.current) return true
     saveCalculationResult(result)
     dispatch({ type: 'SET_CALCULATION_RESULT', payload: result })
-
-    // Auto-generate report after each entry
-    await generateNewReport(result.user_data)
 
     if (mountedRef.current) {
       refreshWidgets()
     }
 
   } catch (error) {
-    if (!mountedRef.current) return
+    if (!mountedRef.current) return true
     const errorMessage = error instanceof CalculationError
       ? error.message
       : 'Failed to recalculate progression'
@@ -92,6 +88,11 @@ export async function addEntry(
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }
+
+  // Saving a check-in and generating a report are intentionally separate.
+  // A report can take minutes and must pass the cycle/fingerprint gate in the
+  // Report Center; it must never make the entry form appear stuck.
+  return true
 }
 
 interface UpdateEntryDeps {

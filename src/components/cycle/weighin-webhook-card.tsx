@@ -35,7 +35,7 @@ export function WeighInWebhookCard() {
     try {
       const res = await fireWeighInWebhook({ urlOverride: url, reportTitle: "Test from Settings" })
       if (!res.attempted) {
-        setTestResult({ ok: false, msg: "Enter a webhook URL first." })
+        setTestResult({ ok: false, msg: res.error ?? "Enter a webhook URL first." })
       } else if (res.ok) {
         setTestResult({ ok: true, msg: `Delivered (HTTP ${res.status}). Next weigh-in: ${res.payload?.next_weighin_date ?? "none scheduled"}.` })
       } else {
@@ -54,7 +54,7 @@ export function WeighInWebhookCard() {
           Weigh-In Reminders (n8n)
         </CardTitle>
         <CardDescription>
-          When you generate a report, we&apos;ll POST your next weigh-in to this n8n webhook so your
+          When you generate a standard report, we&apos;ll POST your next weigh-in to this n8n webhook so your
           flow can add a calendar event, Todoist task, or Sunsama task. Optional and non-blocking.
         </CardDescription>
       </CardHeader>
@@ -78,7 +78,7 @@ export function WeighInWebhookCard() {
             Save
           </Button>
           <Button variant="outline" onClick={test} disabled={testing || !url}>
-            {testing ? "Sending..." : "Send test"}
+            {testing ? "Sending..." : "Send test event"}
           </Button>
           {saved && (
             <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
@@ -101,8 +101,9 @@ export function WeighInWebhookCard() {
         )}
 
         <p className="text-xs text-muted-foreground">
-          The payload includes an idempotency key (cycle + date) so retries won&apos;t double-create
-          downstream tasks. Failures here never block report generation.
+          This is a real webhook event and may run downstream actions. The payload includes an
+          idempotency key (cycle + date) that your n8n workflow must use to prevent duplicates.
+          Failures here never block report generation.
         </p>
       </CardContent>
     </Card>

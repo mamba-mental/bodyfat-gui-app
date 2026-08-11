@@ -5,18 +5,14 @@
  */
 
 import { UserData, BodyFatEntry, AppAction, ProgramReferenceSnapshot, ArchivedProgram, ProgramSummary } from '@/types'
-import { saveUserData } from '@/lib/storage-api'
 import { config } from '@/lib/config'
+import { buildStandardCycleForProgram } from '@/lib/programCycle'
 
 interface ProgramActionDeps {
   dispatch: React.Dispatch<AppAction>
   currentUser: UserData | null
   entries: BodyFatEntry[]
   refreshWidgets: () => void
-  /** Override weight for new program (use when state hasn't updated yet) */
-  overrideWeight?: number
-  /** Override body fat for new program (use when state hasn't updated yet) */
-  overrideBf?: number
 }
 
 /**
@@ -25,60 +21,102 @@ interface ProgramActionDeps {
  * baseline from the current state.
  * @returns The new program ID, or null if no user data exists
  */
-export function createNewProgram(deps: ProgramActionDeps): string | null {
-  const { dispatch, currentUser, refreshWidgets, overrideWeight, overrideBf } = deps
+export async function createNewProgram(
+  deps: ProgramActionDeps,
+  profileOverride?: UserData,
+): Promise<string | null> {
+  const { dispatch, currentUser, refreshWidgets } = deps
+  const profile = profileOverride ?? currentUser
 
-  if (!currentUser) {
+  if (!profile) {
     console.warn('[ProgramActions] Cannot create new program: no user data')
     return null
   }
 
-  // Generate new program ID with timestamp
-  const programId = `program-${Date.now()}`
-  const now = new Date()
-  const todayStr = now.toISOString().split('T')[0]
-
-  // Use override values if provided (for when state hasn't updated yet)
-  // Otherwise fall back to current user profile data
-  const currentWeight = overrideWeight ?? currentUser.current_weight
-  const currentBF = overrideBf ?? currentUser.current_bf
-  console.log('[ProgramActions] Creating new program with baseline:', currentWeight, 'lbs,', currentBF, '% BF', overrideWeight ? '(from override)' : '(from profile)')
+  const stamp = Date.now()
+  const programId = `program-${stamp}`
+  const todayStr = new Date().toLocaleDateString('en-CA')
+  const cycle = buildStandardCycleForProgram(profile, {
+    id: `cyc-${stamp}`,
+    startDate: todayStr,
+  })
 
   // Create program reference snapshot
   const programReference: ProgramReferenceSnapshot = {
     start_date: todayStr,
-    initial_weight: currentWeight,
-    initial_bf: currentBF,
+    initial_weight: profile.current_weight,
+    initial_bf: profile.current_bf,
   }
-
-  // Dispatch to update state
-  dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: programReference })
-
-  // Calculate default end date (16 weeks from today)
-  const defaultWeeks = currentUser.timeline_weeks || 16
-  const endDate = new Date(now.getTime() + (defaultWeeks * 7 * 24 * 60 * 60 * 1000))
-  const endDateStr = endDate.toISOString().split('T')[0]
 
   // Update user data with new program ID AND new start/end dates
   // Also update current_weight and current_bf if override values were provided
   const updatedUser = {
-    ...currentUser,
+    ...profile,
     current_program_id: programId,
     program_reference: programReference,
-    start_date: todayStr, // Update start_date for new program
-    end_date: endDateStr, // Update end_date for new program
-    // Use override values to ensure dashboard shows correct current stats
-    current_weight: currentWeight,
-    current_bf: currentBF,
+    start_date: todayStr,
+    end_date: cycle.end_date,
   }
-  void saveUserData(updatedUser)
-  dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
 
-  // Trigger refresh
-  refreshWidgets()
+  try {
+    let previousActiveCycle: Record<string, unknown> | null = null
+    try {
+      const existingResponse = await fetch('/api/data/cycles', { cache: 'no-store' })
+      const existingCycles = existingResponse.ok ? await existingResponse.json() : []
+      previousActiveCycle = Array.isArray(existingCycles)
+        ? existingCycles.find((candidate) => candidate?.status === 'active') ?? null
+        : null
+    } catch {
+      // Compensation can still stop the new cycle when no prior cycle resolves.
+    }
 
-  console.log('[ProgramActions] New program created:', programId, programReference)
-  return programId
+    // The cycle is the aggregate used by reports, check-ins, and reminders.
+    // Persist it as part of the same user action as the editable profile copy.
+    const cycleResponse = await fetch('/api/data/cycles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cycle),
+    })
+    if (!cycleResponse.ok) throw new Error(`Failed to create ReComp cycle (${cycleResponse.status})`)
+
+    const compensateCycle = async () => {
+      const rollback = previousActiveCycle
+        ? { ...previousActiveCycle, status: 'active' }
+        : { ...cycle, status: 'stopped' }
+      await fetch('/api/data/cycles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rollback),
+      }).catch(() => undefined)
+    }
+
+    let userResponse: Response
+    try {
+      userResponse = await fetch('/api/data/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedUser),
+      })
+    } catch (error) {
+      await compensateCycle()
+      throw error
+    }
+    if (!userResponse.ok) {
+      // Compensate so a failed profile write cannot leave the new cycle active.
+      await compensateCycle()
+      throw new Error(`Failed to save the new program profile (${userResponse.status})`)
+    }
+
+    dispatch({ type: 'SET_PROGRAM_REFERENCE', payload: programReference })
+    dispatch({ type: 'SET_USER_DATA', payload: updatedUser })
+    refreshWidgets()
+    return programId
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to start new program'
+    dispatch({ type: 'SET_ERROR', payload: message })
+    console.error('[ProgramActions] Failed to create new program:', error)
+    return null
+  }
 }
 
 interface DeleteReportDeps {

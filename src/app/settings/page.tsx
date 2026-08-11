@@ -115,6 +115,10 @@ export default function SettingsPage() {
     try {
       localStorage.setItem('userSettings', JSON.stringify(settings))
       localStorage.setItem('profileData', JSON.stringify(profileData))
+      const displayName = profileData.name.trim()
+      if (current_user && displayName && displayName !== current_user.name) {
+        setUserData({ ...current_user, name: displayName })
+      }
       // Apply theme change
       if (settings.display.theme !== theme) {
         setTheme(settings.display.theme)
@@ -169,45 +173,9 @@ export default function SettingsPage() {
     }
   }
 
-  const handleStartNewProgram = async () => {
+  const handleStartNewProgram = () => {
     if (!current_user) return
-
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const updatedUser = {
-        ...current_user,
-        start_date: today,
-        program_reference: {
-          start_date: today,
-          initial_weight: current_user.current_weight,
-          initial_bf: current_user.current_bf
-        }
-      }
-
-      setUserData(updatedUser)
-
-      // Force save to localStorage immediately to ensure persistence
-      localStorage.setItem('bodyfat_user_data', JSON.stringify(updatedUser))
-
-      // Also update via API if possible (though setUserData usually handles this via context)
-      try {
-        await fetch('/api/data/user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedUser)
-        })
-      } catch (e) {
-        console.warn('Failed to sync new program to API', e)
-      }
-
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-
-      // Redirect to dashboard to see changes
-      router.push('/')
-    } catch (err) {
-      setError("Failed to start new program")
-    }
+    router.push('/setup/custom?newProgram=true')
   }
 
   const getDataSize = () => {
@@ -251,6 +219,12 @@ export default function SettingsPage() {
       console.error('Failed to load settings:', err)
     }
   }, [theme, palette, font])
+
+  React.useEffect(() => {
+    if (current_user?.name) {
+      setProfileData((previous) => ({ ...previous, name: current_user.name }))
+    }
+  }, [current_user?.name])
 
   React.useEffect(() => {
     fetch(withBasePath('/api/sync/status'))
@@ -458,7 +432,7 @@ export default function SettingsPage() {
                 <ClientIcon icon={User} className="h-5 w-5" />
                 Profile Information
               </CardTitle>
-              <CardDescription>Update your personal information</CardDescription>
+              <CardDescription>Your display name updates the app profile; email and timezone are saved as local preferences.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -712,15 +686,15 @@ export default function SettingsPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Start New Program</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will reset your program start date and initial stats to today's values.
-                          Your existing entries and reports will be preserved as history.
-                          This allows you to track a new transformation phase without losing your data.
+                          We&apos;ll copy your current profile into an editable form. Keep or change
+                          measurements, goals, training, nutrition, and PED fields before the new
+                          cycle is created. Existing entries and reports remain preserved.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleStartNewProgram}>
-                          Start New Program
+                          Review New Program
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

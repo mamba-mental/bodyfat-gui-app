@@ -251,13 +251,13 @@ export default function EntriesPage() {
 
     try {
       const latestEntry = entries[0]
-      const startWeight = Number(current_user.current_weight)
+      const startWeight = Number(current_user.program_reference?.initial_weight ?? current_user.current_weight)
       const goalWeight = Number(current_user.goal_weight)
       const currentWeight = Number(latestEntry.weight)
 
       const weightProgress = calculateProgressPercentage(startWeight, currentWeight, goalWeight)
 
-      const startBF = Number(current_user.current_bf)
+      const startBF = Number(current_user.program_reference?.initial_bf ?? current_user.current_bf)
       const goalBF = Number(current_user.goal_bf)
       const currentBF = Number(latestEntry.body_fat_percentage || startBF)
 

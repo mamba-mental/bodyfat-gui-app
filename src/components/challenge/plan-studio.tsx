@@ -213,6 +213,16 @@ export function PlanStudio() {
 
           <div className="space-y-4 xl:sticky xl:top-6 xl:self-start">
             <PlanPreviewPanel preview={preview} loading={previewing} />
+            {planLength !== 14 && (
+              <div className="rounded-2xl border border-[#d7ddd4] bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#677169]">Standard cycle</p>
+                <h2 className="mt-1 font-serif text-2xl text-[#173c2a]">Start a {planLength}-week cut</h2>
+                <p className="mt-2 text-sm text-[#687169]">Your existing profile will be copied into an editable review form. Saving creates the active cycle used by entries, reminders, dashboards, and reports.</p>
+                <Button asChild className="mt-4 h-12 w-full bg-[#173c2a] text-white hover:bg-[#214c38]">
+                  <Link href={`/setup/custom?newProgram=true&weeks=${planLength}`}>Review profile &amp; start cycle <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+              </div>
+            )}
             {planLength === 14 && (
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button onClick={buildPreview} disabled={previewing || !user} variant="outline" className="h-12 border-[#8a987e] bg-white"><Sparkles className="mr-2 h-4 w-4" /> Build exact preview</Button>

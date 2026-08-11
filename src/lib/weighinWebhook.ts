@@ -80,17 +80,27 @@ export async function fireWeighInWebhook(opts?: {
       ? cycles.find((c: any) => c.status === "active")
       : null
 
+    if (!active) {
+      return { attempted: false, ok: false, error: "Start an active ReComp cycle first." }
+    }
+
     const weighinDays: number[] = Array.isArray(active?.weighin_days) ? active.weighin_days : []
+    if (!weighinDays.length) {
+      return { attempted: false, ok: false, error: "Choose at least one weigh-in day first." }
+    }
     const today = todayLocalISO()
     const next = nextWeighIn(today, weighinDays)
+    if (!next) {
+      return { attempted: false, ok: false, error: "No upcoming weigh-in could be calculated." }
+    }
 
     const payload: WeighInWebhookPayload = {
       event: "next_weighin",
       // Idempotency: same cycle + same next date => same key, so n8n can dedupe.
-      idempotency_key: `${active?.id ?? "nocycle"}:${next ?? "none"}`,
+      idempotency_key: `${active.id}:${next}`,
       next_weighin_date: next,
-      cycle_id: active?.id ?? null,
-      cycle_name: active?.name ?? null,
+      cycle_id: active.id,
+      cycle_name: active.name ?? null,
       weighin_days: weighinDays,
       report_title: opts?.reportTitle,
       generated_at: new Date().toISOString(),

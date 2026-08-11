@@ -345,7 +345,7 @@ export default function SetupWizard() {
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
-  const handleFinish = useCallback(() => {
+  const handleFinish = useCallback(async () => {
     const normalizedDob = normalizeDateInput(form.dob) || ""
     const weeks = parseInt(form.timeline_weeks, 10) || 16
     const startDateIso = new Date().toISOString().split("T")[0]
@@ -398,10 +398,11 @@ export default function SetupWizard() {
       calorie_floor: parseInt(form.calorie_floor) || 1200,
     }
 
-    setUserData(processedData as any)
-
     if (isNewProgram) {
-      createNewProgram(processedData.current_weight, processedData.current_bf)
+      const programId = await createNewProgram(processedData as any)
+      if (!programId) return
+    } else {
+      setUserData(processedData as any)
     }
 
     router.push("/")

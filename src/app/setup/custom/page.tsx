@@ -32,6 +32,9 @@ export default function CustomSetupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isNewProgram = searchParams.get('newProgram') === 'true'
+  const requestedWeeks = [12, 15, 22].includes(Number(searchParams.get('weeks')))
+    ? String(Number(searchParams.get('weeks')))
+    : null
   const { setUserData, createNewProgram, state } = useApp()
   const { current_user } = state
 
@@ -78,7 +81,7 @@ export default function CustomSetupPage() {
 
     goal_weight: current_user?.goal_weight?.toString() || "",
     goal_bf: current_user?.goal_bf?.toString() || "",
-    timeline_weeks: current_user?.timeline_weeks || "16",
+    timeline_weeks: requestedWeeks || current_user?.timeline_weeks || "16",
 
     activity_level: current_user?.activity_level?.toString() || "1",
     resistance_training: current_user?.resistance_training || false,
@@ -125,7 +128,7 @@ export default function CustomSetupPage() {
 
         goal_weight: current_user.goal_weight?.toString() || "",
         goal_bf: current_user.goal_bf?.toString() || "",
-        timeline_weeks: current_user.timeline_weeks || "16",
+        timeline_weeks: requestedWeeks || current_user.timeline_weeks || "16",
 
         activity_level: current_user.activity_level?.toString() || "1",
         resistance_training: current_user.resistance_training || false,
@@ -151,7 +154,7 @@ export default function CustomSetupPage() {
         sleep_quality: current_user.sleep_quality || "good"
       })
     }
-  }, [current_user])
+  }, [current_user, requestedWeeks])
 
   const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -188,7 +191,7 @@ export default function CustomSetupPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Convert string numbers to actual numbers
@@ -228,14 +231,11 @@ export default function CustomSetupPage() {
       ped_stack: formData.ped_stack && formData.ped_stack.length > 0 ? formData.ped_stack : undefined,
     }
 
-    // Save the user data first
-    setUserData(processedData)
-
-    // If this is a new program, create the program reference after saving
     if (isNewProgram) {
-      // Create a new program - pass the new weight/BF directly since state hasn't updated yet
-      createNewProgram(processedData.current_weight, processedData.current_bf)
-      console.log('[Setup] New program created with fresh stats:', processedData.current_weight, 'lbs,', processedData.current_bf, '% BF')
+      const programId = await createNewProgram(processedData as any)
+      if (!programId) return
+    } else {
+      setUserData(processedData)
     }
 
     router.push("/")
@@ -470,8 +470,10 @@ export default function CustomSetupPage() {
                   <SelectContent>
                     <SelectItem value="8">8 weeks</SelectItem>
                     <SelectItem value="12">12 weeks</SelectItem>
+                    <SelectItem value="15">15 weeks</SelectItem>
                     <SelectItem value="16">16 weeks</SelectItem>
                     <SelectItem value="20">20 weeks</SelectItem>
+                    <SelectItem value="22">22 weeks</SelectItem>
                     <SelectItem value="24">24 weeks</SelectItem>
                   </SelectContent>
                 </Select>
@@ -768,7 +770,7 @@ export default function CustomSetupPage() {
             Back
           </Button>
           <Button type="submit" variant="default">
-            {current_user ? 'Update Profile' : 'Create Profile'}
+            {isNewProgram ? 'Start New Program' : current_user ? 'Update Profile' : 'Create Profile'}
           </Button>
         </div>
       </form>

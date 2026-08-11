@@ -33,6 +33,8 @@ import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
 import { fetchGeneratedLivingReport, generateId } from "@/lib/storage-api"
 import { challengeApi } from "@/lib/challenge-api"
 import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
+import { buildLivingReportActualEntries } from "@/lib/livingReportEntries"
+import { dedupeReportsByArtifact } from "@/lib/reportArtifacts"
 
 const CALC_VERSION = "calc-v1"
 const GENERATOR_VERSION = "gen-v3"
@@ -83,15 +85,19 @@ export default function ReportsPage() {
     return () => { alive = false }
   }, [])
   const entries = scopeByCycle(allEntries as any[], selectedCycleId)
-  const reports = scopeByCycle(allReports as any[], selectedCycleId)
+  const uniqueReports = React.useMemo(
+    () => dedupeReportsByArtifact(allReports as Report[]),
+    [allReports],
+  )
+  const reports = scopeByCycle(uniqueReports as any[], selectedCycleId)
   const selectedChallenge = React.useMemo(() => {
     const candidates = cycles.filter((cycle) => cycle.plan_mode === 'two_week_cut')
     if (selectedCycleId !== ALL_CYCLES) return candidates.find((cycle) => cycle.id === selectedCycleId) || null
     return candidates.find((cycle) => cycle.status === 'active') || candidates[0] || null
   }, [cycles, selectedCycleId])
   const latestChallengeReport = React.useMemo(
-    () => (allReports as Report[]).find((report) => report.report_type === 'two_week_cut' && (!selectedChallenge || report.cycle_id === selectedChallenge.id)) || null,
-    [allReports, selectedChallenge],
+    () => uniqueReports.find((report) => report.report_type === 'two_week_cut' && (!selectedChallenge || report.cycle_id === selectedChallenge.id)) || null,
+    [uniqueReports, selectedChallenge],
   )
 
   // Real elapsed weeks between two entry dates (floored at 1/7 wk to avoid divide-by-zero).
@@ -150,21 +156,15 @@ export default function ReportsPage() {
     setLivingReportLoading(true)
     setLivingReportError(null)
     try {
-      // Build actual_entries from app entries (week number derived from start_date)
-      const startMs = current_user.start_date ? new Date(current_user.start_date).getTime() : null
-      const actualEntries = (allEntries as any[]).map((e: any) => {
-        const entryMs = new Date(e.date).getTime()
-        const week = startMs
-          ? Math.max(1, Math.round((entryMs - startMs) / (7 * 24 * 60 * 60 * 1000)))
-          : 1
-        return {
-          week,
-          weight: e.weight,
-          bf: e.body_fat_percentage ?? e.bf ?? 0,
-          date: typeof e.date === 'string' ? e.date : new Date(e.date).toISOString().slice(0, 10),
-          ...(e.photo ? { photo: e.photo } : {}),
-        }
-      })
+      // `entries` is already scoped by the selected cycle. Its cycle start date
+      // wins over the profile date so historical reports retain their own week 1.
+      const selectedCycle = selectedCycleId === ALL_CYCLES
+        ? null
+        : cycles.find((cycle) => cycle.id === selectedCycleId) ?? null
+      const actualEntries = buildLivingReportActualEntries(
+        entries as any[],
+        selectedCycle?.start_date ?? current_user.start_date,
+      )
       const res = await fetchGeneratedLivingReport(current_user, actualEntries)
       if (!res.html_content) throw new Error('Living report returned no HTML content')
 
@@ -224,7 +224,7 @@ export default function ReportsPage() {
       calcVersion: CALC_VERSION,
       generatorVersion: GENERATOR_VERSION,
     })
-    const targetReports = scopeByCycle(allReports as any[], targetCycleId || ALL_CYCLES)
+    const targetReports = scopeByCycle(uniqueReports as any[], targetCycleId || ALL_CYCLES)
     const lastFp = (targetReports[0] as any)?.source_fingerprint ?? null
     const gate = canGenerateReport(lastFp, currentFp)
     if (!gate.allowed) {
@@ -466,7 +466,7 @@ export default function ReportsPage() {
               <SelectItem value={ALL_CYCLES}>All ReComp Cycles</SelectItem>
               {cycles.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {(c.name || c.id)}{c.status === 'active' ? ' (current)' : c.status === 'archived' ? ' (archived)' : ''}
+                  {(c.name || c.id)}{c.status === 'active' ? ' (current)' : ` (${c.status})`}
                 </SelectItem>
               ))}
             </SelectContent>

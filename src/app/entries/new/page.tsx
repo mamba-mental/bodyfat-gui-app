@@ -33,7 +33,7 @@ export default function NewEntryPage() {
   const handleSubmit = async (data: { date: Date; weight: number; body_fat_percentage?: number; notes?: string; photo?: string }) => {
     setIsSaving(true)
     try {
-      await addEntry({
+      const saved = await addEntry({
         date: data.date,
         weight: data.weight,
         body_fat_percentage: data.body_fat_percentage,
@@ -41,8 +41,10 @@ export default function NewEntryPage() {
         photo: data.photo,
       })
 
-      // Redirect to dashboard after successful submission
-      router.push("/")
+      if (saved) {
+        // Report generation is an explicit, cycle-gated action in Report Center.
+        router.push("/")
+      }
     } catch (error) {
       console.error("Error saving entry:", error)
       // Error is handled by the context
@@ -56,7 +58,7 @@ export default function NewEntryPage() {
       <WorkspacePageHeader
         eyebrow="Daily check-in"
         title="Record today’s measurements"
-        description="Add a canonical weight and body-fat entry, optional notes, and a progress photo. The new record updates your active cycle, projections, dashboard, and reports."
+        description="Add a canonical weight and body-fat entry, optional notes, and a progress photo. The new record updates your active cycle, projections, and dashboard, and becomes available to the Report Center."
         icon={ClipboardPlus}
         actions={<Button asChild variant="outline" size="sm"><Link href="/entries"><ArrowLeft className="mr-2 h-4 w-4" /> Entry history</Link></Button>}
       />

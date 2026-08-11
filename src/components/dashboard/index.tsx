@@ -4,6 +4,7 @@ import * as React from "react"
 import { Activity, ArrowRight, AlertCircle, Target, Brain, TrendingUp } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +21,7 @@ import { NutritionTab } from "./tabs/NutritionTab"
 import { AICoachTab } from "./tabs/AICoachTab"
 
 export function Dashboard() {
+  const router = useRouter()
   const [mounted, setMounted] = React.useState(false)
 
   const {
@@ -34,7 +36,6 @@ export function Dashboard() {
     report_generation_entry_date,
     programEntries,
     metrics,
-    generateNewReport,
     setUserData,
     createNewProgram,
     calculateAndUpdateProgression,
@@ -45,9 +46,10 @@ export function Dashboard() {
     setMounted(true)
   }, [])
 
-  const handleGenerateReport = React.useCallback(async () => {
-    await generateNewReport()
-  }, [generateNewReport])
+  const handleGenerateReport = React.useCallback(() => {
+    // Report Center owns cycle selection and duplicate/source-fingerprint gates.
+    router.push('/reports')
+  }, [router])
 
   const handleArchiveProgram = React.useCallback(async (name: string, notes: string) => {
     const result = await archiveProgram(name, notes)

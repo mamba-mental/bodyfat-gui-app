@@ -14,11 +14,9 @@ export function defaultSelectedCycle(
   if (!cycles.length) return ALL_CYCLES
   const active = cycles.find((c) => c.status === 'active')
   if (active) return active.id
-  // No active cycle -> most recent by startDate.
-  const recent = [...cycles].sort((a, b) =>
-    a.startDate < b.startDate ? 1 : a.startDate > b.startDate ? -1 : 0
-  )[0]
-  return recent.id
+  // A stopped/archived cycle is historical. Never silently treat it as the
+  // current report target; that leaked an old start date into new reports.
+  return ALL_CYCLES
 }
 
 export function scopeByCycle<T extends { cycle_id?: string | null }>(

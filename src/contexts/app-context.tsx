@@ -41,7 +41,7 @@ interface AppContextType {
   state: ReturnType<typeof appReducer>
   dispatch: React.Dispatch<AppAction>
   setUserData: (userData: UserData) => void
-  addEntry: (entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>
+  addEntry: (entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<boolean>
   updateEntry: (entry: BodyFatEntry) => Promise<void>
   deleteEntry: (entryId: string) => Promise<void>
   calculateAndUpdateProgression: (userData?: UserData) => Promise<void>
@@ -50,7 +50,7 @@ interface AppContextType {
   clearAllData: () => void
   refreshWidgets: () => void
   subscribeToDataChanges: (callback: () => void) => () => void
-  createNewProgram: (overrideWeight?: number, overrideBf?: number) => string | null
+  createNewProgram: (profileOverride?: UserData) => Promise<string | null>
   refreshKey: number
 }
 
@@ -378,14 +378,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addEntry = React.useCallback(async (
     entryData: Omit<BodyFatEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ) => {
-    await addEntryAction(entryData, {
+    return addEntryAction(entryData, {
       dispatch,
       currentUser: state.current_user,
       mountedRef,
       refreshWidgets,
-      generateNewReport,
     })
-  }, [state.current_user, mountedRef, refreshWidgets, generateNewReport])
+  }, [state.current_user, mountedRef, refreshWidgets])
 
   const updateEntry = React.useCallback(async (entry: BodyFatEntry) => {
     await updateEntryAction(entry, { dispatch, refreshWidgets })
@@ -407,15 +406,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await deleteReportAction(reportId, deleteReportFromStorage, { dispatch, refreshWidgets })
   }, [refreshWidgets])
 
-  const createNewProgram = React.useCallback((overrideWeight?: number, overrideBf?: number): string | null => {
+  const createNewProgram = React.useCallback((profileOverride?: UserData): Promise<string | null> => {
     return createProgramAction({
       dispatch,
       currentUser: state.current_user,
       entries: state.entries,
       refreshWidgets,
-      overrideWeight,
-      overrideBf,
-    })
+    }, profileOverride)
   }, [state.current_user, state.entries, refreshWidgets])
 
   const contextValue: AppContextType = {
