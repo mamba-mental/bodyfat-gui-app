@@ -73,7 +73,7 @@ The development frontend uses Turbopack/Next development compilation, so the fir
 ## Primary workflows
 
 1. Use **Setup Profile** to create or edit the member profile.
-2. Use **Plan Studio** to start a standard cut or build a 14-day cut.
+2. Use **Plans** to continue the current plan, start a standard cut, or build a guided 14-day cut.
 3. Use **New Entry** for measurements. A successful save recalculates state but leaves report creation explicit.
 4. Use **Reports** to choose the active cycle or aggregate history and generate the desired report.
 5. Use **Settings > Check-ins** to select weigh-in days and optionally connect an n8n webhook.

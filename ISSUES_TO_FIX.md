@@ -29,7 +29,8 @@ Older July 2025 issues in this file were reconciled against the current applicat
 - Reports do not silently use the newest stopped cycle.
 - Entry save does not wait for or silently create reports.
 - Dashboard generation uses Report Center's duplicate gate.
-- Plan Studio 12/15/22 choices continue to setup.
+- Plans separates continuing the active plan from starting a replacement, and standard 12/15/22 choices continue to setup.
+- The 14-day builder is a resumable five-step flow with authoritative Readiness and exact Review gates.
 - Living Reports are selected-cycle scoped and use correct week math.
 - 14-day report creation refreshes app state.
 - Startup/UI report artifact duplication is guarded.

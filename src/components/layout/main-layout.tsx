@@ -83,7 +83,7 @@ const navigationItems = [
     icon: TrendingUp,
   },
   {
-    title: "Plan Studio",
+    title: "Plans",
     url: "/plans",
     icon: CalendarRange,
   },
@@ -318,7 +318,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </ClientWrapper>
         </aside>
 
-        <div className="flex-1 flex flex-col">
+        <div className="min-w-0 flex-1 flex flex-col">
           <header
             className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur"
             role="banner"
@@ -330,7 +330,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 aria-controls="sidebar-content"
               />
               <nav className="ml-auto flex items-center gap-2 md:gap-4" aria-label="Secondary navigation">
-                <Button asChild variant="outline" size="sm" aria-label="Open Plan Decision Studio">
+                <Button asChild variant="outline" size="sm" aria-label="Open Plans">
                   <Link href="/plans"><CalendarRange className="mr-2 h-4 w-4" /> Current plan</Link>
                 </Button>
                 <ThemeToggle />
@@ -350,7 +350,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           <main
-            className="flex-1"
+            className="min-w-0 flex-1"
             role="main"
             id="main-content"
             aria-label="Main application content"

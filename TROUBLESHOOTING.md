@@ -56,7 +56,7 @@ The local backend port is `8313`, not `8000`. Port `8000` is used inside some Do
 
 ## New program has the wrong profile or date
 
-1. Confirm the active cycle in Plan Studio or **Settings > Check-ins**.
+1. Confirm the active cycle in **Plans** or **Settings > Check-ins**.
 2. Confirm the Reports selector is not showing a stopped historical cycle.
 3. Reopen **Setup Profile** and verify the copied/editable profile values.
 4. If a save error occurred, refresh and re-check the active cycle; client compensation is not a fully atomic server transaction.
@@ -82,7 +82,7 @@ The repaired August 11 active cycle begins `2026-08-11`. An older June 3 report/
 
 ## 14-day cut is missing or blocked
 
-Open `/plans`, select **14-Day Cut**, and resolve the displayed blockers. Typical blockers are a draft template, missing consecutive source weeks, incomplete source values, unconfirmed/expired inventory, incompatible units, non-divisible oral strength, shortage, missing review evidence, or missing acknowledgement.
+Open `/plans`, select **Start a 14-day cut**, and follow Basics → Diet & Training → PED Schedule → Readiness. Resolve every actionable checklist item before Review. Typical blockers are a missing profile, incomplete source weeks, incomplete source values, unconfirmed/expired inventory, incompatible units, non-divisible oral strength, shortage, missing review evidence, or missing acknowledgement.
 
 The app intentionally refuses to infer or recommend a replacement compound/dose.
 

@@ -154,7 +154,7 @@ export function CommandCenter() {
     return (
       <main className="flex min-h-[75vh] items-center justify-center bg-[#f8f6f0] p-6">
         <div className="max-w-xl rounded-3xl border border-[#d7ddd4] bg-white p-10 text-center shadow-sm">
-          <CalendarDays className="mx-auto h-10 w-10 text-[#315a40]" /><h1 className="mt-4 font-serif text-4xl text-[#173c2a]">No 14-day challenge yet.</h1><p className="mt-3 text-sm text-[#687169]">Build a preview, choose a complete source schedule, and save or activate the plan in the Decision Studio.</p><Button asChild className="mt-6 bg-[#173c2a] text-white"><Link href="/plans">Open Plan Decision Studio <ChevronRight className="ml-2 h-4 w-4" /></Link></Button>
+          <CalendarDays className="mx-auto h-10 w-10 text-primary" /><h1 className="mt-4 text-4xl font-semibold">No 14-day challenge yet.</h1><p className="mt-3 text-sm text-muted-foreground">Use Plans to choose your dates, review diet and training, confirm the source-backed schedule and inventory, and check readiness.</p><Button asChild className="mt-6"><Link href="/plans">Start a 14-day plan <ChevronRight className="ml-2 h-4 w-4" /></Link></Button>
         </div>
       </main>
     )

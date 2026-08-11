@@ -8,11 +8,16 @@ Verified on August 11, 2026 against the local Windows-supervised application and
 - `npm run build`: passed; all 57 static pages were generated. The existing ESLint circular-configuration warning remains.
 - `python -m pytest python-api/tests/unit -q`: 28 passed in the latest flow-repair run.
 - Focused TypeScript regression coverage: 22 passed across nine files, including program/profile preservation, cycle/report scoping, challenge contracts, palette/nutrition behavior, report parity, and theme behavior.
-- Playwright modern-workspace suite: 11 passed with one Chromium worker. Earlier feature verification also exercised the seven Settings palettes, responsive sidebar navigation, dashboard challenge discovery, Plan Studio, and the fourteen-day Template Editor.
+- Final guided Plans/palette unit/component coverage: 8 passed across three focused files, including exact local 14-day date math, safe draft restoration, malformed-state handling, roadmap navigation, and the seven-palette registry.
+- Guided Plans Playwright coverage: 5 passed with one Chromium worker, covering dashboard entry, standard-versus-14-day disclosure, five-column progress geometry, mobile overflow containment, safe reload restoration, and the fourteen-day Template Editor.
+- Combined modern-workspace and guided-Plans Chromium run: 16 passed with one worker.
+- Playwright modern-workspace suite: 11 passed with one Chromium worker. It exercises the seven Settings palettes, responsive sidebar navigation, dashboard challenge discovery, Plans, and the fourteen-day Template Editor.
+- Manual browser inspection verified the guided Plans workspace at 1536 px and 390 px. All seven palettes were evaluated in light and dark mode (14 combinations); semantic background/primary/success/warning/info roles resolved in every combination. The mobile page has no document-level horizontal overflow, while the five-step rail scrolls inside its own container.
 - 22 checked application routes returned HTTP 200.
 - `openspec validate add-two-week-cut-challenge --strict`: passed.
 - `openspec validate update-interface-palettes-and-feature-lab --strict`: passed.
 - `openspec validate add-ai-ped-inventory-scheduler --strict`: passed.
+- `openspec validate simplify-plan-creation-flow --strict`: passed.
 - `git diff --check`: passed.
 
 ## Live runtime and data
@@ -56,6 +61,15 @@ Verified on August 11, 2026 against the local Windows-supervised application and
 - The deterministic report reflects the frozen PED schedule/inventory snapshot without requiring AI. AI explanation remains roadmap work and may not mutate the report or schedule.
 - Existing standard-cycle and Living Report history remains preserved.
 
+## Guided Plans workflow
+
+- `/plans` shows the current plan and continuation action before replacement choices.
+- Standard 12/15/22-week choices keep using the copied, editable profile flow.
+- The 14-day path reveals only Basics, Diet & Training, PED Schedule, Readiness, and Review in order.
+- Browser-safe choices resume after a reload, but a final preview is never trusted from local storage; canonical readiness must be regenerated.
+- PED inventory and documented review stay mounted during in-session step navigation so entered data is not discarded when moving Back.
+- Readiness remains backed by the authoritative preview API, and the final action remains blocked until the exact preview reports ready.
+
 ## Navigation performance
 
 The supervised frontend currently runs `next dev`. A route can take several seconds the first time it compiles after a restart. Checked warmed primary routes returned HTTP 200. Explicit sidebar routing and prefetch behavior were covered by Playwright.
@@ -65,7 +79,7 @@ A future move to production runtime must use a verified standalone build/copy/st
 ## Remaining verified gaps
 
 - Standard-program creation is compensated across separate requests, not atomic in one backend transaction.
-- Modern challenge/dashboard surfaces still contain hard-coded colors that do not all consume the selected palette.
+- The guided Plans workspace uses semantic palette roles. Other modern dashboard/challenge surfaces still contain hard-coded colors that do not all consume the selected palette.
 - Some Settings values can show local success before/without confirmed server consumption.
 - Unit/date/notification/privacy preferences are not fully enforced.
 - n8n is unsigned/browser-side, has no app retry ledger, and relies on downstream idempotency enforcement.

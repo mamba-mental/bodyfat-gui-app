@@ -23,7 +23,7 @@ If port `8313` shows `PRIME Body Fat Calculator API`, the backend is working. Op
 
 ## Start a standard cut
 
-1. Open **Plan Studio** or use **Start New Program**.
+1. Open **Plans** or use **Start New Program**.
 2. Choose 12, 15, or 22 weeks. The setup form is also capable of saving another explicit duration when exposed by the selected flow.
 3. Review the copied profile, start date, current measurements, goals, activity, training, nutrition, and PED-use inputs.
 4. Change anything that should differ for this cycle.
@@ -36,17 +36,15 @@ If the profile save fails after cycle creation, the client attempts to restore t
 
 ## Start a 14-day cut
 
-1. Open **Plan Studio** at `/plans`.
-2. Select **14-Day Cut**.
-3. Choose an exact start date and two consecutive source-protocol weeks.
-4. Review or edit the two-week nutrition/training template. Activate its revision if it is still draft.
-5. Add and confirm the exact PED inventory needed by the selected source schedule.
-6. Resolve every range, unit, expiry, divisibility, quantity, and source-coverage blocker.
-7. Record member inventory confirmation and separate documented review evidence.
-8. Accept the safety/source acknowledgement.
-9. Select **Build exact preview**.
-10. When the preview says **Ready to activate**, select **Start 14-day cut**.
-11. Use the **14-Day Command Center** for daily logging, future-day amendments, progress reports, and final/stopped-early reporting.
+1. Open **Plans** at `/plans` and select **Start a 14-day cut**.
+2. In **Basics**, choose the exact start date and confirm the profile values that will anchor the plan.
+3. In **Diet & Training**, review or edit the versioned two-week structure.
+4. In **PED Schedule**, choose two consecutive source-protocol weeks and add the exact inventory needed by those dated events.
+5. Resolve every range, unit, expiry, divisibility, quantity, and source-coverage blocker, then record the inventory confirmation and separate documented review evidence.
+6. In **Readiness**, accept the source/safety acknowledgement and select **Check readiness**. The app saves a draft template automatically when required and never guesses missing source values.
+7. When every item is complete, select **Review my plan**.
+8. Confirm the exact frozen calculation, schedule, inventory allocation, and report inputs, then select **Start 14-Day Cut**.
+9. Use the **14-Day Command Center** for daily logging, future-day amendments, progress reports, and final/stopped-early reporting.
 
 Inventory constrains whether the selected source schedule can be fulfilled. It does not cause the app to choose a protocol or invent a dose. See [docs/TWO-WEEK-PED-INVENTORY-MVP.md](docs/TWO-WEEK-PED-INVENTORY-MVP.md).
 

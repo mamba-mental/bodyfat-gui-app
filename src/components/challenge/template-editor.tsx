@@ -96,7 +96,7 @@ export function TemplateEditor() {
       <div className="mx-auto max-w-[1500px]">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Link href="/plans" className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-[#3d654d]"><ArrowLeft className="h-3.5 w-3.5" /> Plan Decision Studio</Link>
+            <Link href="/plans" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary"><ArrowLeft className="h-3.5 w-3.5" /> Back to Plans</Link>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#647068]">Editable source template</p>
             <h1 className="mt-1 font-serif text-4xl font-medium text-[#173c2a]">Two-Week Cut Template Editor</h1>
             <p className="mt-2 text-sm text-[#687169]">Every save creates a new revision. Existing challenges and reports keep their original snapshot.</p>

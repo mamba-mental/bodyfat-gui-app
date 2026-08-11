@@ -70,15 +70,17 @@ The report is deterministic from the frozen plan snapshot. Optional future AI ex
 
 **Progress** visualizes recorded weight/body-fat data. **Calculator** exposes PRIME-derived calculation tools. These are support surfaces; the active cycle and report snapshot remain the context for official program reporting.
 
-## 7. Plan Studio
+## 7. Plans
+
+**Plans** opens with the current active plan and a direct continuation action. Starting a replacement plan is a separate choice so it cannot be confused with continuing today's work.
 
 ### Standard cut
 
-Select 12, 15, or 22 weeks, continue to the copied profile review, adjust values, and save. A real active cycle and program baseline are created.
+Select **Start a standard cut**, choose 12, 15, or 22 weeks, continue to the copied profile review, adjust values, and save. A real active cycle and program baseline are created.
 
 ### 14-Day Cut
 
-The short challenge is separate from standard cuts and always spans exactly 14 calendar days. Activation requires:
+Select **Start a 14-day cut**. The guided setup reveals only the current step: Basics, Diet & Training, PED Schedule, Readiness, and Review. Safe navigation choices are saved in the browser so setup can be resumed. The short challenge is separate from standard cuts and always spans exactly 14 calendar days. Activation requires:
 
 - an exact start date;
 - an active/reviewed two-week template revision;
@@ -89,7 +91,7 @@ The short challenge is separate from standard cuts and always spans exactly 14 c
 - member confirmation, documented review evidence, and safety/source acknowledgement;
 - a successful PRIME-backed preview.
 
-The app blocks rather than guesses when any required value is missing.
+The app blocks rather than guesses when any required value is missing. The final Review step identifies the exact frozen revision that the Command Center and reports will use.
 
 ## 8. 14-Day Command Center
 
@@ -125,7 +127,7 @@ The Changelog is a user-facing release-history page. `/test`, `/test-api`, `/tes
 
 - API JSON instead of dashboard: open `http://localhost:3010`, not `8313`.
 - “Site can't be reached”: run the lifecycle start/status commands.
-- Wrong cycle date: confirm the active cycle in Plan Studio/Settings and the selected scope in Reports.
+- Wrong cycle date: confirm the active cycle in Plans/Settings and the selected scope in Reports.
 - Missing n8n schedule: select weigh-in days on the active cycle first.
 - Slow first page load: let the development server compile that route, then retry.
 - Saved report appears twice: refresh; the UI collapses historical duplicate artifact rows and new startup ingestion is deduplicated.

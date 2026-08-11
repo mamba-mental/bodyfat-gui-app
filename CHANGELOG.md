@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Complete 14-day cut workflow with exact day semantics, editable/versioned templates, source-bound two-week PED schedule selection, daily command center, future-day amendments, and progress/final/stopped-early reporting.
 - Manual confirmed PED inventory MVP with Decimal-based coverage, expiry/unit/divisibility/shortage blockers, documented range review, immutable activation snapshots, and report provenance.
-- Modernized workspace, preserved banner, seven palettes, nutrition workspace/import, Plan Studio, AI pages, Settings Feature Lab, and Mobbin reference directions.
+- Modernized workspace, preserved banner, seven palettes, nutrition workspace/import, Plans, AI pages, Settings Feature Lab, and Mobbin reference directions.
+- Replaced the mixed Plan Studio with a plain-language Plans landing page and a resumable five-step 14-day setup: Basics, Diet & Training, PED Schedule, Readiness, and Review.
 - Weigh-in schedule and optional n8n webhook handoff with cycle/date idempotency key and prerequisite guards.
 - Canonical documentation index plus current user, API, developer, database, persistence, operations, troubleshooting, n8n, and verification guides.
 
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Entry-history “from start” deltas use the program baseline.
 - Setup Profile remains available; Settings display name now updates the actual member profile.
 - Repaired the live active-cycle start from the incorrectly inherited June 3 context to August 11 while preserving the old cycle/report as history.
+- Fixed the Plans development-mode loading hang caused by React Strict Mode cleanup, plus desktop progress-rail and mobile horizontal-overflow defects found during visual verification.
 
 ### Known limitations
 

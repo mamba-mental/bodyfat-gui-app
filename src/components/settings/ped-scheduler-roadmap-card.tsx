@@ -27,7 +27,7 @@ export function PedSchedulerRoadmapCard() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            The manual 14-day workflow is ready in Plan Studio. The complete design still targets
+            The manual 14-day workflow is ready in Plans. The complete design still targets
             source-backed schedules for 14-day, standard, and custom-length cuts.
           </p>
 
@@ -41,7 +41,7 @@ export function PedSchedulerRoadmapCard() {
           </div>
 
           <Link href="/plans" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            Open 14-day Plan Studio <ArrowRight className="h-4 w-4" />
+            Open 14-day setup <ArrowRight className="h-4 w-4" />
           </Link>
 
           <div className="flex items-start gap-2 rounded-md border border-amber-500/35 bg-amber-500/10 p-3 text-xs text-foreground">

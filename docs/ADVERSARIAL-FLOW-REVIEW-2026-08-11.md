@@ -1,6 +1,8 @@
 # Apex Fit Adversarial Flow Review — 2026-08-11
 
-**Disposition updated:** August 11, 2026 after commit `df184db`. This is the current full-flow audit; older June audits remain historical snapshots.
+**Disposition updated:** August 11, 2026 after the flow repair and guided Plans implementation. This is the current full-flow audit; older June audits remain historical snapshots.
+
+The later guided Plans slice resolved the audit's Plan Studio discoverability and palette findings for `/plans`: the route now presents the current plan first, separates standard and 14-day creation, uses five resumable steps with authoritative Readiness and Review gates, and consumes semantic palette roles. The remaining palette finding applies to other modern Dashboard and Command Center surfaces.
 
 ## Scope and method
 
@@ -38,14 +40,14 @@ After the read-only audit, an explicitly scoped live-state repair restored the c
 
 | Workspace | Result | Notes |
 | --- | --- | --- |
-| Dashboard | Pass with fix | Current metrics use active-cycle domain data; report CTA now enters the gated Report Center. Standard-cycle controls remain hidden under a disclosure and are less discoverable than Plan Studio. |
+| Dashboard | Pass with fix | Current metrics use active-cycle domain data; report CTA now enters the gated Report Center. Standard and 14-day replacement flows are directly available in Plans. |
 | Setup Profile / custom / wizard | Pass with fix | Existing profile is reused and editable. No historical entry/report deletion occurs. |
 | New Entry | Pass with fix | Persistence, recalculation, failure retention, and post-save navigation are separated from report generation. |
 | Entry History | Pass with fix | Baseline delta uses the program snapshot. Edit/delete mutations were not fired against live data during this read-only audit. |
 | Nutrition | Pass, availability only | Workspace and controls render. Live import/delete was not exercised because it would mutate member data. |
 | Reports | Pass with fixes | Active/aggregate scoping, duplicate gate, standard, Living, and 14-day report state paths were traced. Existing duplicate DB rows remain preserved but are hidden as one artifact. |
 | Progress Charts | Pass, availability only | Browser assertion passed; no live record mutation was needed. |
-| Plan Studio | Pass with fix | 12/15/22 standard choices now continue; 14-day preview/inventory path renders. Challenge activation was not fired. |
+| Plans | Pass with fixes | Current-plan continuation is separated from replacement. Standard 12/15/22 choices continue, and the 14-day path is guided through Basics, Diet & Training, PED Schedule, authoritative Readiness, and exact Review. Challenge activation was not fired. |
 | 14-Day Cut | Pass with fix | Draft/active challenge selection, logs, amendment constraints, schedule rendering, and report refresh were traced. There is currently no live 14-day challenge to execute end-to-end. |
 | Calculator | Pass, availability only | Primary calculator workspace rendered. |
 | AI Settings / Chat / Insights | Pass, availability only | Pages render. No provider credential, paid model call, or medical/PED schedule generation was invoked. |
@@ -59,9 +61,9 @@ After the read-only audit, an explicitly scoped live-state repair restored the c
 
 Cycle creation and profile saving are separate HTTP writes. This change adds client-side compensation: if the profile write fails, the prior active cycle is reactivated (or the new cycle is stopped). That closes the ordinary split-state failure, but a process crash between requests still cannot be made atomic in the browser. The durable fix is one backend transaction endpoint that saves the cycle, profile baseline, and old-cycle status together or rolls all three back.
 
-### P1 — Palette selection does not govern all modern screens
+### P1 — Palette selection does not govern all remaining modern screens
 
-The challenge/Plan Studio/Command Center and parts of the modern dashboard contain extensive hard-coded hex colors (139 occurrences in the audited files). Seven palettes are selectable, but these screens do not consistently consume theme tokens, so the setting's visible promise is broader than its implementation.
+Guided Plans now consumes semantic palette roles and was checked across all seven palettes in light and dark modes. Parts of the modern dashboard and 14-day Command Center still contain hard-coded colors, so palette migration is not complete application-wide.
 
 ### P1 — Settings “saved” can get ahead of server persistence
 
@@ -92,7 +94,7 @@ The live UI uses `next dev`; the first visit after restart can take several seco
 ## Recommended next implementation slice
 
 1. Add an atomic backend `start program` transaction and make the UI wait for its confirmed response.
-2. Convert hard-coded modern workspace colors to semantic palette tokens and visually validate all seven palettes on Dashboard, Plan Studio, and Command Center.
+2. Convert the remaining hard-coded modern workspace colors to semantic palette tokens and visually validate all seven palettes on Dashboard and Command Center.
 3. Make Settings honest: implement or label units/date formatting, notifications, and privacy enforcement.
 4. Move the live supervisor to production runtime, then add a signed server-side n8n delivery record with retries and event history.
 5. Remove or development-gate test routes and install Firefox/WebKit for cross-browser release testing.

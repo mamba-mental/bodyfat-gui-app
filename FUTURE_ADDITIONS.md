@@ -11,7 +11,7 @@
    - Return the complete committed state and test failure/rollback boundaries.
 
 2. **Complete palette-token migration**
-   - Replace remaining hard-coded modern Dashboard, Plan Studio, and Command Center colors with semantic tokens.
+   - Replace remaining hard-coded modern Dashboard and Command Center colors with semantic tokens; guided Plans is complete.
    - Visually verify all seven palettes, both themes, contrast, reduced motion, and responsive layouts.
 
 3. **Awaited Settings persistence**

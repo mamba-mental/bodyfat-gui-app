@@ -37,6 +37,7 @@ The Desktop shortcuts **ApexFit Tracker** and **Stop ApexFit** are not currently
 - **Living Report:** uses the selected cycle's entries, cycle start date, and floor-based seven-day week boundaries.
 - **Dashboard Generate:** opens Report Center so the cycle/source duplicate gate is applied.
 - **14-day reports:** use the immutable activated challenge snapshot and can include template, protocol/PED, inventory review, amendments, planned-versus-actual daily data, and completion state.
+- **Plans:** presents the active plan first, separates standard and 14-day creation, and guides the 14-day path through Basics, Diet & Training, PED Schedule, Readiness, and exact final Review. Safe navigation choices resume locally; canonical profile, protocol, inventory, and preview data are reloaded.
 - **n8n:** sends only when there is an active cycle, at least one weigh-in day, and a calculable next date. n8n—not the app—must enforce the supplied idempotency key.
 
 ## Verified release gates
@@ -44,8 +45,8 @@ The Desktop shortcuts **ApexFit Tracker** and **Stop ApexFit** are not currently
 - TypeScript typecheck passed.
 - Production build passed with 57 static pages; the pre-existing ESLint circular-configuration warning remains.
 - 28 Python backend tests passed.
-- 22 focused frontend tests passed.
-- 11 Chromium modern-workspace end-to-end tests passed.
+- 8 focused guided-Plans/palette frontend tests passed in the final slice; the earlier 22-test flow-repair regression set also passed.
+- 16 Chromium modern-workspace and guided-Plans end-to-end tests passed.
 - 22 checked HTTP routes returned 200.
 - All three active relevant OpenSpec changes passed strict validation.
 
@@ -54,7 +55,7 @@ See [docs/VERIFICATION-2026-08-11.md](docs/VERIFICATION-2026-08-11.md) for exact
 ## Not complete
 
 - Atomic backend transaction for starting a standard program.
-- Full semantic-palette coverage on every modern page.
+- Full semantic-palette coverage on the remaining modern Dashboard and Command Center surfaces.
 - Awaited server confirmation for all Settings saves.
 - Enforcement of units, date-format, notification, and privacy preferences.
 - Signed/server-side n8n delivery with retries and event history.

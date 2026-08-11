@@ -80,7 +80,7 @@ export function QuietDashboard({ user, metrics, entries, reports, calculation, o
         <div className="absolute -right-14 -top-20 h-56 w-56 rounded-full border-[34px] border-[#dfe7d8]/70" />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#718075]">Dashboard · today</p><h1 className="mt-2 font-serif text-4xl font-medium tracking-tight text-[#173c2a] md:text-5xl">Good morning, {firstName}</h1><p className="mt-2 text-sm text-[#687169]">Stay focused today. Small steps lead to measurable changes.</p></div>
-          <div className="flex gap-2"><Button asChild variant="outline" className="border-[#c6d0c4] bg-white"><Link href="/plans">Plan Studio</Link></Button><Button asChild className="bg-[#173c2a] text-white hover:bg-[#214c38]"><Link href={challenge ? "/challenge" : "/entries/new"}>{challenge ? "Open today" : "Start check-in"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
+          <div className="flex gap-2"><Button asChild variant="outline" className="border-[#c6d0c4] bg-white"><Link href="/plans">Plans</Link></Button><Button asChild className="bg-[#173c2a] text-white hover:bg-[#214c38]"><Link href={challenge ? "/challenge" : "/entries/new"}>{challenge ? "Open today" : "Start check-in"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
         </div>
       </section>
 

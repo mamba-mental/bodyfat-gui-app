@@ -10,20 +10,71 @@ test.describe("Quiet Strength dashboard and 14-day challenge", () => {
     await expect(page.getByText("Nutrition & adherence")).toBeVisible()
     await expect(page.getByText("Latest measurements")).toBeVisible()
     await expect(page.getByText("AI Coach insight")).toBeVisible()
-    await expect(page.getByRole("link", { name: /Plan Studio/i }).first()).toBeVisible()
+    await expect(page.getByRole("link", { name: /^Plans$/i }).first()).toBeVisible()
   })
 
-  test("Plan Studio binds a complete source window into a 14-day preview", async ({ page }) => {
+  test("Plans separates standard creation from the guided 14-day workflow", async ({ page }) => {
     await page.goto("/plans", { waitUntil: "domcontentloaded" })
 
-    await expect(page.getByRole("heading", { name: "Build the plan. Keep the life." })).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByRole("combobox", { name: "Start from source week" })).toBeVisible()
-    await page.getByRole("button", { name: /Build exact preview/i }).click()
+    await expect(page.getByRole("heading", { name: "Start or change a plan" })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole("button", { name: /Start a standard cut/i })).toBeVisible()
+    await expect(page.getByRole("button", { name: /Start a 14-day cut/i })).toBeVisible()
+    await expect(page.getByText("Which two source weeks should be used?")).not.toBeVisible()
 
-    await expect(page.getByText("Average calories")).toBeVisible({ timeout: 60_000 })
-    await expect(page.getByText("14", { exact: true }).first()).toBeVisible()
-    await expect(page.getByText(/Protocol source weeks/)).toBeVisible()
-    await expect(page.getByText(/Safety acknowledgement is required/)).toBeVisible()
+    await page.getByRole("button", { name: /Start a standard cut/i }).click()
+    await page.getByRole("button", { name: "22 weeks" }).click()
+    await expect(page.getByRole("link", { name: /Review profile and start plan/i })).toHaveAttribute("href", /weeks=22/)
+
+    await page.getByRole("button", { name: /Start a 14-day cut/i }).click()
+    const progressRail = page.getByRole("navigation", { name: "14-day setup progress" })
+    await expect(progressRail).toBeVisible()
+    const progressColumns = await progressRail.locator("ol").evaluate((element) => (
+      getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length
+    ))
+    expect(progressColumns).toBe(5)
+    await expect(page.getByRole("heading", { name: "Basics" })).toBeVisible()
+    await page.getByRole("button", { name: /Continue to diet and training/i }).click()
+    await expect(page.getByRole("heading", { name: "Diet and training" })).toBeVisible()
+    await page.getByRole("button", { name: /Continue to PED schedule/i }).click()
+    await expect(page.getByRole("heading", { name: "PED schedule and inventory" })).toBeVisible()
+    await expect(page.getByLabel("Which two source weeks should be used?")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "PED inventory & exact coverage" })).toBeVisible()
+  })
+
+  test("guided Plans contains its progress rail on a phone viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto("/plans", { waitUntil: "domcontentloaded" })
+
+    await expect(page.getByRole("heading", { name: "Start or change a plan" })).toBeVisible({ timeout: 30_000 })
+    await page.getByRole("button", { name: /Start a 14-day cut/i }).click()
+    const progressRail = page.getByRole("navigation", { name: "14-day setup progress" })
+    await expect(progressRail).toBeVisible()
+
+    const widths = await progressRail.evaluate((element) => ({
+      client: element.clientWidth,
+      scroll: element.scrollWidth,
+      documentClient: document.documentElement.clientWidth,
+      documentScroll: document.documentElement.scrollWidth,
+    }))
+    expect(widths.scroll).toBeGreaterThan(widths.client)
+    expect(widths.documentScroll).toBe(widths.documentClient)
+  })
+
+  test("Plans restores a safe in-progress 14-day step without restoring a final preview", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("apexfit.plan-wizard.v1", JSON.stringify({
+        planKind: "challenge",
+        standardWeeks: 15,
+        challengeStep: 5,
+        startDate: "2026-08-11",
+        startWeek: 9,
+      }))
+    })
+    await page.goto("/plans", { waitUntil: "domcontentloaded" })
+
+    await expect(page.getByRole("heading", { name: "Readiness" })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole("button", { name: /Review my plan/i })).toBeDisabled()
+    await expect(page.getByText(/Setup choices saved in this browser/i)).toBeVisible()
   })
 
   test("template editor exposes all fourteen editable days and revision history", async ({ page }) => {

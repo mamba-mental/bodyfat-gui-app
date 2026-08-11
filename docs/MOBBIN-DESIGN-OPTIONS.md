@@ -4,7 +4,7 @@ These are reference patterns, not instructions to copy another product. Each lan
 
 The options are **not mutually exclusive comps that require discarding the other cards/widgets**. They are a pattern library: each reference can contribute useful hierarchy, navigation, form, chart, history, or action behavior to one coherent Apex Fit system. Implementation still follows the selected Quiet Strength/Apex Fit shell, banner, seven palettes, and semantic tokens.
 
-**Current disposition:** Dashboard, Plan Studio, 14-day Command Center, Settings palette selection, nutrition, and challenge discovery have been modernized. New Entry, AI Coach, Reports/history, Progress Charts, and portions of Settings remain the highest-value destinations for the patterns below. Palette-token completion is a prerequisite for calling the visual migration complete.
+**Current disposition:** Dashboard, guided Plans, 14-day Command Center, Settings palette selection, nutrition, and challenge discovery have been modernized. Plans now uses active-plan context, progressive disclosure, a five-step 14-day setup, an actionable readiness checklist, and an exact final review. New Entry, AI Coach, Reports/history, Progress Charts, and portions of Settings remain the highest-value destinations for the patterns below. Palette-token completion on the remaining modern surfaces is a prerequisite for calling the visual migration complete.
 
 ## New Entry and daily check-in
 

@@ -6,7 +6,7 @@
 
 ## What is available now
 
-The 14-day Plan Decision Studio can now:
+The guided 14-day setup in **Plans** can now:
 
 1. Store editable, local PED inventory records.
 2. Require confirmation of the exact label name, canonical compound, form, amount per physical unit, units on hand, and expiration.
@@ -21,9 +21,9 @@ Inventory is a supply constraint only. The application does not use inventory to
 
 ## Use it tonight
 
-1. Open `http://localhost:3010/plans`.
-2. Select **14-Day Cut**.
-3. Choose the challenge start date and the two source weeks.
+1. Open `http://localhost:3010/plans` and select **Start a 14-day cut**.
+2. Complete **Basics** and review **Diet & Training**.
+3. In **PED Schedule**, choose the two source weeks.
 4. In **PED inventory & exact coverage**, add every container or package you intend to match.
 5. For injectable inventory, enter the label concentration as the amount per mL and enter the total mL physically on hand.
 6. For oral inventory, enter the amount per tablet or capsule and the number physically on hand.
@@ -31,9 +31,9 @@ Inventory is a supply constraint only. The application does not use inventory to
 8. If the source contains a range, record the exact value that was separately reviewed. The app verifies only that the value remains inside the literal source range.
 9. Enter the reviewer name, reviewer role, and a short review note. Check the member inventory confirmation and separate-review attestation.
 10. Check the existing safety acknowledgement.
-11. Select **Build exact preview**. Resolve every blocker shown in the inventory card or preview.
-12. If the editable two-week template is still a draft, activate the template and build the preview again.
-13. When the preview says **Ready to activate**, select **Start 14-day cut**.
+11. Continue to **Readiness**, accept the source/safety acknowledgement, and select **Check readiness**. Resolve every blocker shown in the checklist or inventory coverage. The app saves the current template details automatically when needed.
+12. Select **Review my plan** and confirm the exact frozen report inputs.
+13. Select **Start 14-Day Cut**.
 14. Open the 14-Day Command Center. Each day shows the source schedule and the exact inventory-backed events used for that revision.
 15. Generate a progress report at any time or a final report after all 14 days are logged. The report includes the frozen inventory coverage and review provenance.
 
