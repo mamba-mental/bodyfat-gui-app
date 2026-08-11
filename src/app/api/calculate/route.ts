@@ -82,8 +82,7 @@ export async function POST(request: NextRequest) {
 
 
     const targetUrl = `${PYTHON_API_URL}/calculate`
-    console.log('Python API URL:', targetUrl)
-    console.log('Sending to Python API:', JSON.stringify(apiData, null, 2))
+    console.log('Sending calculation request to Python service')
 
     // Call the Python PRIME calculation engine
     // Note: FastAPI expects { user_data: UserData, ai_settings?: AISettings } format

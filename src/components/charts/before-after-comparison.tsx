@@ -14,11 +14,11 @@ import { useMountedRef } from "@/hooks/use-mounted-ref"
 const chartConfig = {
   starting: {
     label: "Starting",
-    color: "hsl(var(--muted-foreground) / 0.4)",
+    color: "color-mix(in oklch, var(--muted-foreground) 40%, transparent)",
   },
   current: {
     label: "Current",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
 } satisfies ChartConfig
 
@@ -205,7 +205,7 @@ export function BeforeAfterComparison() {
               <span className="text-xs text-muted-foreground mb-1">{item.metric}</span>
               <span
                 className={`text-xl font-bold ${
-                  item.delta <= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                  item.delta <= 0 ? "text-primary" : "text-destructive"
                 }`}
               >
                 {item.deltaLabel}
@@ -222,14 +222,14 @@ export function BeforeAfterComparison() {
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-sm"
-              style={{ background: "hsl(var(--muted-foreground) / 0.4)" }}
+              style={{ background: "color-mix(in oklch, var(--muted-foreground) 40%, transparent)" }}
             />
             <span>Starting</span>
           </div>
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-sm"
-              style={{ background: "hsl(var(--chart-1))" }}
+              style={{ background: "var(--chart-1)" }}
             />
             <span>Current</span>
           </div>

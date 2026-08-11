@@ -12,10 +12,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { DATA_DIR } from '@/lib/constants';
+import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
 
 // Type definitions matching OpenAPI schema
 interface ThemeResponse {
   theme: 'light' | 'dark' | 'system';
+  palette: PaletteId;
   font?: string;
   updated_at?: string;
   source: 'localStorage' | 'cookie' | 'database' | 'default';
@@ -25,12 +27,14 @@ interface ThemeResponse {
 
 interface ThemeUpdateRequest {
   theme?: 'light' | 'dark' | 'system';
+  palette?: PaletteId;
   font?: string;
   user_id?: string;
 }
 
 interface ThemeUpdateResponse {
   theme?: 'light' | 'dark' | 'system';
+  palette?: PaletteId;
   font?: string;
   updated_at: string;
   storage_updates: StorageUpdates;
@@ -54,6 +58,7 @@ const THEME_FILE = path.join(DATA_DIR, 'theme-preferences.json');
 interface ThemeStore {
   [userId: string]: {
     theme: 'light' | 'dark' | 'system';
+    palette?: PaletteId;
     font?: string;
     updated_at: string;
   };
@@ -89,6 +94,7 @@ export async function GET(request: NextRequest) {
     const cookieTheme = request.cookies.get('theme')?.value as 'light' | 'dark' | 'system' | undefined;
 
     let theme: 'light' | 'dark' | 'system' = 'system';
+    let palette: PaletteId = DEFAULT_PALETTE;
     let font: string | undefined;
     let source: 'localStorage' | 'cookie' | 'database' | 'default' = 'default';
     let updated_at: string | undefined;
@@ -100,6 +106,7 @@ export async function GET(request: NextRequest) {
 
       if (userTheme) {
         theme = userTheme.theme;
+        palette = isPaletteId(userTheme.palette) ? userTheme.palette : DEFAULT_PALETTE;
         font = userTheme.font;
         updated_at = userTheme.updated_at;
         source = 'database';
@@ -114,6 +121,7 @@ export async function GET(request: NextRequest) {
 
     const response: ThemeResponse = {
       theme,
+      palette,
       font,
       updated_at,
       source,
@@ -156,18 +164,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Must have at least theme or font to update
-    if (!body.theme && !body.font) {
+    if (body.palette && !isPaletteId(body.palette)) {
       return NextResponse.json(
         {
           error: 'ValidationError',
-          message: 'Must provide theme or font to update',
+          message: 'Invalid palette value',
         },
         { status: 400 }
       );
     }
 
-    const { theme, font, user_id } = body;
+    // Must have at least theme or font to update
+    if (!body.theme && !body.font && !body.palette) {
+      return NextResponse.json(
+        {
+          error: 'ValidationError',
+          message: 'Must provide theme, palette, or font to update',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { theme, palette, font, user_id } = body;
     const updated_at = new Date().toISOString();
 
     const storage_updates: StorageUpdates = {
@@ -180,9 +198,10 @@ export async function PUT(request: NextRequest) {
     if (user_id) {
       try {
         const themeStore = await readThemeData();
-        const existing = themeStore[user_id] || { theme: 'system', updated_at };
+        const existing = themeStore[user_id] || { theme: 'system', palette: DEFAULT_PALETTE, updated_at };
         themeStore[user_id] = {
           theme: theme || existing.theme,
+          palette: palette || existing.palette || DEFAULT_PALETTE,
           font: font || existing.font,
           updated_at,
         };
@@ -196,6 +215,7 @@ export async function PUT(request: NextRequest) {
 
     const response: ThemeUpdateResponse = {
       theme,
+      palette,
       font,
       updated_at,
       storage_updates,

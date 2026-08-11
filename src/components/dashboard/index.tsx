@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { useDashboardData } from "./hooks/useDashboardData"
-import { DashboardHeader } from "./DashboardHeader"
-import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
 import { CycleManagerCard } from "@/components/cycle/cycle-manager-card"
+import { QuietDashboard } from "./quiet-dashboard"
+import { DashboardHeader } from "./DashboardHeader"
 import { OverviewTab } from "./tabs/OverviewTab"
 import { ProgressTab } from "./tabs/ProgressTab"
 import { NutritionTab } from "./tabs/NutritionTab"
@@ -122,23 +122,17 @@ export function Dashboard() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <DashboardHeader
-        currentUser={current_user}
+    <div className="flex-1">
+      <QuietDashboard
+        user={current_user}
+        metrics={metrics}
         entries={entries}
-        programReference={program_reference}
-        loading={loading}
-        reportGenerationStatus={report_generation_status}
-        onArchiveProgram={handleArchiveProgram}
+        reports={reports}
+        calculation={current_calculation}
         onGenerateReport={handleGenerateReport}
       />
 
-      {/* ReComp Cycle context + lifecycle controls (P3) */}
-      <CycleContextBanner entryDates={(entries ?? []).map((e: any) => e.date)} />
-      <CycleManagerCard
-        latestWeight={entries?.[0]?.weight ?? null}
-        latestBf={entries?.[0]?.body_fat_percentage ?? null}
-      />
+      <section className="space-y-4 bg-[#f8f6f0] px-4 pb-8 md:px-8">
 
       {error && (
         <Alert variant="destructive">
@@ -166,36 +160,37 @@ export function Dashboard() {
         </Alert>
       )}
 
+      <div className="flex flex-wrap items-end justify-between gap-3 pt-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#69736b]">Detailed workspace</p><h2 className="mt-1 font-serif text-3xl text-[#173c2a]">All existing analytics remain available</h2></div></div>
       <Tabs defaultValue="overview" className="space-y-4" aria-label="Dashboard sections">
         <TabsList
-          className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900"
+          className="grid w-full grid-cols-4 border border-[#d7ddd4] bg-white lg:w-auto lg:grid-cols-4"
           role="tablist"
           aria-label="Dashboard navigation tabs"
         >
           <TabsTrigger
             value="overview"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white"
+            className="data-[state=active]:bg-[#173c2a] data-[state=active]:text-white"
             aria-label="Overview section - View current metrics and progress summary"
           >
             <span aria-hidden="true">&#x1F4CA;</span> Overview
           </TabsTrigger>
           <TabsTrigger
             value="progress"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500 data-[state=active]:text-white"
+            className="data-[state=active]:bg-[#173c2a] data-[state=active]:text-white"
             aria-label="Progress section - View detailed progress charts and trends"
           >
             <span aria-hidden="true">&#x1F4C8;</span> Progress
           </TabsTrigger>
           <TabsTrigger
             value="nutrition"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white"
+            className="data-[state=active]:bg-[#173c2a] data-[state=active]:text-white"
             aria-label="Nutrition section - View calorie and nutrition guidance"
           >
             <span aria-hidden="true">&#x1F34E;</span> Nutrition
           </TabsTrigger>
           <TabsTrigger
             value="ai-coach"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+            className="data-[state=active]:bg-[#173c2a] data-[state=active]:text-white"
             aria-label="AI Coach section - Get personalized AI insights and chat"
           >
             <span aria-hidden="true">&#x1F916;</span> AI Coach
@@ -233,6 +228,9 @@ export function Dashboard() {
           <AICoachTab />
         </TabsContent>
       </Tabs>
+      <details className="rounded-2xl border border-[#d7ddd4] bg-white p-4"><summary className="cursor-pointer text-sm font-semibold text-[#365640]">Standard cycle controls</summary><div className="mt-4"><CycleManagerCard latestWeight={entries?.[0]?.weight ?? null} latestBf={entries?.[0]?.body_fat_percentage ?? null} /></div></details>
+      <details className="rounded-2xl border border-[#d7ddd4] bg-white p-4"><summary className="cursor-pointer text-sm font-semibold text-[#365640]">Legacy program and report actions</summary><div className="mt-4"><DashboardHeader currentUser={current_user} entries={entries} programReference={program_reference} loading={loading} reportGenerationStatus={report_generation_status} onArchiveProgram={handleArchiveProgram} onGenerateReport={handleGenerateReport} /></div></details>
+      </section>
     </div>
   )
 }

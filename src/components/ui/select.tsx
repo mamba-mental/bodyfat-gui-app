@@ -68,8 +68,8 @@ function SelectContent({
         )}
         position={position}
         style={{
-          backgroundColor: 'hsl(var(--popover))',
-          color: 'hsl(var(--popover-foreground))'
+          backgroundColor: 'var(--popover)',
+          color: 'var(--popover-foreground)'
         }}
         {...props}
       >

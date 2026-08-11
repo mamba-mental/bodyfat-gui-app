@@ -220,7 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               if (fallbackData && fallbackData.name) {
                 dispatch({ type: 'SET_USER_DATA', payload: ensureEatingPattern(fallbackData)! })
                 didUpdate = true
-                console.log('[AppContext] Loaded user from direct API fallback:', fallbackData.name)
+                console.log('[AppContext] Loaded user from direct API fallback')
               }
             }
           } catch (e) {

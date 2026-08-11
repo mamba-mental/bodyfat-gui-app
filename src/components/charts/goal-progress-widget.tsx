@@ -281,19 +281,19 @@ export function GoalProgressWidget({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-blue-600">{timeEstimate.progressWeeks}</div>
+                <div className="text-2xl font-bold text-primary">{timeEstimate.progressWeeks}</div>
                 <div className="text-xs text-muted-foreground">Weeks Completed</div>
               </div>
               <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-green-600">{timeEstimate.remainingWeeks}</div>
+                <div className="text-2xl font-bold text-primary">{timeEstimate.remainingWeeks}</div>
                 <div className="text-xs text-muted-foreground">Weeks Remaining</div>
               </div>
               <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-purple-600">{timeEstimate.totalWeeks}</div>
+                <div className="text-2xl font-bold text-primary">{timeEstimate.totalWeeks}</div>
                 <div className="text-xs text-muted-foreground">Total Duration</div>
               </div>
               <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-2xl font-bold text-primary">
                   {Math.round((timeEstimate.progressWeeks / timeEstimate.totalWeeks) * 100)}%
                 </div>
                 <div className="text-xs text-muted-foreground">Timeline Complete</div>
@@ -342,7 +342,7 @@ export function GoalProgressWidget({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Remaining</span>
-              <span className="font-medium text-blue-600">
+              <span className="font-medium text-primary">
                 {Math.max(0, currentWeight - goalWeight).toFixed(1)} lbs
               </span>
             </div>
@@ -364,7 +364,7 @@ export function GoalProgressWidget({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Remaining</span>
-              <span className="font-medium text-blue-600">
+              <span className="font-medium text-primary">
                 {Math.max(0, currentBF - goalBF).toFixed(1)}%
               </span>
             </div>

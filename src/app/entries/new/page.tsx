@@ -4,13 +4,14 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { EntryForm } from "@/components/forms/entry-form"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ClipboardPlus } from "lucide-react"
 import Link from "next/link"
 import { useApp } from "@/contexts/app-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { AIInsightsPanel } from "@/components/ai/ai-insights-panel"
 import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 export default function NewEntryPage() {
   const router = useRouter()
@@ -51,21 +52,14 @@ export default function NewEntryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Link href="/entries">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Entries
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">New Entry</h1>
-          <p className="text-muted-foreground">
-            Add a new weight and body fat measurement to track your progress
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+      <WorkspacePageHeader
+        eyebrow="Daily check-in"
+        title="Record today’s measurements"
+        description="Add a canonical weight and body-fat entry, optional notes, and a progress photo. The new record updates your active cycle, projections, dashboard, and reports."
+        icon={ClipboardPlus}
+        actions={<Button asChild variant="outline" size="sm"><Link href="/entries"><ArrowLeft className="mr-2 h-4 w-4" /> Entry history</Link></Button>}
+      />
 
       {error && (
         <Alert variant="destructive">

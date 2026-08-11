@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
     // This is DIFFERENT from /generate-report which takes bare UserData.
     const body = await request.json()
 
-    console.log('=== Generate Living Report Request ===')
-    console.log('user_data keys:', body?.user_data ? Object.keys(body.user_data) : 'missing')
-    console.log('actual_entries count:', body?.actual_entries?.length ?? 0)
+    console.log('Generate Living Report request accepted')
 
     if (!body?.user_data) {
       return NextResponse.json(

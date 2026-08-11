@@ -42,6 +42,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { AISettingsService } from "@/lib/ai-settings-service"
 import { AIPromptsEditor } from "@/components/settings/ai-prompts-editor"
 import { withBasePath } from "@/lib/api-path"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 /** Providers that render editable name + base URL fields instead of a read-only endpoint display */
 const CUSTOM_PROVIDERS: AIProvider[] = ['custom1', 'custom2', 'custom3']
@@ -363,14 +364,14 @@ export default function AISettingsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">AI Settings</h2>
-        <Badge variant="secondary" className="gap-1">
-          <Shield className="h-3 w-3" />
-          Secure Storage
-        </Badge>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <WorkspacePageHeader
+        eyebrow="AI control plane"
+        title="Choose which intelligence powers each task."
+        description="Configure providers, route product areas, refine prompts, and test connectivity without exposing provider keys to the browser."
+        icon={Brain}
+        actions={<Badge variant="secondary" className="gap-1"><Shield className="h-3 w-3" />Secure server storage</Badge>}
+      />
 
       {loadError && (
         <Alert variant="destructive">
@@ -380,7 +381,7 @@ export default function AISettingsPage() {
       )}
 
       <Tabs defaultValue="providers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="providers" className="gap-2">
             <Key className="h-4 w-4" />
             Providers
@@ -433,7 +434,7 @@ export default function AISettingsPage() {
               return (
                 <Card
                   key={providerKey}
-                  className={config.enabled ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-800'}
+                  className={config.enabled ? 'border-primary/35 bg-accent/30' : 'border-border'}
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -441,7 +442,7 @@ export default function AISettingsPage() {
                         <CardTitle className="text-lg">{cardTitle}</CardTitle>
                         <CardDescription>
                           {config.enabled ? (
-                            <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
+                            <Badge variant="default" className="gap-1">
                               <CheckCircle className="h-3 w-3" />
                               Active
                             </Badge>
@@ -570,13 +571,13 @@ export default function AISettingsPage() {
                           <div className="flex items-center gap-2 text-sm">
                             {config.connectionStatus === 'success' ? (
                               <>
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                <span className="text-green-600">Working</span>
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                                <span className="text-primary">Working</span>
                               </>
                             ) : (
                               <>
-                                <AlertCircle className="h-4 w-4 text-red-600" />
-                                <span className="text-red-600">Failed - {config.connectionError || 'Connection error'}</span>
+                                <AlertCircle className="h-4 w-4 text-destructive" />
+                                <span className="text-destructive">Failed - {config.connectionError || 'Connection error'}</span>
                               </>
                             )}
                           </div>

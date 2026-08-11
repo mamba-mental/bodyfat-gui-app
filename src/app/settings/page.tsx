@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain, Sparkles, Calendar, Apple, Database } from "lucide-react"
+import { Settings, Download, Trash2, Save, User, Globe, Bell, Shield, AlertCircle, CheckCircle, Brain, Sparkles, Calendar, Apple, Database, Palette } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/contexts/theme-context"
@@ -34,6 +34,9 @@ import { FontSelector } from "@/components/settings/font-selector"
 import { SyncStatus } from "@/components/settings/sync-status"
 import { useRouter } from "next/navigation"
 import { withBasePath } from "@/lib/api-path"
+import { DEFAULT_PALETTE, PALETTE_OPTIONS, type PaletteId } from "@/lib/palettes"
+import type { CloudSyncStatus } from "@/lib/cloud-sync"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 interface UserSettings {
   units: "imperial" | "metric"
@@ -48,6 +51,7 @@ interface UserSettings {
   }
   display: {
     theme: "light" | "dark" | "system"
+    palette: PaletteId
     dateFormat: "US" | "EU" | "ISO"
     font: string
   }
@@ -56,7 +60,7 @@ interface UserSettings {
 export default function SettingsPage() {
   const { state, setUserData, clearAllData } = useApp()
   const { current_user, entries, reports } = state
-  const { theme, setTheme, font, setFont } = useTheme()
+  const { theme, setTheme, palette, setPalette, font, setFont } = useTheme()
   const router = useRouter()
 
   const formattedHeight = React.useMemo(() => {
@@ -89,6 +93,7 @@ export default function SettingsPage() {
     },
     display: {
       theme: "system",
+      palette: DEFAULT_PALETTE,
       dateFormat: "US",
       font: "roboto"
     }
@@ -102,6 +107,7 @@ export default function SettingsPage() {
 
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus | null>(null)
   const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleSaveSettings = () => {
@@ -111,6 +117,9 @@ export default function SettingsPage() {
       // Apply theme change
       if (settings.display.theme !== theme) {
         setTheme(settings.display.theme)
+      }
+      if (settings.display.palette !== palette) {
+        setPalette(settings.display.palette)
       }
       // Apply font change
       if (settings.display.font !== font) {
@@ -222,13 +231,14 @@ export default function SettingsPage() {
             ...(parsed?.display ?? {}),
             // Live theme context wins over whatever was persisted.
             theme,
+            palette,
           },
         }))
       } else {
         // Initialize with current theme and font
         setSettings(prev => ({
           ...prev,
-          display: { ...prev.display, theme, font }
+          display: { ...prev.display, theme, palette, font }
         }))
       }
 
@@ -239,21 +249,26 @@ export default function SettingsPage() {
     } catch (err) {
       console.error('Failed to load settings:', err)
     }
-  }, [theme, font])
+  }, [theme, palette, font])
+
+  React.useEffect(() => {
+    fetch(withBasePath('/api/sync/status'))
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => payload && setCloudStatus(payload))
+      .catch(() => undefined)
+  }, [])
 
   return (
-    <div className="container max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Customize your application preferences and account settings
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <WorkspacePageHeader
+        eyebrow="Control room"
+        title="Make Apex Fit work your way."
+        description="Manage appearance, profile data, check-ins, AI providers, privacy, backups, and feature readiness from one durable settings workspace."
+        icon={Settings}
+        actions={
+          <>
           {saved && (
-            <Badge variant="default" className="bg-green-500">
+            <Badge variant="default">
               <CheckCircle className="w-3 h-3 mr-1" />
               Saved
             </Badge>
@@ -262,8 +277,9 @@ export default function SettingsPage() {
             <ClientIcon icon={Save} className="mr-2 h-4 w-4" />
             Save Settings
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -272,8 +288,8 @@ export default function SettingsPage() {
         </Alert>
       )}
 
-      <Tabs defaultValue="preferences" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="preferences" orientation="vertical" className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <TabsList className="h-auto w-full flex-col items-stretch justify-start gap-1 bg-muted/45 p-2 lg:sticky lg:top-24 [&_[role=tab]]:w-full [&_[role=tab]]:justify-start">
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="checkins">Check-ins</TabsTrigger>
@@ -281,8 +297,10 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
-          <TabsTrigger value="coming-soon">Coming Soon</TabsTrigger>
+          <TabsTrigger value="coming-soon">Feature Lab</TabsTrigger>
         </TabsList>
+
+        <div className="min-w-0">
 
         <TabsContent value="preferences" className="space-y-4">
           <Card>
@@ -320,8 +338,10 @@ export default function SettingsPage() {
                         }`}
                     >
                       <div className="space-y-2">
-                        <div className="w-full h-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded border"></div>
-                        <div className="text-xs font-medium">☀️ Light</div>
+                        <div className="grid h-6 w-full grid-cols-[2fr_1fr] overflow-hidden rounded border" aria-hidden="true">
+                          <span className="bg-slate-50" /><span className="bg-slate-200" />
+                        </div>
+                        <div className="text-xs font-medium">Light</div>
                       </div>
                     </button>
 
@@ -334,8 +354,10 @@ export default function SettingsPage() {
                         }`}
                     >
                       <div className="space-y-2">
-                        <div className="w-full h-6 bg-gradient-to-r from-slate-800 to-slate-900 rounded border"></div>
-                        <div className="text-xs font-medium">🌙 Dark</div>
+                        <div className="grid h-6 w-full grid-cols-[2fr_1fr] overflow-hidden rounded border" aria-hidden="true">
+                          <span className="bg-slate-900" /><span className="bg-slate-700" />
+                        </div>
+                        <div className="text-xs font-medium">Dark</div>
                       </div>
                     </button>
 
@@ -348,14 +370,52 @@ export default function SettingsPage() {
                         }`}
                     >
                       <div className="space-y-2">
-                        <div className="w-full h-6 bg-gradient-to-r from-slate-100 via-slate-400 to-slate-800 rounded border"></div>
-                        <div className="text-xs font-medium">🖥️ System</div>
+                        <div className="grid h-6 w-full grid-cols-3 overflow-hidden rounded border" aria-hidden="true">
+                          <span className="bg-slate-100" /><span className="bg-slate-400" /><span className="bg-slate-900" />
+                        </div>
+                        <div className="text-xs font-medium">System</div>
                       </div>
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Choose your preferred color scheme. System matches your device's settings.
+                    Choose brightness independently. System follows your device setting.
                   </p>
+                </div>
+
+                <div className="space-y-3 md:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <ClientIcon icon={Palette} className="h-4 w-4 text-primary" />
+                    <Label>Color palette</Label>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="radiogroup" aria-label="Color palette">
+                    {PALETTE_OPTIONS.map((option) => {
+                      const selected = settings.display.palette === option.id
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          data-testid={`palette-${option.id}`}
+                          onClick={() => {
+                            setSettings(prev => ({ ...prev, display: { ...prev.display, palette: option.id } }))
+                            setPalette(option.id)
+                          }}
+                          className={`rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card hover:border-primary/60'}`}
+                        >
+                          <span className="flex items-start justify-between gap-2">
+                            <span className="text-sm font-semibold">{option.name}</span>
+                            {option.recommended && <Badge variant="secondary" className="text-[10px]">Recommended</Badge>}
+                          </span>
+                          <span className="mt-2 grid h-7 grid-cols-4 overflow-hidden rounded-md border border-black/10" aria-hidden="true">
+                            {option.swatches.map((swatch) => <span key={swatch} style={{ backgroundColor: swatch }} />)}
+                          </span>
+                          <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">{option.description}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Palette changes preview immediately and remain available in Light, Dark, and System modes.</p>
                 </div>
 
                 <Separator />
@@ -642,7 +702,7 @@ export default function SettingsPage() {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="default" className="w-full bg-blue-600 hover:bg-blue-700">
+                      <Button variant="default" className="w-full">
                         <ClientIcon icon={Sparkles} className="mr-2 h-4 w-4" />
                         Start New Program
                       </Button>
@@ -658,7 +718,7 @@ export default function SettingsPage() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleStartNewProgram} className="bg-blue-600 text-white hover:bg-blue-700">
+                        <AlertDialogAction onClick={handleStartNewProgram}>
                           Start New Program
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -739,9 +799,9 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClientIcon icon={Sparkles} className="h-5 w-5" />
-                Coming Soon
+                Feature Lab
               </CardTitle>
-              <CardDescription>Exciting features we're working on for future releases</CardDescription>
+              <CardDescription>What is available now, and what still needs external infrastructure</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
 
@@ -754,29 +814,37 @@ export default function SettingsPage() {
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">Managed Postgres + Multi-User Cloud Sync</h3>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        Planned
+                      <Badge variant="outline">
+                        {cloudStatus?.phase === 'ready_for_migration' ? 'Migration validation required' : 'Provider setup required'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Your data lives in a single local SQLite database today. Cloud sync will move it to
-                      managed Postgres so you can access the same history across devices and share coaching
-                      access — without changing how the app works.
+                      The application has a single-user local data layer and portable exports today. The
+                      managed Postgres migration boundary is documented, but enabling accounts, encrypted
+                      remote storage, and coach access requires choosing and configuring a cloud provider.
                     </p>
                     <div className="space-y-1 text-sm">
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Cross-device access to entries, reports, and cycles</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Multi-user accounts (coach + athlete) on one workspace</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Automatic encrypted backups</span>
                       </div>
                     </div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <Badge variant={cloudStatus?.database_configured ? 'secondary' : 'outline'}>Database {cloudStatus?.database_configured ? 'configured' : 'not configured'}</Badge>
+                      <Badge variant={cloudStatus?.authentication_configured ? 'secondary' : 'outline'}>Authentication {cloudStatus?.authentication_configured ? 'configured' : 'not configured'}</Badge>
+                      <Badge variant={cloudStatus?.sync_enabled ? 'secondary' : 'outline'}>Cloud writes {cloudStatus?.sync_enabled ? 'enabled' : 'disabled'}</Badge>
+                    </div>
+                    <Button variant="outline" onClick={handleExportData}>
+                      <Download className="mr-2 h-4 w-4" /> Export a local backup now
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -790,8 +858,8 @@ export default function SettingsPage() {
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">MyFitnessPal Integration</h3>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        Planned
+                      <Badge variant="secondary">
+                        Available now
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -799,28 +867,25 @@ export default function SettingsPage() {
                     </p>
                     <div className="space-y-1 text-sm">
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>CSV Import: Upload your MyFitnessPal export data</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Manual Entry: Log daily calories directly in the app</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Variance Tracking: See daily/weekly differences vs. targets</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <span>Dashboard Widget: Visual comparison charts</span>
                       </div>
                     </div>
-                    <Alert className="mt-3">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-xs">
-                        <strong>Note:</strong> MyFitnessPal discontinued their public API in 2020. We're designing a user-friendly CSV import system and manual entry option to bring this functionality to you.
-                      </AlertDescription>
-                    </Alert>
+                    <Button onClick={() => router.push('/nutrition')}>
+                      <Apple className="mr-2 h-4 w-4" /> Open nutrition workspace
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -828,38 +893,40 @@ export default function SettingsPage() {
               {/* Additional Future Features */}
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-purple-100">
-                    <ClientIcon icon={Calendar} className="h-6 w-6 text-purple-600" />
+                  <div className="rounded-lg bg-accent p-2">
+                    <ClientIcon icon={Calendar} className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">Progress Photos Timeline</h3>
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                        Under Consideration
+                      <Badge variant="secondary">
+                        Available now
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Track visual progress alongside your metrics with timestamped photos and side-by-side comparisons.
                     </p>
+                    <Button variant="outline" onClick={() => router.push('/charts#progress-photos')}>Open photo timeline</Button>
                   </div>
                 </div>
               </div>
 
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-green-100">
-                    <ClientIcon icon={Brain} className="h-6 w-6 text-green-600" />
+                  <div className="rounded-lg bg-accent p-2">
+                    <ClientIcon icon={Brain} className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">Advanced AI Insights</h3>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Research Phase
+                      <Badge variant="secondary">
+                        Available now
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Enhanced AI-powered analysis of your progress patterns, including anomaly detection, personalized recommendations, and predictive success modeling.
                     </p>
+                    <Button variant="outline" onClick={() => router.push('/ai/insights')}><Brain className="mr-2 h-4 w-4" /> Open AI Insights</Button>
                   </div>
                 </div>
               </div>
@@ -871,13 +938,14 @@ export default function SettingsPage() {
                   Have a feature request or feedback?
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  These features are based on user feedback and development roadmap priorities. Implementation timelines may vary.
+                  Cloud sync remains intentionally gated until a provider, authentication model, retention policy, and migration window are approved.
                 </p>
               </div>
 
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   )

@@ -162,11 +162,11 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
   }, [form.formState.errors])
 
   return (
-    <Card className="w-full max-w-2xl mx-auto" role="form" aria-labelledby="entry-form-title">
+    <Card className="w-full overflow-hidden border-border/90 shadow-sm" role="form" aria-labelledby="entry-form-title">
       <CardHeader>
-        <CardTitle id="entry-form-title">Add New Entry</CardTitle>
+        <CardTitle id="entry-form-title" className="text-2xl">Measurement details</CardTitle>
         <CardDescription>
-          Record your weight and body fat percentage for tracking progress
+          Weight is required. Body fat, notes, and a photo add useful context to future comparisons.
         </CardDescription>
       </CardHeader>
 
@@ -342,7 +342,8 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
             <FormItem>
               <FormLabel>Progress Photo (Optional)</FormLabel>
               <FormControl>
-                <div className="space-y-3">
+                <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4">
+                  <div className="space-y-3">
                   {photoPreview ? (
                     <div className="relative inline-block">
                       <img
@@ -379,6 +380,7 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
                     onChange={handlePhotoChange}
                     aria-hidden="true"
                   />
+                  </div>
                 </div>
               </FormControl>
               <FormDescription id="photo-description">
@@ -387,7 +389,7 @@ export function EntryForm({ onSubmit, defaultValues, isLoading }: EntryFormProps
             </FormItem>
           </CardContent>
 
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-between border-t bg-muted/20 py-4">
             <Button
               type="button"
               variant="secondary"

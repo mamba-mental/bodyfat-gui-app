@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 import * as React from "react"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { History, CheckCircle, Wrench, Bug, Sparkles } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 interface ChangelogEntry {
   version: string
@@ -207,21 +207,20 @@ export default function ChangelogPage() {
   }
 
   return (
-    <main
-      className="container max-w-4xl mx-auto space-y-8 p-6"
+    <div
+      className="mx-auto max-w-5xl space-y-8 px-4 py-6 md:px-6 lg:px-8"
       role="main"
       aria-labelledby="changelog-heading"
       aria-describedby="changelog-description"
     >
-      <div className="space-y-2">
-        <h1 id="changelog-heading" className="text-3xl font-bold flex items-center gap-2">
-          <History className="h-8 w-8" aria-hidden="true" />
-          Changelog
-        </h1>
-        <p id="changelog-description" className="text-muted-foreground text-lg">
-          Track updates, improvements, and fixes to Ap³𝘅Fit.ai
-        </p>
-        <Separator className="max-w-xl" aria-hidden="true" />
+      <div id="changelog-heading">
+        <WorkspacePageHeader
+          eyebrow="Product record"
+          title="What changed—and why it matters."
+          description="A durable record of Apex Fit features, improvements, fixes, and compatibility work."
+          icon={History}
+        />
+        <span id="changelog-description" className="sr-only">Apex Fit release history</span>
       </div>
 
       <section role="feed" aria-labelledby="changelog-heading" aria-live="polite">
@@ -269,6 +268,6 @@ export default function ChangelogPage() {
           </article>
         ))}
       </section>
-    </main>
+    </div>
   )
 }

@@ -35,19 +35,19 @@ interface ProgressTrendChartProps {
 const chartConfig = {
   weightActual: {
     label: "Weight (Actual)",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   weightPredicted: {
     label: "Weight (Predicted)",
-    color: "hsl(var(--chart-1) / 0.55)",
+    color: "color-mix(in oklch, var(--chart-1) 55%, transparent)",
   },
   bodyFatActual: {
     label: "Body Fat (Actual)",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   bodyFatPredicted: {
     label: "Body Fat (Predicted)",
-    color: "hsl(var(--chart-2) / 0.55)",
+    color: "color-mix(in oklch, var(--chart-2) 55%, transparent)",
   },
   weightProjection: {
     label: "Goal Projection",
@@ -59,11 +59,11 @@ const chartConfig = {
   },
   weightComparison: {
     label: "Weight (Comparison)",
-    color: "hsl(var(--chart-1) / 0.3)",
+    color: "color-mix(in oklch, var(--chart-1) 30%, transparent)",
   },
   bodyFatComparison: {
     label: "Body Fat (Comparison)",
-    color: "hsl(var(--chart-2) / 0.3)",
+    color: "color-mix(in oklch, var(--chart-2) 30%, transparent)",
   },
 } satisfies ChartConfig
 
@@ -436,7 +436,7 @@ export function ProgressTrendChart({
               <div className="flex items-center space-x-2">
                 <div
                   className="w-3 h-0.5 rounded"
-                  style={{ background: "hsl(var(--chart-1))" }}
+                  style={{ background: "var(--chart-1)" }}
                 ></div>
                 <span>Weight (actual)</span>
               </div>
@@ -444,7 +444,7 @@ export function ProgressTrendChart({
                 <div className="flex items-center space-x-2">
                   <div
                     className="w-3 h-0.5 rounded border-t border-dashed"
-                    style={{ borderColor: "hsl(var(--chart-1))" }}
+                    style={{ borderColor: "var(--chart-1)" }}
                   ></div>
                   <span>Weight (predicted)</span>
                 </div>
@@ -456,7 +456,7 @@ export function ProgressTrendChart({
               <div className="flex items-center space-x-2">
                 <div
                   className="w-3 h-0.5 rounded"
-                  style={{ background: "hsl(var(--chart-2))" }}
+                  style={{ background: "var(--chart-2)" }}
                 ></div>
                 <span>Body fat % (actual)</span>
               </div>
@@ -464,7 +464,7 @@ export function ProgressTrendChart({
                 <div className="flex items-center space-x-2">
                   <div
                     className="w-3 h-0.5 rounded border-t border-dashed"
-                    style={{ borderColor: "hsl(var(--chart-2))" }}
+                    style={{ borderColor: "var(--chart-2)" }}
                   ></div>
                   <span>Body fat % (predicted)</span>
                 </div>
@@ -484,7 +484,7 @@ export function ProgressTrendChart({
             <div className="flex items-center space-x-2">
               <div
                 className="w-3 h-0.5 rounded border-t border-dashed"
-                style={{ borderColor: "hsl(var(--chart-1) / 0.3)" }}
+                style={{ borderColor: "color-mix(in oklch, var(--chart-1) 30%, transparent)" }}
               ></div>
               <span>Comparison period</span>
             </div>

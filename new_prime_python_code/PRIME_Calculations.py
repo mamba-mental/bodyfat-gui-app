@@ -482,6 +482,7 @@ def compute_ped_stack_modifiers(
     # dose_by_compound is keyed by CANONICAL name after resolution.
     compounds: list[str] = []
     dose_by_compound: dict[str, float] = {}
+    week_on_by_compound: dict[str, int] = {}
     for entry in ped_stack:
         raw_name = str(entry.get("compound", "")).strip()
         if not raw_name:
@@ -497,6 +498,8 @@ def compute_ped_stack_modifiers(
         if dose is not None:
             prev = dose_by_compound.get(canonical, 0.0)
             dose_by_compound[canonical] = max(prev, float(dose))
+        if entry.get("week_on") is not None:
+            week_on_by_compound[canonical] = max(1, int(entry["week_on"]))
 
     if not compounds:
         return {
@@ -533,8 +536,12 @@ def compute_ped_stack_modifiers(
     t3_names = [c for c in compounds if c in _T3_CANONICAL_SET]
     t3_p_fat_delta = 0.0
     t3_lean_penalty = 0.0
+    unresolved_dose_compounds: list[str] = []
     for t3_name in t3_names:
-        dose_t3 = dose_by_compound.get(t3_name, 37.5)  # default: mid low-dose range
+        dose_t3 = dose_by_compound.get(t3_name)
+        if dose_t3 is None:
+            unresolved_dose_compounds.append(t3_name)
+            continue
         if dose_t3 <= 50:
             t3_p_fat_delta += 0.03    # midpoint of +0.02–+0.05 (PMID 3830937, PMC2649744)
             t3_lean_penalty = max(t3_lean_penalty, 0.0)
@@ -607,7 +614,7 @@ def compute_ped_stack_modifiers(
         # original `week` proxy — which is correct when Clen starts at week 1
         # (the common case) and CONSERVATIVE (not zero-ing too early) when it starts
         # later because week_on ≤ week implies decay ≥ the proxy value.
-        week_on = week  # default: assume compound started at protocol week 1
+        week_on = week_on_by_compound.get(clen_name, week)
         if week_on <= 1:
             clen_decay = 1.0
         else:
@@ -617,7 +624,9 @@ def compute_ped_stack_modifiers(
     for t3_name in t3_names:
         # T3 EE: rough extrapolation — each 25 mcg above replacement (~12.5 mcg) adds
         # ~100 kcal/day. Source: sourcing doc §Algorithm Step 5 (flagged speculative ±50%).
-        dose_t3 = dose_by_compound.get(t3_name, 37.5)
+        dose_t3 = dose_by_compound.get(t3_name)
+        if dose_t3 is None:
+            continue
         t3_above_replacement = max(0.0, dose_t3 - 12.5)
         ee_bonus_kcal += (t3_above_replacement / 25.0) * 100.0
 
@@ -661,6 +670,7 @@ def compute_ped_stack_modifiers(
         "ee_bonus_kcal": round(ee_bonus_kcal, 1),
         "confidence": confidence,
         "low_evidence_compounds": active_low,
+        "unresolved_dose_compounds": unresolved_dose_compounds,
     }
 
 
@@ -1460,6 +1470,7 @@ def predict_weight_loss(
     goal_type: str = "cut",
     calorie_floor: float = 1200.0,
     ped_stack: Optional[list] = None,
+    ped_stack_by_week: Optional[Dict[str, list]] = None,
     lean_ceiling_lb: float = _DEFAULT_LEAN_CEILING_LB,
     max_cardio_min_per_day: int = _MAX_CARDIO_MIN_PER_DAY,
     actual_entries: Optional[List[Dict[str, Any]]] = None,
@@ -1605,7 +1616,12 @@ def predict_weight_loss(
     _req_w0 = _traj0.get("required_weight", current_weight)
     _req_bf0 = _traj0.get("required_bf", current_bf)
 
-    _ped_mods_0 = compute_ped_stack_modifiers(ped_stack, week=1)
+    def _ped_stack_for_week(week_number: int) -> Optional[list]:
+        if ped_stack_by_week:
+            return ped_stack_by_week.get(str(week_number), ped_stack_by_week.get(week_number))
+        return ped_stack
+
+    _ped_mods_0 = compute_ped_stack_modifiers(_ped_stack_for_week(1), week=1)
     _p_ratio_0_base = _compute_p_ratio(current_bf, _ref_wk0["phase"])
     _p_ratio_0 = (
         max(_PED_P_FAT_FLOOR, min(_PED_P_FAT_HARD_CAP,
@@ -1660,6 +1676,7 @@ def predict_weight_loss(
         "ped_week": None,
         "ped_compounds_active": [],
         "ped_low_evidence_compounds": _ped_mods_0["low_evidence_compounds"],
+        "ped_unresolved_dose_compounds": _ped_mods_0.get("unresolved_dose_compounds", []),
         "phase_macros_source": (
             _phase_macros_source_for_week(1, _PROTOCOL) or "not specified"
         ),
@@ -1821,7 +1838,7 @@ def predict_weight_loss(
             correction_status = "on_track"
 
         # PED stack modifiers
-        ped_mods = compute_ped_stack_modifiers(ped_stack, week=week)
+        ped_mods = compute_ped_stack_modifiers(_ped_stack_for_week(week), week=week)
 
         # --- Doc-sourced (display-only) macro + PED fields for this week --------
         # ADDITIVE read-only passthrough from nutrition-and-ped.json. These do NOT
@@ -1914,6 +1931,7 @@ def predict_weight_loss(
             "ped_week": _ped_week_wk,
             "ped_compounds_active": _ped_compounds_active_wk,
             "ped_low_evidence_compounds": ped_mods["low_evidence_compounds"],
+            "ped_unresolved_dose_compounds": ped_mods.get("unresolved_dose_compounds", []),
             "phase_macros_source": _phase_macros_source_wk,
             # CONTROLLER fields
             "required_weight": round(req_weight_out, 2),

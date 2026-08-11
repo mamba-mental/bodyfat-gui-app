@@ -123,17 +123,17 @@ export function AIInsightsPanel({
   const getInsightIcon = (type: AIInsight['type']) => {
     switch (type) {
       case 'celebration':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-primary" />
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        return <AlertTriangle className="h-4 w-4 text-destructive" />
       case 'guidance':
-        return <Lightbulb className="h-4 w-4 text-blue-600" />
+        return <Lightbulb className="h-4 w-4 text-primary" />
       case 'motivation':
-        return <Zap className="h-4 w-4 text-purple-600" />
+        return <Zap className="h-4 w-4 text-primary" />
       case 'tip':
-        return <TrendingUp className="h-4 w-4 text-indigo-600" />
+        return <TrendingUp className="h-4 w-4 text-primary" />
       default:
-        return <Brain className="h-4 w-4 text-gray-600" />
+        return <Brain className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -152,13 +152,13 @@ export function AIInsightsPanel({
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      progress: 'bg-green-100 text-green-800',
-      nutrition: 'bg-orange-100 text-orange-800',
-      workout: 'bg-blue-100 text-blue-800',
-      goal: 'bg-purple-100 text-purple-800',
-      health: 'bg-red-100 text-red-800'
+      progress: 'bg-accent text-accent-foreground',
+      nutrition: 'bg-primary/12 text-foreground',
+      workout: 'bg-muted text-foreground',
+      goal: 'bg-accent text-accent-foreground',
+      health: 'bg-destructive/10 text-destructive'
     }
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return colors[category as keyof typeof colors] || 'bg-muted text-foreground'
   }
 
   if (!current_user) {

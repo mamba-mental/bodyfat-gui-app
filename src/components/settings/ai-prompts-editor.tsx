@@ -47,7 +47,7 @@ interface AIPromptsEditorProps {
 // ---------------------------------------------------------------------------
 function SectionHint({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 px-3 py-2 text-xs text-blue-800 dark:text-blue-300">
+    <div className="flex items-start gap-2 rounded-md border border-primary/25 bg-accent/40 px-3 py-2 text-xs text-foreground">
       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>{children}</span>
     </div>
@@ -268,7 +268,7 @@ export function AIPromptsEditor({ onSave }: AIPromptsEditorProps) {
               {saveStatus === 'saving' && 'Saving prompts…'}
               {saveStatus === 'saved' && (
                 <>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-primary" />
                   Prompts saved successfully.
                 </>
               )}
@@ -550,7 +550,7 @@ export function AIPromptsEditor({ onSave }: AIPromptsEditorProps) {
                     validation[selectedPrompt.id]?.valid) ||
                     editedModels[selectedPrompt.id] !== undefined) && (
                     <Alert>
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-primary" />
                       <AlertDescription>This prompt has unsaved changes</AlertDescription>
                     </Alert>
                   )}

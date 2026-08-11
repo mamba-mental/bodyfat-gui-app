@@ -22,27 +22,27 @@ interface MetabolicInsightsWidgetProps {
 const chartConfig = {
   rmr: {
     label: "RMR",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   tef: {
     label: "TEF",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   neat: {
     label: "NEAT",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
   },
   exercise: {
     label: "Exercise",
-    color: "hsl(var(--chart-4))",
+    color: "var(--chart-4)",
   },
 } satisfies ChartConfig
 
 const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
 ]
 
 export function MetabolicInsightsWidget({
@@ -288,7 +288,7 @@ export function MetabolicInsightsWidget({
             <div className="h-[40px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyTrend}>
-                  <Bar dataKey="tdee" fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="tdee" fill="var(--chart-1)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

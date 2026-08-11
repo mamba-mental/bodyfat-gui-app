@@ -177,7 +177,7 @@ export async function generateReport(
       updatedUserData.start_date = today
     }
     updatedUserData = ensureEatingPattern(updatedUserData)!
-    console.log('[ReportActions] Using updated user data for report:', updatedUserData)
+    console.log('[ReportActions] Report inputs prepared')
 
     // Get calculation
     let calculationToUse: CalculationResult

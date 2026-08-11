@@ -6,22 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AIInsightsPanel } from "@/components/ai/ai-insights-panel"
 import { useApp } from "@/contexts/app-context"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 export default function AIInsightsPage() {
   const { state } = useApp()
   const hasEntries = state.entries.length > 0
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
-      <div className="flex items-center gap-3">
-        <Brain className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">AI Insights & Guidance</h1>
-          <p className="text-muted-foreground">
-            Personalized recommendations generated from your logged entries and PRIME calculations.
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <WorkspacePageHeader
+        eyebrow="Pattern review"
+        title="Insights you can act on."
+        description="Personalized recommendations generated from your logged entries and PRIME calculations, organized by what deserves attention now."
+        icon={Brain}
+      />
 
       {!hasEntries && (
         <Alert>
@@ -31,7 +29,7 @@ export default function AIInsightsPage() {
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -13,11 +13,19 @@ import {
   TrendingUp,
   Brain,
   MessageSquare,
+  CalendarRange,
+  ClipboardCheck,
+  PencilRuler,
+  Mountain,
+  Utensils,
 } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import ClientWrapper from "@/components/ui/client-wrapper"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { ProfileHeader } from "@/components/profile/profile-header"
+import { useSidebarNavigation } from "@/components/layout/use-sidebar-navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useApp } from "@/contexts/app-context"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -61,6 +69,11 @@ const navigationItems = [
     icon: History,
   },
   {
+    title: "Nutrition",
+    url: "/nutrition",
+    icon: Utensils,
+  },
+  {
     title: "Reports",
     url: "/reports",
     icon: FileText,
@@ -69,6 +82,16 @@ const navigationItems = [
     title: "Progress Charts",
     url: "/charts",
     icon: TrendingUp,
+  },
+  {
+    title: "Plan Studio",
+    url: "/plans",
+    icon: CalendarRange,
+  },
+  {
+    title: "14-Day Cut",
+    url: "/challenge",
+    icon: ClipboardCheck,
   },
 ]
 
@@ -79,11 +102,6 @@ const toolItems = [
     icon: Calculator,
   },
   {
-    title: "Report Generator",
-    url: "/reports",
-    icon: FileText,
-  },
-  {
     title: "AI Settings",
     url: "/settings/ai",
     icon: Brain,
@@ -92,6 +110,11 @@ const toolItems = [
     title: "Settings",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Template Editor",
+    url: "/challenge/template",
+    icon: PencilRuler,
   },
   {
     title: "Changelog",
@@ -113,17 +136,22 @@ const aiItems = [
   },
 ]
 
+const sidebarRoutes = [
+  ...new Set([...navigationItems, ...toolItems, ...aiItems].map((item) => item.url)),
+]
+
 function AppSidebar() {
   const pathname = usePathname()
+  const handleNavigation = useSidebarNavigation(sidebarRoutes)
 
   return (
-    <Sidebar role="navigation" aria-label="Main navigation">
-      <SidebarHeader className="border-b">
-        <div className="flex items-center gap-2 px-4 py-2">
-          <ClientIcon icon={TrendingUp} className="h-6 w-6" aria-hidden="true" />
-          <h1 className="font-semibold text-lg">
-            <span className="sr-only">ApexFit AI Alpha - </span>
-            Ap³𝘹Fit.ai – 𝛼
+    <Sidebar role="navigation" aria-label="Main navigation" className="border-border bg-background">
+      <SidebarHeader className="border-b border-border bg-background">
+        <div className="flex items-center gap-3 px-4 py-3 text-foreground">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-primary"><ClientIcon icon={Mountain} className="h-5 w-5" aria-hidden="true" /></div>
+          <h1 className="font-serif text-xl font-semibold tracking-[0.08em]">
+            <span className="sr-only">Apex Fit - </span>
+            APEX FIT
           </h1>
         </div>
       </SidebarHeader>
@@ -143,7 +171,7 @@ function AppSidebar() {
                       asChild={!isDisabled}
                       isActive={pathname === item.url}
                       className={cn(
-                        "bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50",
+                        "border border-transparent text-foreground hover:border-border hover:bg-accent data-[active=true]:border-primary/30 data-[active=true]:bg-accent data-[active=true]:text-foreground",
                         isDisabled ? "opacity-50 cursor-not-allowed" : ""
                       )}
                       aria-current={pathname === item.url ? "page" : undefined}
@@ -162,6 +190,10 @@ function AppSidebar() {
                         <Link
                           href={item.url}
                           aria-label={`Navigate to ${item.title}`}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            handleNavigation(item.url)
+                          }}
                         >
                           <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
                           <span>{item.title}</span>
@@ -184,12 +216,16 @@ function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    className="bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50"
+                    className="border border-transparent text-foreground hover:border-border hover:bg-accent data-[active=true]:border-primary/30 data-[active=true]:bg-accent data-[active=true]:text-foreground"
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
                     <Link
                       href={item.url}
                       aria-label={`Access ${item.title}`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        handleNavigation(item.url)
+                      }}
                     >
                       <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
                       <span>{item.title}</span>
@@ -210,12 +246,16 @@ function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    className="bg-secondary/50 border border-border/40 hover:bg-secondary hover:border-primary/50"
+                    className="border border-transparent text-foreground hover:border-border hover:bg-accent data-[active=true]:border-primary/30 data-[active=true]:bg-accent data-[active=true]:text-foreground"
                     aria-current={pathname === item.url ? "page" : undefined}
                   >
                     <Link
                       href={item.url}
                       aria-label={`Access ${item.title}`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        handleNavigation(item.url)
+                      }}
                     >
                       <ClientIcon icon={item.icon} className="h-4 w-4" aria-hidden="true" />
                       <span>{item.title}</span>
@@ -236,8 +276,16 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const { state } = useApp()
+  const user = state.current_user
   const [sidebarOpen, setSidebarOpen] = React.useState(true)
   const [hasMounted, setHasMounted] = React.useState(false)
+  const initials = user?.name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 
   // Set initial sidebar state based on viewport and respond to resize across the breakpoint
   React.useEffect(() => {
@@ -255,7 +303,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <SidebarProvider open={hasMounted ? sidebarOpen : true} onOpenChange={setSidebarOpen}>
-      <div className="flex min-h-screen w-full" role="application" aria-label="ApexFit AI Fitness Tracker">
+      <div className="apex-theme flex min-h-screen w-full bg-background text-foreground" role="application" aria-label="ApexFit AI Fitness Tracker">
         {/* Screen reader announcements region */}
         <div
           id="sr-announcements"
@@ -292,24 +340,31 @@ export function MainLayout({ children }: MainLayoutProps) {
 
         <div className="flex-1 flex flex-col">
           <header
-            className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+            className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur"
             role="banner"
           >
-            <div className="container flex h-14 items-center">
+            <div className="flex h-16 items-center px-4 md:px-6">
               <SidebarTrigger
                 aria-label="Toggle navigation menu"
                 aria-expanded="false"
                 aria-controls="sidebar-content"
               />
-              <nav className="ml-auto flex items-center space-x-4" aria-label="Secondary navigation">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label="Export your fitness data to external file"
-                >
-                  Export Data
+              <nav className="ml-auto flex items-center gap-2 md:gap-4" aria-label="Secondary navigation">
+                <Button asChild variant="outline" size="sm" aria-label="Open Plan Decision Studio">
+                  <Link href="/plans"><CalendarRange className="mr-2 h-4 w-4" /> Current plan</Link>
                 </Button>
                 <ThemeToggle />
+                {user && (
+                  <Button asChild variant="ghost" className="h-11 gap-2 rounded-full px-2 pr-3" aria-label="Open profile settings">
+                    <Link href="/settings">
+                      <Avatar className="h-8 w-8 border border-border">
+                        <AvatarImage src={user.profile_picture} alt="" />
+                        <AvatarFallback className="bg-accent text-xs font-semibold text-foreground">{initials}</AvatarFallback>
+                      </Avatar>
+                      <span className="hidden max-w-36 truncate text-sm font-medium text-foreground md:inline">{user.name}</span>
+                    </Link>
+                  </Button>
+                )}
               </nav>
             </div>
           </header>
@@ -321,13 +376,11 @@ export function MainLayout({ children }: MainLayoutProps) {
             aria-label="Main application content"
             tabIndex={-1}
           >
-            <section role="complementary" aria-label="User profile information">
-              <ProfileHeader className="border-b" compact={true} />
+            <section aria-label="User profile banner">
+              <ProfileHeader compact />
             </section>
-
             <section
-              className="space-y-4 p-4 md:p-8 pt-6"
-              role="main"
+              className="space-y-4"
               aria-label="Primary content area"
             >
               {children}

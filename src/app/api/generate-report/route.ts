@@ -23,9 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const userData: UserData = await request.json()
 
-    // Log incoming request data
-    console.log('=== Generate Report Request ===')
-    console.log('Raw user data:', JSON.stringify(userData, null, 2))
+    console.log('Generate report request accepted')
 
     // Calculate timeline weeks from dates
     const startDate = new Date(userData.start_date || Date.now())
@@ -86,13 +84,9 @@ export async function POST(request: NextRequest) {
         : {}),
     }
 
-    console.log('Processed API data:', JSON.stringify(apiData, null, 2))
-    console.log('Python API URL:', PYTHON_API_URL)
-
     // Call the Python API to generate the report
     try {
-      console.log('Calling Python API at:', `${PYTHON_API_URL}/generate-report`)
-      console.log('Request body:', JSON.stringify(apiData, null, 2))
+      console.log('Calling Python report service')
 
       const response = await fetchWithTimeout(
         `${PYTHON_API_URL}/generate-report`,
@@ -108,33 +102,24 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Python API error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          responseBody: errorText
-        })
+        console.error('Python report service returned an error:', response.status, response.statusText)
 
         let errorData = {}
         try {
           errorData = JSON.parse(errorText)
-        } catch (e) {
-          console.error('Failed to parse error response as JSON:', errorText)
+        } catch {
+          console.error('Python report service returned a non-JSON error')
         }
 
         throw new Error((errorData as any)?.detail || (errorData as any)?.message || `Python API returned status ${response.status}: ${errorText.substring(0, 200)}`)
       }
 
       const result = await response.json()
-      console.log('Python API success response:', result)
+      console.log('Python report service completed successfully')
 
       return NextResponse.json(result, { headers: corsHeaders })
     } catch (pythonApiError) {
-      console.error('Python API report generation failed:', pythonApiError)
-      console.error('Error details:', {
-        name: pythonApiError instanceof Error ? pythonApiError.name : 'Unknown',
-        message: pythonApiError instanceof Error ? pythonApiError.message : String(pythonApiError),
-        stack: pythonApiError instanceof Error ? pythonApiError.stack : 'No stack trace'
-      })
+      console.error('Python report generation failed:', pythonApiError instanceof Error ? pythonApiError.message : 'Unknown error')
 
       throw pythonApiError
     }

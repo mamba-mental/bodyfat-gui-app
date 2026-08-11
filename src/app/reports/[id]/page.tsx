@@ -16,6 +16,7 @@ import { generatePDFFromHTML, generateStyledPDF } from "@/lib/pdf-generator"
 import { formatDate } from "@/lib/date-utils"
 // @ts-ignore
 import TurndownService from 'turndown'
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 interface ReportViewPageProps {
   params: Promise<{
@@ -116,28 +117,23 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
 
   if (!hasValidCalculation) {
     return (
-      <div className="container max-w-7xl mx-auto space-y-6 p-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center space-x-4">
-            <Button variant="secondary" onClick={() => router.push('/reports')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Reports
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">{report.title}</h1>
-              <p className="text-muted-foreground">
-                Generated on {new Date(report.generated_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
-          {legacyHtml && (
-            <div className="flex items-center space-x-2">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+        <WorkspacePageHeader
+          eyebrow={report.report_type === 'two_week_cut' ? '14-day cut report' : 'Saved report'}
+          title={report.title}
+          description={`Generated ${new Date(report.generated_at).toLocaleString()}. This saved output remains attached to its original source data.`}
+          icon={FileText}
+          actions={
+            <>
+              <Button variant="outline" onClick={() => router.push('/reports')}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
+              {legacyHtml && <>
               <Button variant="secondary" onClick={handleLegacyHtml}><Download className="mr-2 h-4 w-4" />HTML</Button>
               <Button variant="secondary" onClick={handleLegacyMarkdown}><FileDown className="mr-2 h-4 w-4" />Markdown</Button>
               <Button variant="secondary" onClick={handleLegacyPdf}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-            </div>
-          )}
-        </div>
+              </>}
+            </>
+          }
+        />
 
         {legacyLoading && (
           <Card>
@@ -271,24 +267,18 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto space-y-6 p-6">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="secondary" onClick={() => router.push('/reports')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Reports
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{report.title}</h1>
-            <p className="text-muted-foreground">
-              Generated on {new Date(report.generated_at).toLocaleString()}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
+      <WorkspacePageHeader
+        eyebrow="Saved PRIME report"
+        title={report.title}
+        description={`Generated ${new Date(report.generated_at).toLocaleString()}. Review the decision summary, full progression, and source-bound exports below.`}
+        icon={BarChart3}
+        actions={
+          <>
+          <Button variant="outline" onClick={() => router.push('/reports')}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
           {report.html_content && (
-            <Button onClick={handleViewFullReport} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button onClick={handleViewFullReport}>
               <ClientIcon icon={Eye} className="mr-2 h-4 w-4" />
               View Full Report
             </Button>
@@ -305,8 +295,9 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
             <FileText className="mr-2 h-4 w-4" />
             PDF
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -316,7 +307,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
             <ClientIcon icon={Weight} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-primary">
               {typeof summary.total_weight_loss === 'number'
                 ? `${summary.total_weight_loss.toFixed(1)} lbs`
                 : '—'}
@@ -333,7 +324,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
             <ClientIcon icon={TrendingDown} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-primary">
               {typeof summary.body_fat_reduction === 'number'
                 ? `${summary.body_fat_reduction.toFixed(1)}%`
                 : '—'}
@@ -350,7 +341,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
             <ClientIcon icon={Calendar} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-primary">
               {summary.timeline_weeks ?? '—'} weeks
             </div>
             <p className="text-xs text-muted-foreground">
@@ -365,7 +356,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
             <ClientIcon icon={Target} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-primary">
               {typeof summary.muscle_gain === 'number'
                 ? `${summary.muscle_gain.toFixed(1)} lbs`
                 : '—'}
@@ -591,7 +582,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Deficit:</span>
-                        <span className="font-mono text-green-600">
+                        <span className="font-mono text-primary">
                           {Math.round(week.tdee - week.daily_calorie_intake)}
                         </span>
                       </div>
@@ -628,7 +619,7 @@ export default function ReportViewPage({ params }: ReportViewPageProps) {
                       </div>
                     </div>
                     <div className="text-right text-sm">
-                      <div className="font-medium text-green-600">
+                      <div className="font-medium text-primary">
                         +{week.muscle_gain.toFixed(2)} lbs muscle
                       </div>
                       <div className="text-muted-foreground">

@@ -4,12 +4,15 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { getFontFamily, getGoogleFontsUrl, FONT_OPTIONS } from '@/lib/fonts'
 import { useMountedRef } from '@/hooks/use-mounted-ref'
 import { withBasePath } from '@/lib/api-path'
+import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes'
 
 type Theme = 'light' | 'dark' | 'system'
 
 interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme) => void
+  palette: PaletteId
+  setPalette: (palette: PaletteId) => void
   font: string
   setFont: (font: string) => void
 }
@@ -20,6 +23,7 @@ const THEME_STORAGE_KEY = 'userSettings'
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system')
+  const [palette, setPalette] = useState<PaletteId>(DEFAULT_PALETTE)
   const [font, setFont] = useState<string>('roboto')
   const [mounted, setMounted] = useState(false)
   const mountedRef = useMountedRef()
@@ -55,6 +59,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           if (mountedRef.current && settings.display?.font) {
             setFont(settings.display.font)
           }
+          if (mountedRef.current && isPaletteId(settings.display?.palette)) {
+            setPalette(settings.display.palette)
+          }
         } catch (error) {
           console.error('Failed to load theme from local settings:', error)
         }
@@ -75,9 +82,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch(withBasePath(`/api/theme${query}`))
         if (response.ok) {
           const data = await response.json()
-          if (mountedRef.current && (data?.theme || data?.font)) {
+          if (mountedRef.current && (data?.theme || data?.font || data?.palette)) {
             if (data.theme) setTheme(data.theme)
             if (data.font) setFont(data.font)
+            if (isPaletteId(data.palette)) setPalette(data.palette)
             // Also mirror into localStorage for instant reloads
             const existing = localStorage.getItem(THEME_STORAGE_KEY)
             if (existing) {
@@ -86,18 +94,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 parsed.display = {
                   ...parsed.display,
                   ...(data.theme && { theme: data.theme }),
-                  ...(data.font && { font: data.font })
+                  ...(data.font && { font: data.font }),
+                  ...(isPaletteId(data.palette) && { palette: data.palette })
                 }
                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(parsed))
               } catch {
                 // ignore malformed local storage
               }
-            } else if (data.theme || data.font) {
+            } else if (data.theme || data.font || data.palette) {
               // Create localStorage entry if none exists
               localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({
                 display: {
                   theme: data.theme || 'system',
-                  font: data.font || 'roboto'
+                  font: data.font || 'roboto',
+                  palette: isPaletteId(data.palette) ? data.palette : DEFAULT_PALETTE
                 }
               }))
             }
@@ -128,7 +138,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('light', 'dark')
 
       if (theme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        const systemTheme = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         root.classList.add(systemTheme)
       } else {
         root.classList.add(theme)
@@ -139,6 +149,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       cancelAnimationFrame(frameId)
     }
   }, [theme, mounted])
+
+  // Apply the visual identity independently from light/dark mode.
+  useEffect(() => {
+    if (!mounted) return
+
+    const root = window.document.documentElement
+    const frameId = requestAnimationFrame(() => {
+      root.dataset.palette = palette
+    })
+
+    return () => cancelAnimationFrame(frameId)
+  }, [palette, mounted])
 
   // Apply font changes
   useEffect(() => {
@@ -187,7 +209,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Create default settings with theme
       const defaultSettings = {
-        display: { theme: newTheme, font: font }
+        display: { theme: newTheme, font, palette }
       }
       localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(defaultSettings))
     }
@@ -204,6 +226,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       })
     } catch (error) {
       console.error('Failed to save theme to server:', error)
+    }
+  }
+
+  const updatePalette = async (newPalette: PaletteId) => {
+    setPalette(newPalette)
+    if (userIdRef.current === 'default') {
+      userIdRef.current = resolveUserId()
+    }
+
+    const savedSettings = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings)
+        settings.display = { ...settings.display, palette: newPalette }
+        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(settings))
+      } catch (error) {
+        console.error('Failed to save palette to settings:', error)
+      }
+    } else {
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({
+        display: { theme, font, palette: newPalette }
+      }))
+    }
+
+    try {
+      await fetch(withBasePath('/api/theme'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          palette: newPalette,
+          user_id: userIdRef.current
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save palette to server:', error)
     }
   }
 
@@ -226,7 +283,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Create default settings with font
       const defaultSettings = {
-        display: { theme: theme, font: newFont }
+        display: { theme, font: newFont, palette }
       }
       localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(defaultSettings))
     }
@@ -251,7 +308,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: updateTheme, font, setFont: updateFont }}>
+    <ThemeContext.Provider value={{ theme, setTheme: updateTheme, palette, setPalette: updatePalette, font, setFont: updateFont }}>
       {children}
     </ThemeContext.Provider>
   )

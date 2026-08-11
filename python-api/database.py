@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+from challenge_repository import initialize_challenge_schema
+
 class Database:
     def __init__(self, db_path: str = None):
         if db_path is None:
@@ -137,6 +139,9 @@ class Database:
                 conn.execute('ALTER TABLE reports ADD COLUMN source_fingerprint TEXT')
             if 'updated_at' not in report_cols:
                 conn.execute('ALTER TABLE reports ADD COLUMN updated_at TIMESTAMP')
+
+            # Editable 14-day templates and immutable plan/protocol snapshots.
+            initialize_challenge_schema(conn)
 
             # Stamp alembic_version to head so `alembic upgrade head` is a no-op on a
             # DB this code already migrated (prevents double-apply if Alembic is run).
@@ -286,6 +291,11 @@ class Database:
                     c['weighin_days'] = json.loads(c.get('weighin_days') or '[]')
                 except Exception:
                     c['weighin_days'] = []
+                for field in ('plan_snapshot_json', 'protocol_snapshot_json'):
+                    try:
+                        c[field] = json.loads(c.get(field)) if c.get(field) else None
+                    except (TypeError, ValueError):
+                        c[field] = None
                 out.append(c)
             return out
 
@@ -301,29 +311,54 @@ class Database:
                 return None
 
     def save_cycle(self, cycle: Dict[str, Any], user_id: str = "default"):
-        """Insert/update a cycle. Demotes any other active cycle first (one-active)."""
+        """Insert/update a cycle without dropping stored challenge snapshots."""
         with sqlite3.connect(self.db_path) as conn:
-            if cycle.get('status', 'active') == 'active':
+            conn.row_factory = sqlite3.Row
+            existing_row = conn.execute('SELECT * FROM cycles WHERE id=?', (cycle['id'],)).fetchone()
+            existing = dict(existing_row) if existing_row else {}
+
+            def value(name, default=None):
+                return cycle[name] if name in cycle else existing.get(name, default)
+
+            status = value('status', 'active')
+            if status == 'active':
                 conn.execute(
                     "UPDATE cycles SET status='stopped', updated_at=CURRENT_TIMESTAMP "
                     "WHERE user_id=? AND status='active' AND id<>?",
                     (user_id, cycle['id']),
                 )
-            wd = cycle.get('weighin_days')
+            wd = value('weighin_days', [])
+            if isinstance(wd, str):
+                try:
+                    wd = json.loads(wd)
+                except ValueError:
+                    wd = []
+
+            def json_value(name):
+                item = value(name)
+                return json.dumps(item, separators=(',', ':')) if isinstance(item, (dict, list)) else item
+
             conn.execute('''
                 INSERT OR REPLACE INTO cycles
                 (id,user_id,name,start_date,end_date,status,start_weight,start_bf,goal_weight,
                  goal_bf,timeline_weeks,weighin_days,weighin_per_week,legacy_program_id,
+                 plan_mode,timeline_days,template_id,template_revision_id,plan_snapshot_json,
+                 current_plan_revision,protocol_id,protocol_version,protocol_status,
+                 protocol_start_week,protocol_snapshot_json,safety_acknowledged_at,
                  created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
                  COALESCE((SELECT created_at FROM cycles WHERE id=?),CURRENT_TIMESTAMP),
                  CURRENT_TIMESTAMP)
             ''', (
-                cycle['id'], user_id, cycle.get('name'), cycle['start_date'], cycle.get('end_date'),
-                cycle.get('status', 'active'), cycle.get('start_weight'), cycle.get('start_bf'),
-                cycle.get('goal_weight'), cycle.get('goal_bf'), cycle.get('timeline_weeks'),
-                json.dumps(wd if isinstance(wd, list) else []), cycle.get('weighin_per_week', 0),
-                cycle.get('legacy_program_id'), cycle['id'],
+                cycle['id'], user_id, value('name'), value('start_date'), value('end_date'),
+                status, value('start_weight'), value('start_bf'), value('goal_weight'),
+                value('goal_bf'), value('timeline_weeks'),
+                json.dumps(wd if isinstance(wd, list) else []), value('weighin_per_week', 0),
+                value('legacy_program_id'), value('plan_mode', 'standard'), value('timeline_days'),
+                value('template_id'), value('template_revision_id'), json_value('plan_snapshot_json'),
+                value('current_plan_revision', 0), value('protocol_id'), value('protocol_version'),
+                value('protocol_status', 'not_provided'), value('protocol_start_week'),
+                json_value('protocol_snapshot_json'), value('safety_acknowledged_at'), cycle['id'],
             ))
             conn.commit()
 
@@ -385,8 +420,9 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO reports 
-                (id, user_id, title, date, data, file_path, cycle_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (id, user_id, title, date, data, file_path, cycle_id,
+                 source_fingerprint, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ''', (
                 report['id'],
                 user_id,
@@ -396,7 +432,8 @@ class Database:
                 report.get('file_path') or report.get('pdf_path'),
                 # Tag the report with its cycle so the Reports page can scope it.
                 # Falls back to the active cycle when the caller doesn't specify one.
-                report.get('cycle_id') or self.get_active_cycle_id(user_id)
+                report.get('cycle_id') or self.get_active_cycle_id(user_id),
+                report.get('source_fingerprint'),
             ))
             conn.commit()
     

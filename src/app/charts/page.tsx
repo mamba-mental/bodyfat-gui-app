@@ -20,6 +20,7 @@ import { BeforeAfterComparison } from "@/components/charts/before-after-comparis
 import { PhotoTimeline } from "@/components/charts/photo-timeline"
 import { ChartErrorBoundary } from "@/components/error-boundary-chart"
 import { useCycles } from "@/hooks/use-cycles"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 export default function ChartsPage() {
   const { state } = useApp()
@@ -88,13 +89,13 @@ export default function ChartsPage() {
 
   if (!current_user) {
     return (
-      <div className="container max-w-4xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Progress Charts</h1>
-          <p className="text-muted-foreground">
-            Visual tracking of your body composition progress over time
-          </p>
-        </div>
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+        <WorkspacePageHeader
+          eyebrow="Progress workspace"
+          title="See the trend before you change the plan."
+          description="Weight, body composition, metabolic projections, adherence, and progress photos in one decision-ready view."
+          icon={BarChart3}
+        />
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -108,13 +109,13 @@ export default function ChartsPage() {
 
   if (entries.length === 0) {
     return (
-      <div className="container max-w-4xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Progress Charts</h1>
-          <p className="text-muted-foreground">
-            Visual tracking of your body composition progress over time
-          </p>
-        </div>
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+        <WorkspacePageHeader
+          eyebrow="Progress workspace"
+          title="Your first trend starts with one entry."
+          description="Add a weigh-in to unlock body-composition trends, goal projections, and photo comparisons."
+          icon={BarChart3}
+        />
 
         <Card>
           <CardHeader>
@@ -140,16 +141,14 @@ export default function ChartsPage() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Progress Charts</h1>
-          <p className="text-muted-foreground">
-            Visual tracking of your body composition progress over time
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <WorkspacePageHeader
+        eyebrow="Progress workspace"
+        title="See the trend before you change the plan."
+        description="Weight, body composition, metabolic projections, adherence, and progress photos in one decision-ready view."
+        icon={BarChart3}
+        actions={
+          <>
           <Select value={timeRange} onValueChange={(value) => setTimeRange(value as typeof timeRange)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue />
@@ -168,8 +167,9 @@ export default function ChartsPage() {
           <Badge variant="secondary">
             {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
           </Badge>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {stats && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -236,7 +236,7 @@ export default function ChartsPage() {
       )}
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+        <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="comparison">Comparison</TabsTrigger>
           <TabsTrigger value="photos">Photos</TabsTrigger>
@@ -330,7 +330,7 @@ export default function ChartsPage() {
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-sm">Total Change:</span>
-                    <span className={`font-medium ${stats?.weightChange && stats.weightChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className="font-medium text-primary">
                       {stats?.weightChange && stats.weightChange >= 0 ? '+' : ''}{stats?.weightChange.toFixed(1)} lbs
                     </span>
                   </div>

@@ -16,10 +16,15 @@ from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 import uvicorn
 import asyncio
+import uuid
 
 # Import data endpoints
 from data_endpoints import router as data_router
 from backup_endpoints import router as backup_router
+from challenge_endpoints import router as challenge_router, repo as challenge_repo
+from challenge_plan import build_plan_snapshot, readiness_blockers
+from challenge_protocol import select_protocol_window
+from database import Database
 
 # Report output directory - must match data_endpoints.py REPORTS_DIR for ingestion
 REPORTS_OUTPUT_DIR = Path(__file__).parent.parent / "storage" / "reports"
@@ -95,6 +100,9 @@ app.include_router(data_router)
 
 # Include backup endpoints
 app.include_router(backup_router)
+
+# Include editable 14-day challenge and source-bound PED schedule endpoints.
+app.include_router(challenge_router)
 
 # CORS Configuration - Use environment variable for production security
 # Set ALLOWED_ORIGINS env var as comma-separated list in production
@@ -203,6 +211,7 @@ class UserData(BaseModel):
     # Old callers that only send ped_use=True are fully backwards-compatible.
     # See docs/PED-MODIFIERS-SOURCING.md for valid compound names.
     ped_stack: Optional[List[Dict[str, Any]]] = None
+    ped_stack_by_week: Optional[Dict[str, List[Dict[str, Any]]]] = None
 
     # Controller fields (2026-06-08 — contest-prep course-correction system)
     lean_ceiling_lb: float = 189.0          # Proven lean-mass ceiling (lb). PRIME default = 189.
@@ -210,6 +219,21 @@ class UserData(BaseModel):
     # actual_entries: list of actual weigh-ins for course-correction.
     # Each: {"week": int, "weight": float, "bf": float}
     actual_entries: Optional[List[Dict[str, Any]]] = None
+
+
+class ChallengePreviewRequest(BaseModel):
+    """Inputs required to bind a template, PRIME result, and sourced PED window."""
+    user_data: UserData
+    template_id: str
+    protocol_start_week: int
+    start_date: str
+    safety_acknowledged: bool = False
+
+
+class ChallengeCreateRequest(ChallengePreviewRequest):
+    cycle_id: Optional[str] = None
+    name: str = "Two-Week Emergency Cut"
+    activate: bool = False
 
 
 class WeeklyProgression(BaseModel):
@@ -248,6 +272,7 @@ class WeeklyProgression(BaseModel):
     # ---- PED stack fields (Optional; None when no stack provided) ----
     ped_ee_bonus_kcal: Optional[float] = None   # Thermogenic EE bonus kcal/day (Clen/T3)
     ped_confidence: Optional[str] = None        # Weakest evidence grade ("high"|"medium"|"low")
+    ped_unresolved_dose_compounds: Optional[List[str]] = None
     # ---- CONTROLLER fields (2026-06-08 — contest-prep course-correction system) ----
     required_weight: Optional[float] = None     # Required weight at this week (lb)
     required_bf: Optional[float] = None         # Required BF% at this week
@@ -431,7 +456,11 @@ async def root():
 @app.post("/calculate", response_model=CalculationResult)
 # @cached_calculation  # DISABLED - performance_optimizations not imported
 # @performance_monitor  # DISABLED - performance_optimizations not imported
-async def calculate_progression(user_data: UserData, ai_settings: Optional[AISettings] = None):
+async def calculate_progression(
+    user_data: UserData,
+    ai_settings: Optional[AISettings] = None,
+    include_ai: bool = True,
+):
     """
     Calculate weight loss progression using PRIME engine.
 
@@ -473,6 +502,8 @@ async def calculate_progression(user_data: UserData, ai_settings: Optional[AISet
             _extra_kwargs["calorie_floor"] = user_data.calorie_floor
         if "ped_stack" in _sig.parameters:
             _extra_kwargs["ped_stack"] = user_data.ped_stack  # None when not sent by frontend
+        if "ped_stack_by_week" in _sig.parameters:
+            _extra_kwargs["ped_stack_by_week"] = user_data.ped_stack_by_week
         # Controller params (2026-06-08)
         if "lean_ceiling_lb" in _sig.parameters:
             _extra_kwargs["lean_ceiling_lb"] = user_data.lean_ceiling_lb
@@ -552,6 +583,7 @@ async def calculate_progression(user_data: UserData, ai_settings: Optional[AISet
                     # PED stack pass-through (None when no stack in request)
                     ped_ee_bonus_kcal=week_data.get("ped_ee_bonus_kcal"),
                     ped_confidence=week_data.get("ped_confidence"),
+                    ped_unresolved_dose_compounds=week_data.get("ped_unresolved_dose_compounds"),
                     # Controller fields pass-through (None when engine hasn't emitted them)
                     required_weight=week_data.get("required_weight"),
                     required_bf=week_data.get("required_bf"),
@@ -579,6 +611,8 @@ async def calculate_progression(user_data: UserData, ai_settings: Optional[AISet
         confidence_score = None
         ai_analysis = None
         try:
+            if not include_ai:
+                raise RuntimeError("AI confidence analysis disabled for deterministic challenge preview")
             ai_analyzer = get_ai_analyzer(ai_settings)
 
             # Augment prime_data with ped_stack + current phase for the AI prompt.
@@ -621,6 +655,117 @@ async def calculate_progression(user_data: UserData, ai_settings: Optional[AISet
     except Exception as e:
         print(f"Calculation error: {e}")
         raise HTTPException(status_code=500, detail=f"Calculation failed: {str(e)}")
+
+
+async def _build_challenge_preview(request: ChallengePreviewRequest) -> Dict[str, Any]:
+    template = challenge_repo.get_template(request.template_id)
+    if not template or not template.get("current_revision"):
+        raise HTTPException(status_code=404, detail="Challenge template or current revision not found")
+
+    try:
+        protocol = select_protocol_window(request.protocol_start_week)
+        start = parse_date_string(request.start_date)
+        # PRIME treats end_date as the fixed deadline boundary. Fourteen days
+        # therefore uses start + 14, while the visible calendar ends on +13.
+        engine_end = start + timedelta(days=14)
+        user_values = request.user_data.model_dump() if hasattr(request.user_data, "model_dump") else request.user_data.dict()
+        user_values.update(
+            {
+                "start_date": start.strftime("%Y-%m-%d"),
+                "end_date": engine_end.strftime("%Y-%m-%d"),
+                "timeline_weeks": 2,
+                "goal_type": "cut",
+                "ped_use": True,
+                "ped_stack": protocol["ped_stack"],
+                "ped_stack_by_week": protocol["ped_stack_by_week"],
+            }
+        )
+        challenge_user = UserData(**user_values)
+        calculation = await calculate_progression(challenge_user, include_ai=False)
+        plan = build_plan_snapshot(
+            template["current_revision"], protocol, calculation, start.strftime("%Y-%m-%d")
+        )
+    except HTTPException:
+        raise
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    blockers = readiness_blockers(template["status"], plan, request.safety_acknowledged)
+    calculation_data = calculation.model_dump() if hasattr(calculation, "model_dump") else calculation.dict()
+    return {
+        "template": template,
+        "protocol_snapshot": protocol,
+        "calculation_snapshot": calculation_data,
+        "plan_snapshot": plan,
+        "readiness": {"ready": not blockers, "blockers": blockers},
+    }
+
+
+@app.post("/api/data/challenges/preview")
+async def preview_challenge(request: ChallengePreviewRequest):
+    """Preview an exact 14-day plan without mutating the active cycle."""
+    return await _build_challenge_preview(request)
+
+
+@app.post("/api/data/challenges")
+async def create_challenge(request: ChallengeCreateRequest):
+    """Create a draft or activate a fully ready 14-day challenge."""
+    preview = await _build_challenge_preview(request)
+    blockers = preview["readiness"]["blockers"]
+    if request.activate and blockers:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Challenge cannot be activated", "blockers": blockers},
+        )
+
+    cycle_id = request.cycle_id or f"two-week-{uuid.uuid4()}"
+    plan = preview["plan_snapshot"]
+    template = preview["template"]
+    protocol = preview["protocol_snapshot"]
+    status = "active" if request.activate else "draft"
+    database = Database()
+    database.save_cycle(
+        {
+            "id": cycle_id,
+            "name": request.name,
+            "start_date": plan["start_date"],
+            "end_date": plan["end_date"],
+            "status": status,
+            "start_weight": request.user_data.current_weight,
+            "start_bf": request.user_data.current_bf,
+            "goal_weight": request.user_data.goal_weight,
+            "goal_bf": request.user_data.goal_bf,
+            "timeline_weeks": 2,
+            "plan_mode": "two_week_cut",
+            "timeline_days": 14,
+            "template_id": template["id"],
+            "template_revision_id": template["current_revision"]["id"],
+            "protocol_id": protocol["protocol_id"],
+            "protocol_version": protocol["version"],
+            "protocol_status": "confirmed" if request.activate else "selected",
+            "protocol_start_week": protocol["start_week"],
+            "protocol_snapshot_json": protocol,
+            "plan_snapshot_json": plan,
+            "current_plan_revision": 1,
+            "safety_acknowledged_at": datetime.now().isoformat() if request.safety_acknowledged else None,
+        }
+    )
+    challenge_repo.save_plan_revision(
+        cycle_id=cycle_id,
+        revision_number=1,
+        template_revision_id=template["current_revision"]["id"],
+        protocol_id=protocol["protocol_id"],
+        protocol_version=protocol["version"],
+        protocol_start_week=protocol["start_week"],
+        protocol_snapshot=protocol,
+        calculation_snapshot=preview["calculation_snapshot"],
+        plan_snapshot=plan,
+    )
+    if request.activate:
+        database.save_cycle(
+            {"id": cycle_id, "status": "active", "protocol_status": "confirmed"}
+        )
+    return {"success": True, "cycle_id": cycle_id, "status": status, **preview}
 
 
 class RecalculateRequest(BaseModel):

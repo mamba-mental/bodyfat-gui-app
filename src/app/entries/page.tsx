@@ -36,6 +36,7 @@ import Link from "next/link"
 import { useApp } from "@/contexts/app-context"
 import { calculateProgressPercentage } from "@/lib/calculations"
 import { BodyFatEntry } from "@/types"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 interface EditingEntry {
   id: string
@@ -345,13 +346,8 @@ export default function EntriesPage() {
 
   if (!current_user) {
     return (
-      <div className="container max-w-4xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Entry History</h1>
-          <p className="text-muted-foreground">
-            View and manage your body composition tracking entries
-          </p>
-        </div>
+      <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+        <WorkspacePageHeader eyebrow="Measurements" title="Entry history" description="Review and manage every recorded body-composition check-in." icon={Calendar} />
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -364,15 +360,13 @@ export default function EntriesPage() {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Entry History</h1>
-          <p className="text-muted-foreground">
-            Track and manage your body composition progress
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
+    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+      <WorkspacePageHeader
+        eyebrow="Measurements"
+        title="Entry history"
+        description="A complete record of your measurements, notes, progress photos, and cycle ownership. Filter the history without losing access to edits or exports."
+        icon={Calendar}
+        actions={<>
           {filteredEntries.length > 0 && (
             <Button variant="secondary" onClick={exportEntries}>
               <ClientIcon icon={Download} className="mr-2 h-4 w-4" />
@@ -385,8 +379,8 @@ export default function EntriesPage() {
               Add Entry
             </Button>
           </Link>
-        </div>
-      </div>
+        </>}
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -445,7 +439,7 @@ export default function EntriesPage() {
 
       <Tabs value={filterPeriod} onValueChange={(value) => setFilterPeriod(value as any)} className="space-y-4">
         <div className="flex justify-between items-center">
-          <TabsList>
+          <TabsList className="h-auto max-w-full justify-start overflow-x-auto">
             <TabsTrigger value="cycle">
               {activeCycle ? activeCycle.name : "This Cycle"}
             </TabsTrigger>

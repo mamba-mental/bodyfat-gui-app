@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, FileText, TrendingUp, Target, Activity, Brain, AlertCircle, CheckCircle, FileDown, TrashIcon, Eye } from "lucide-react"
+import { Download, FileText, TrendingUp, Target, Activity, Brain, AlertCircle, CheckCircle, FileDown, TrashIcon, Eye, CalendarRange, ShieldCheck } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
 import Link from "next/link"
 import { useApp } from "@/contexts/app-context"
@@ -31,6 +31,8 @@ import {
 
 import { CycleContextBanner } from "@/components/cycle/cycle-context-banner"
 import { fetchGeneratedLivingReport, generateId } from "@/lib/storage-api"
+import { challengeApi } from "@/lib/challenge-api"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 const CALC_VERSION = "calc-v1"
 const GENERATOR_VERSION = "gen-v3"
@@ -82,6 +84,15 @@ export default function ReportsPage() {
   }, [])
   const entries = scopeByCycle(allEntries as any[], selectedCycleId)
   const reports = scopeByCycle(allReports as any[], selectedCycleId)
+  const selectedChallenge = React.useMemo(() => {
+    const candidates = cycles.filter((cycle) => cycle.plan_mode === 'two_week_cut')
+    if (selectedCycleId !== ALL_CYCLES) return candidates.find((cycle) => cycle.id === selectedCycleId) || null
+    return candidates.find((cycle) => cycle.status === 'active') || candidates[0] || null
+  }, [cycles, selectedCycleId])
+  const latestChallengeReport = React.useMemo(
+    () => (allReports as Report[]).find((report) => report.report_type === 'two_week_cut' && (!selectedChallenge || report.cycle_id === selectedChallenge.id)) || null,
+    [allReports, selectedChallenge],
+  )
 
   // Real elapsed weeks between two entry dates (floored at 1/7 wk to avoid divide-by-zero).
   // Fixes "per week" stats that previously assumed every entry was exactly one week apart.
@@ -112,6 +123,27 @@ export default function ReportsPage() {
   // Living Report generation state
   const [livingReportLoading, setLivingReportLoading] = useState(false)
   const [livingReportError, setLivingReportError] = useState<string | null>(null)
+  const [challengeReportLoading, setChallengeReportLoading] = useState(false)
+
+  const handleGenerateChallengeReport = async () => {
+    if (!selectedChallenge) return
+    setChallengeReportLoading(true)
+    setLivingReportError(null)
+    try {
+      const generated = await challengeApi.report(selectedChallenge.id) as unknown as Report
+      dispatch({ type: 'ADD_REPORT', payload: generated })
+      const html = generated.html_content
+      if (html) {
+        const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+        window.open(url, '_blank')
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      }
+    } catch (reason) {
+      setLivingReportError(reason instanceof Error ? reason.message : 'Failed to generate the 14-day report')
+    } finally {
+      setChallengeReportLoading(false)
+    }
+  }
 
   const handleGenerateLivingReport = async () => {
     if (!current_user) return
@@ -363,15 +395,50 @@ export default function ReportsPage() {
     }
   }
 
+  const challengeReportCard = (
+    <Card className="overflow-hidden border-primary/30 bg-accent/40">
+      <CardContent className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="gap-1"><CalendarRange className="h-3 w-3" /> 14-Day Cut report</Badge>
+            <Badge variant="outline">{selectedChallenge ? latestChallengeReport?.report_mode?.replace('_', ' ') || 'Ready to generate' : 'Plan required'}</Badge>
+          </div>
+          <h2 className="mt-3 text-2xl font-semibold">{selectedChallenge?.name || 'Two-Week Emergency Cut'}</h2>
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            {selectedChallenge
+              ? 'This report is generated from the immutable plan revision, the exact source-backed PED schedule, daily diet targets and actuals, completion logs, and future-day amendments.'
+              : 'Build and activate a 14-day plan to unlock a dedicated progress/final report containing its diet schedule, exact source-backed PED schedule, daily actuals, amendments, and provenance.'}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            {selectedChallenge ? <>
+              <span><strong className="text-foreground">Progress:</strong> {latestChallengeReport?.completion ? `${latestChallengeReport.completion.days_logged} / ${latestChallengeReport.completion.days_total} days` : 'Generate to snapshot current progress'}</span>
+              <span><strong className="text-foreground">Plan revision:</strong> {latestChallengeReport?.plan_revision || Number(selectedChallenge.current_plan_revision) || '—'}</span>
+              <span><strong className="text-foreground">Protocol:</strong> {latestChallengeReport?.protocol_id || String(selectedChallenge.protocol_id || 'Required')}</span>
+            </> : <span><strong className="text-foreground">Report modes:</strong> progress, final, and stopped early</span>}
+            <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Source provenance retained</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 md:flex-col">
+          {selectedChallenge ? <>
+            <Button onClick={handleGenerateChallengeReport} disabled={challengeReportLoading}>
+              <FileText className="mr-2 h-4 w-4" />
+              {challengeReportLoading ? 'Building 14-day report…' : latestChallengeReport ? 'Refresh progress report' : 'Generate 14-day report'}
+            </Button>
+            <Button asChild variant="outline"><Link href="/challenge">Open Command Center</Link></Button>
+            {latestChallengeReport && <Button variant="ghost" onClick={() => handleViewFullReport(latestChallengeReport)}>View latest report</Button>}
+          </> : <>
+            <Button asChild><Link href="/plans">Build the 14-day plan</Link></Button>
+            <Button asChild variant="outline"><Link href="/challenge/template">Review editable template</Link></Button>
+          </>}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   if (!current_user) {
     return (
-      <div className="container max-w-4xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">
-            Comprehensive analysis and reports of your body composition progress
-          </p>
-        </div>
+      <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+        <WorkspacePageHeader eyebrow="Report center" title="Progress reports" description="Generate, review, and export reproducible PRIME and 14-day challenge reports." icon={FileText} />
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -379,20 +446,20 @@ export default function ReportsPage() {
             Please complete your profile setup to generate reports.
           </AlertDescription>
         </Alert>
+
+        {challengeReportCard}
       </div>
     )
   }
 
   return (
-    <div className="container max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">
-            Comprehensive PRIME analysis and progress reports
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
+    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+      <WorkspacePageHeader
+        eyebrow="Report center"
+        title="Progress reports"
+        description="Build standard PRIME Living Reports or revision-bound 14-day reports, then review, compare, and export the exact saved result."
+        icon={FileText}
+        actions={<>
           <Select value={selectedCycleId} onValueChange={setSelectedCycleId}>
             <SelectTrigger className="w-[210px]"><SelectValue placeholder="Cycle" /></SelectTrigger>
             <SelectContent>
@@ -416,11 +483,13 @@ export default function ReportsPage() {
             <ClientIcon icon={FileText} className="mr-2 h-4 w-4" />
             {loading ? "Generating..." : "Generate New Report"}
           </Button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Cycle context + next scheduled check-in (P8) */}
       <CycleContextBanner entryDates={(allEntries as any[]).map((e) => e.date)} />
+
+      {challengeReportCard}
 
       {error && (
         <Alert variant="destructive">
@@ -486,7 +555,7 @@ export default function ReportsPage() {
         </Card>
       )}
 
-      {current_calculation && (
+      {(current_calculation || reports.length > 0) && (
         <Tabs defaultValue="summary" className="space-y-4">
           <TabsList>
             <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -783,7 +852,7 @@ export default function ReportsPage() {
               // Prefer the latest saved report's progression so the chart reflects
               // what was actually generated, not a stale transient calculation.
               progression={
-                latestReport?.calculation_result?.progression ?? current_calculation.progression
+                latestReport?.calculation_result?.progression ?? current_calculation?.progression ?? []
               }
               title="PRIME Progression Analysis"
               description="Weekly breakdown of your projected transformation"
@@ -923,20 +992,20 @@ export default function ReportsPage() {
                               
                               if (recentWeightLoss > avgWeightLoss + 0.5) {
                                 return (
-                                  <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                    <p className="text-green-800">🎯 <strong>Excellent Progress!</strong> Your recent weight loss ({recentWeightLoss.toFixed(1)} lbs/week) is ahead of your average pace.</p>
+                                  <div className="rounded-lg border border-primary/25 bg-accent/45 p-3">
+                                    <p className="text-foreground">🎯 <strong>Excellent Progress!</strong> Your recent weight loss ({recentWeightLoss.toFixed(1)} lbs/week) is ahead of your average pace.</p>
                                   </div>
                                 )
                               } else if (recentWeightLoss < avgWeightLoss - 0.5) {
                                 return (
-                                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-                                    <p className="text-yellow-800">⚠️ <strong>Slowing Progress</strong> Recent loss ({recentWeightLoss.toFixed(1)} lbs/week) is below average. Consider reviewing calorie intake or increasing activity.</p>
+                                  <div className="rounded-lg border border-border bg-muted/55 p-3">
+                                    <p className="text-foreground">⚠️ <strong>Slowing Progress</strong> Recent loss ({recentWeightLoss.toFixed(1)} lbs/week) is below average. Consider reviewing calorie intake or increasing activity.</p>
                                   </div>
                                 )
                               } else {
                                 return (
-                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                                    <p className="text-blue-800">📈 <strong>Steady Progress</strong> You're maintaining consistent progress at {avgWeightLoss.toFixed(1)} lbs/week. Keep up the great work!</p>
+                                  <div className="rounded-lg border border-border bg-muted/55 p-3">
+                                    <p className="text-foreground">📈 <strong>Steady Progress</strong> You're maintaining consistent progress at {avgWeightLoss.toFixed(1)} lbs/week. Keep up the great work!</p>
                                   </div>
                                 )
                               }
@@ -949,34 +1018,34 @@ export default function ReportsPage() {
                           <div className="text-sm space-y-2">
                             {current_user?.workout_type === 'Bodybuilding' && (
                               <div className="flex items-start gap-2">
-                                <span className="text-blue-500">💪</span>
+                                <span className="text-primary">💪</span>
                                 <p>Focus on maintaining muscle mass with high protein intake ({Math.round(current_user.current_weight * 1.2)}g daily) and consistent resistance training.</p>
                               </div>
                             )}
                             {current_user?.workout_type === 'Powerlifting' && (
                               <div className="flex items-start gap-2">
-                                <span className="text-red-500">🏋️</span>
+                                <span className="text-primary">🏋️</span>
                                 <p>Prioritize strength maintenance. Consider periodic refeed days to support performance and metabolism.</p>
                               </div>
                             )}
                             {current_user?.workout_type === 'CrossFit' && (
                               <div className="flex items-start gap-2">
-                                <span className="text-orange-500">🔥</span>
+                                <span className="text-primary">🔥</span>
                                 <p>Balance high-intensity training with adequate recovery. Monitor performance metrics alongside weight loss.</p>
                               </div>
                             )}
                             {current_user?.workout_type === 'Cardio Only' && (
                               <div className="flex items-start gap-2">
-                                <span className="text-green-500">🏃</span>
+                                <span className="text-primary">🏃</span>
                                 <p>Add 2-3 resistance training sessions weekly to preserve muscle mass during weight loss.</p>
                               </div>
                             )}
                             <div className="flex items-start gap-2">
-                              <span className="text-purple-500">😴</span>
+                              <span className="text-primary">😴</span>
                               <p>Ensure 7-9 hours of quality sleep nightly to optimize recovery and fat loss hormones.</p>
                             </div>
                             <div className="flex items-start gap-2">
-                              <span className="text-indigo-500">💧</span>
+                              <span className="text-primary">💧</span>
                               <p>Stay hydrated with {Math.round(current_user?.current_weight * 0.5) || 64}+ oz of water daily for optimal metabolism.</p>
                             </div>
                           </div>
@@ -1001,7 +1070,7 @@ export default function ReportsPage() {
                 {entries.length >= 3 ? (
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-lg font-bold text-green-600">
+                      <div className="text-lg font-bold text-primary">
                         {entries && entries.length >= 2 && entries[0] && entries[entries.length - 1]
                           ? ((entries[entries.length - 1].weight - entries[0].weight) * -1 / weeksBetween(entries[0].date, entries[entries.length - 1].date) * 4).toFixed(1)
                           : '0.0'
@@ -1012,7 +1081,7 @@ export default function ReportsPage() {
                     </div>
                     
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">
+                      <div className="text-lg font-bold text-primary">
                         {(() => {
                           // Calculate based on timeline (consistent with dashboard)
                           if (!current_user?.start_date || !current_user?.end_date) return 0
@@ -1029,7 +1098,7 @@ export default function ReportsPage() {
                     </div>
                     
                     <div className="text-center p-4 border rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
+                      <div className="text-lg font-bold text-primary">
                         {/* Prefer the latest report's confidence score so this reflects saved data */}
                         {latestReport?.calculation_result?.confidence_score ?? current_calculation?.confidence_score ?? 'N/A'}
                       </div>
@@ -1057,14 +1126,32 @@ export default function ReportsPage() {
                 {reports.length > 0 ? (
                   <div className="space-y-4">
                     {reports.map((report) => (
-                      <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{report.title}</div>
+                      <div key={report.id} className="flex flex-col gap-4 rounded-xl border p-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="font-medium">{report.title}</div>
+                            {report.report_type === 'two_week_cut' ? (
+                              <Badge variant="outline" className="gap-1 border-primary/50 text-primary">
+                                <CalendarRange className="h-3 w-3" />
+                                14-Day · {(report.report_mode || 'progress').replace('_', ' ')}
+                              </Badge>
+                            ) : report.report_type === 'living' ? (
+                              <Badge variant="outline">
+                                <Activity className="mr-1 h-3 w-3" />
+                                Living
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Complete
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             Generated {new Date(report.generated_at).toLocaleString()}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/reports/${report.id}`}>
                             <Button variant="default" size="sm">
                               <ClientIcon icon={Eye} className="mr-1 h-3 w-3" />
@@ -1072,10 +1159,9 @@ export default function ReportsPage() {
                             </Button>
                           </Link>
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleViewFullReport(report)}
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
                           >
                             <ClientIcon icon={FileText} className="mr-1 h-3 w-3" />
                             Full Report
@@ -1111,17 +1197,6 @@ export default function ReportsPage() {
                           >
                             <ClientIcon icon={TrashIcon} className="h-3 w-3" />
                           </Button>
-                          {(report as any).report_type === 'living' ? (
-                            <Badge variant="outline" className="text-teal-600 border-teal-400">
-                              <Activity className="w-3 h-3 mr-1" />
-                              Living
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Complete
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     ))}
@@ -1135,7 +1210,7 @@ export default function ReportsPage() {
         </Tabs>
       )}
       
-      {!current_calculation && (
+      {!current_calculation && !selectedChallenge && (
         <Card>
           <CardHeader>
             <CardTitle>No Calculation Available</CardTitle>

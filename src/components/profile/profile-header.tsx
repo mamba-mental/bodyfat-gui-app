@@ -131,6 +131,34 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
     .toUpperCase()
     .slice(0, 2)
 
+  if (compact) {
+    return (
+      <div className={cn("relative h-36 overflow-hidden border-b border-[#d9ded6] bg-[#173c2a] md:h-40", className)}>
+        {user.profile_banner ? (
+          <img
+            src={user.profile_banner}
+            alt="Profile banner"
+            className="h-full w-full object-cover object-center"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_25%,rgba(190,208,195,0.28),transparent_35%),linear-gradient(120deg,#173c2a,#315c42)]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/5" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent" />
+        <div className="absolute inset-0 flex items-end gap-3 px-5 py-4 md:px-8">
+          <Avatar className="h-14 w-14 shrink-0 border-2 border-white/80 shadow-lg">
+            <AvatarImage src={user.profile_picture} alt={user.name} />
+            <AvatarFallback className="bg-[#edf3ea] text-lg font-semibold text-[#173c2a]">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 pb-0.5 text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+            <h2 className="truncate font-serif text-2xl font-semibold tracking-wide">{user.name}</h2>
+            <p className="text-sm text-white/90">{formatAge(user.dob, user.age)} · {user.gender === 'm' ? 'Male' : 'Female'} · {user.current_weight} lbs</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn("relative", className)}>
       {/* Banner */}
@@ -147,10 +175,8 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
         "relative bg-gradient-to-r from-primary/20 to-primary/10 overflow-hidden",
         user.profile_banner
           ? "w-full aspect-[15/4] max-h-[160px] md:max-h-[200px]"
-          : compact
-            ? "h-20 md:h-24"
-            : "h-32 md:h-48 rounded-t-lg",
-        !compact && "rounded-t-lg"
+          : "h-32 md:h-48 rounded-t-lg",
+        "rounded-t-lg"
       )}>
         {user.profile_banner ? (
           <img
@@ -203,14 +229,14 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
         <div
           className={cn(
             "absolute",
-            compact ? "left-4 top-3" : "left-6 md:left-10 top-6 md:top-10"
+            "left-6 md:left-10 top-6 md:top-10"
           )}
         >
           <div className="relative">
             <Avatar
               className={cn(
                 "border-4 border-background shadow-lg",
-                compact ? "h-16 w-16" : "h-24 w-24"
+                "h-24 w-24"
               )}
             >
               <AvatarImage src={user.profile_picture} alt={user.name} />
@@ -256,15 +282,14 @@ export function ProfileHeader({ className, showEditButtons = false, compact = fa
       {/* User Info */}
       <div className={cn(
         "px-4 md:px-8 pb-4",
-        compact ? "pt-8" : "pt-12"
+        "pt-12"
       )}>
         <h2 className={cn(
           "font-bold",
-          compact ? "text-lg" : "text-2xl"
+          "text-2xl"
         )}>{user.name}</h2>
         <p className={cn(
-          "text-muted-foreground",
-          compact && "text-sm"
+          "text-muted-foreground"
         )}>
           {formatAge(user.dob, user.age)} • {user.gender === 'm' ? 'Male' : 'Female'} • {user.current_weight} lbs
         </p>

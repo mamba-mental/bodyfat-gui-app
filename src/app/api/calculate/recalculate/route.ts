@@ -23,8 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const { userData, newEntry } = await request.json()
 
-    console.log('Recalculate Request - User:', userData.name)
-    console.log('New Entry:', newEntry)
+    console.log('Recalculation request accepted')
 
     // CRITICAL: Always use TODAY as start_date for fresh recalculation
     // This ensures mid-week entries get recalculated from today, not old cached dates
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
       eating_window_hours: userData.eating_window_hours ?? (userData.eating_pattern === 'intermittent_fasting' ? 8 : userData.eating_pattern === 'omad' ? 1 : 12),
     }
 
-    console.log('Recalculating from TODAY:', today, 'with weight:', newEntry.weight)
+    console.log('Recalculating from the latest entry date')
  
     // Call the Python API to recalculate
     try {

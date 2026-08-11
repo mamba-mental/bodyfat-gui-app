@@ -80,7 +80,7 @@ export function PhotoTimeline() {
 
   return (
     <>
-      <Card>
+      <Card id="progress-photos" className="scroll-mt-24">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

@@ -211,6 +211,14 @@ export interface Report {
   file_base?: string;
   cycle_id?: string | null; // ReComp Cycle this report belongs to (P3/P4)
   source_fingerprint?: string | null; // P7 report-gating fingerprint of the source data
+  report_type?: 'living' | 'two_week_cut' | string;
+  report_mode?: 'progress' | 'final' | 'stopped_early' | string;
+  plan_revision?: number;
+  template_revision_id?: string;
+  protocol_id?: string;
+  protocol_version?: string;
+  completion?: { days_logged: number; days_total: number };
+  markdown_content?: string;
 }
 
 export interface AppState {

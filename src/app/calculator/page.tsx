@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Calculator, Target, AlertCircle, CheckCircle } from "lucide-react"
 import ClientIcon from "@/components/ui/client-icon"
+import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
 
 interface CalculationResult {
   bodyFat: number
@@ -154,13 +155,13 @@ export default function CalculatorPage() {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Body Fat Calculator</h1>
-        <p className="text-muted-foreground">
-          Calculate your body fat percentage using scientifically validated methods
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <WorkspacePageHeader
+        eyebrow="Measurement studio"
+        title="Estimate body fat with the right context."
+        description="Compare circumference- and BMI-based estimates, understand their expected error, and use trends—not a single number—to guide decisions."
+        icon={Calculator}
+      />
 
       {errors.length > 0 && (
         <Alert variant="destructive">

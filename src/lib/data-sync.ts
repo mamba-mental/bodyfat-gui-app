@@ -207,7 +207,7 @@ export class DataSync {
       console.log('[DataSync] getUserData: Redis response status:', redisResponse.status);
       if (redisResponse.ok) {
         const userData = await redisResponse.json();
-        console.log('[DataSync] getUserData: Got data from Redis:', userData);
+        console.log('[DataSync] getUserData: Redis returned user data');
         if (userData && Object.keys(userData).length > 0) {
           return userData;
         }
@@ -227,7 +227,7 @@ export class DataSync {
       console.log('[DataSync] getUserData: Python API response status:', sqliteResponse.status);
       if (sqliteResponse.ok) {
         const userData = await sqliteResponse.json();
-        console.log('[DataSync] getUserData: Got data from Python API:', userData);
+        console.log('[DataSync] getUserData: Python API returned user data');
 
         // Warm Redis cache with SQLite data
         if (userData) {

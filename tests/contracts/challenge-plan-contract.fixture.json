@@ -1,0 +1,25 @@
+{
+  "standard_plan": {
+    "plan_mode": "standard",
+    "timeline_weeks": 15
+  },
+  "two_week_plan": {
+    "plan_mode": "two_week_cut",
+    "timeline_days": 14,
+    "timeline_weeks": 2,
+    "template_revision_id": "template-r2",
+    "protocol_start_week": 9
+  },
+  "template_revision": {
+    "revision_number": 2,
+    "duration_days": 14,
+    "validation_status": "reviewed"
+  },
+  "amendment": {
+    "effective_day": 8,
+    "reason": "Recovery-based calorie adjustment",
+    "nutrition_calories": 2250,
+    "protein_g": 220,
+    "safety_acknowledged": true
+  }
+}
