@@ -80,10 +80,13 @@ def _is_active(value: Any) -> bool:
     return bool(normalized) and normalized not in {"off", "—", "-", "n/a", "none"}
 
 
-def _canonical_compound(name: str) -> Optional[str]:
+def canonicalize_compound(name: str) -> Optional[str]:
     normalized = re.sub(r"\s+", " ", name.strip().lower())
     normalized = re.sub(r"\s*\(.*?\)\s*", "", normalized).strip()
     return COMPOUND_ALIASES.get(normalized)
+
+
+_canonical_compound = canonicalize_compound
 
 
 def _compound_names(rows: Iterable[Dict[str, Any]]) -> List[Dict[str, str]]:
@@ -108,7 +111,7 @@ def _compound_names(rows: Iterable[Dict[str, Any]]) -> List[Dict[str, str]]:
     ]
 
 
-def _dose_metadata(value: str) -> Dict[str, Any]:
+def parse_source_dose(value: str) -> Dict[str, Any]:
     """Parse source dose metadata without choosing a value from a range."""
     normalized = str(value or "").replace("—", "-").replace("–", "-")
     ranged = re.search(r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*(mcg|mg)\b", normalized, re.I)
@@ -129,6 +132,9 @@ def _dose_metadata(value: str) -> Dict[str, Any]:
             "dose_resolution": "exact_source_value",
         }
     return {"dose_resolution": "not_parsed"}
+
+
+_dose_metadata = parse_source_dose
 
 
 def _weekly_stack(row: Dict[str, Any], first_active_week: Dict[str, int]) -> List[Dict[str, Any]]:

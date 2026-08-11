@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from challenge_repository import initialize_challenge_schema
+from ped_inventory_repository import initialize_ped_inventory_schema
 
 class Database:
     def __init__(self, db_path: str = None):
@@ -142,12 +143,13 @@ class Database:
 
             # Editable 14-day templates and immutable plan/protocol snapshots.
             initialize_challenge_schema(conn)
+            initialize_ped_inventory_schema(conn)
 
             # Stamp alembic_version to head so `alembic upgrade head` is a no-op on a
             # DB this code already migrated (prevents double-apply if Alembic is run).
             conn.execute('CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)')
             if not conn.execute("SELECT 1 FROM alembic_version LIMIT 1").fetchone():
-                conn.execute("INSERT INTO alembic_version (version_num) VALUES ('f3c461796ba2')")
+                conn.execute("INSERT INTO alembic_version (version_num) VALUES ('a91c4d2f0e7b')")
 
             conn.commit()
     

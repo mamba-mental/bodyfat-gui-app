@@ -103,6 +103,10 @@ def readiness_blockers(
     template_status: str,
     plan_snapshot: Dict[str, Any],
     safety_acknowledged: bool,
+    inventory_required: bool = False,
+    inventory_coverage: Dict[str, Any] | None = None,
+    member_inventory_confirmed: bool = False,
+    review_evidence: Dict[str, Any] | None = None,
 ) -> List[str]:
     blockers = []
     if template_status != "active":
@@ -115,4 +119,23 @@ def readiness_blockers(
         blockers.append("The PED schedule source fingerprint is missing")
     if not safety_acknowledged:
         blockers.append("Safety acknowledgement is required before activation")
+    if inventory_required:
+        coverage = inventory_coverage or {"ready": False, "blockers": []}
+        blockers.extend(
+            str(item.get("message"))
+            for item in coverage.get("blockers", [])
+            if item.get("severity") == "critical" and item.get("message")
+        )
+        if not coverage.get("ready") and not coverage.get("blockers"):
+            blockers.append("Confirmed inventory coverage is required before activation")
+        if not member_inventory_confirmed:
+            blockers.append("Member confirmation of the entered PED inventory is required")
+        evidence = review_evidence or {}
+        if not (
+            evidence.get("attested")
+            and str(evidence.get("reviewer_name") or "").strip()
+            and str(evidence.get("reviewer_role") or "").strip()
+            and str(evidence.get("review_note") or "").strip()
+        ):
+            blockers.append("Documented review evidence is required before activation")
     return blockers

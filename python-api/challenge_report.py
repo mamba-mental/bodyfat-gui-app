@@ -16,6 +16,12 @@ def _schedule_text(schedule: Dict[str, Any]) -> str:
     for timing, value in schedule.get("oral_and_daily_timing", {}).items():
         if str(value).strip() not in {"", "—", "-", "OFF"}:
             pieces.append(f"{timing}: {value}")
+    for event in schedule.get("inventory_schedule_events", []):
+        if event.get("resolution") == "reviewed_range_selection":
+            pieces.append(
+                f"Reviewed range record — {event.get('timing')}: {event.get('source_name')} "
+                f"{event.get('amount')}{event.get('unit')} (source {event.get('source_value')})"
+            )
     return "; ".join(pieces) or "No sourced items for this day"
 
 
@@ -30,6 +36,54 @@ def _stack_text(stack: List[Dict[str, Any]]) -> str:
         resolution = str(entry.get("dose_resolution") or "source text")
         items.append(f"{entry.get('source_name') or entry.get('compound')}: {values} ({resolution})")
     return "; ".join(items) or "No sourced compounds for this week"
+
+
+def _inventory_markdown(plan: Dict[str, Any]) -> List[str]:
+    coverage = plan.get("inventory_coverage") or {}
+    review = plan.get("ped_review") or {}
+    rows = [
+        "## Inventory coverage at activation",
+        "",
+        "> This is inventory math only, not medical safety, interaction validation, or a recommendation.",
+        "",
+        f"- Validation status: {coverage.get('validation_status') or 'not recorded'}",
+        f"- Medical safety status: {coverage.get('medical_safety_status') or 'not_validated'}",
+        f"- Member confirmed entered inventory: {'Yes' if plan.get('member_inventory_confirmed') else 'No'}",
+        f"- Documented reviewer: {review.get('reviewer_name') or 'Not recorded'} ({review.get('reviewer_role') or 'role not recorded'})",
+        f"- Review note: {review.get('review_note') or 'Not recorded'}",
+        "",
+    ]
+    for item in coverage.get("required_by_compound", []):
+        rows.append(
+            f"- {item.get('compound')}: {item.get('required_amount')} {item.get('unit')} required; "
+            f"{item.get('available_amount')} {item.get('unit')} available; "
+            f"{item.get('remaining_amount')} {item.get('unit')} remaining"
+        )
+    extras = ", ".join(str(item.get("label_name") or item.get("canonical_compound")) for item in coverage.get("unused_inventory", []))
+    rows.extend([f"- Extra inventory left unallocated: {extras or 'None'}", ""])
+    return rows
+
+
+def _inventory_html(plan: Dict[str, Any]) -> str:
+    coverage = plan.get("inventory_coverage") or {}
+    review = plan.get("ped_review") or {}
+    items = "".join(
+        "<li><strong>{compound}:</strong> {required} {unit} required; {available} {unit} available; {remaining} {unit} remaining</li>".format(
+            compound=html.escape(str(row.get("compound"))),
+            required=html.escape(str(row.get("required_amount"))),
+            available=html.escape(str(row.get("available_amount"))),
+            remaining=html.escape(str(row.get("remaining_amount"))),
+            unit=html.escape(str(row.get("unit"))),
+        )
+        for row in coverage.get("required_by_compound", [])
+    ) or "<li>No activation inventory snapshot recorded.</li>"
+    return (
+        '<h2>Inventory coverage at activation</h2>'
+        '<p class="notice">This is inventory math only, not medical safety, interaction validation, or a recommendation.</p>'
+        f"<p><strong>Validation status:</strong> {html.escape(str(coverage.get('validation_status') or 'not recorded'))}<br>"
+        f"<strong>Documented reviewer:</strong> {html.escape(str(review.get('reviewer_name') or 'Not recorded'))} "
+        f"({html.escape(str(review.get('reviewer_role') or 'role not recorded'))})</p><ul>{items}</ul>"
+    )
 
 
 def render_challenge_report(
@@ -68,6 +122,7 @@ def render_challenge_report(
         f"- Challenge Week 2 / source week {protocol.get('end_week')}: {_stack_text(protocol.get('ped_stack_by_week', {}).get('2', []))}",
         f"- Unresolved source dose ranges or values: {', '.join(protocol.get('unresolved_dose_compounds', [])) or 'None recorded'}",
         "",
+        *_inventory_markdown(plan),
         "## Day-by-day diet, training, PED schedule, and actuals",
         "",
         "| Day | Date | Nutrition day | Calories | Protein | Training | Cardio | Instruction | Actual | Selected PED source schedule |",
@@ -166,6 +221,7 @@ th,td{{border-bottom:1px solid var(--line);padding:10px;vertical-align:top;text-
 <strong>Report mode:</strong> {report_mode} ({len(logged)} of 14 days logged)</p>
 <p class="notice">The PED section records a user-selected, pre-existing source schedule. It is not a medical recommendation or clinical approval.</p>
 <h2>Selected PED source snapshot</h2><ul><li><strong>Challenge Week 1 / source week {protocol.get('start_week')}:</strong> {stack_week_1}</li><li><strong>Challenge Week 2 / source week {protocol.get('end_week')}:</strong> {stack_week_2}</li><li><strong>Unresolved source dose ranges or values:</strong> {unresolved}</li></ul>
+{_inventory_html(plan)}
 <h2>Day-by-day diet, training, PED schedule, and actuals</h2><table><thead><tr><th>Day</th><th>Date</th><th>Nutrition day</th><th>Calories</th><th>Protein</th><th>Training</th><th>Cardio</th><th>Instruction</th><th>Actuals</th><th>Selected PED source schedule</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
 <h2>Amendments</h2><ul>{amendment_html}</ul>
 <h2>Recovery, measurement, adjustment, and safety rules</h2><p><strong>Recovery:</strong> {html.escape(str(plan.get('recovery') or 'Not specified'))}<br><strong>Measurements:</strong> {html.escape(str(plan.get('measurements') or 'Not specified'))}<br><strong>Adjustment:</strong> {html.escape(str(plan.get('adjustment') or 'Not specified'))}<br><strong>Safety:</strong> {html.escape(str(plan.get('safety') or 'Not specified'))}</p>

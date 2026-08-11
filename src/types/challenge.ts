@@ -69,6 +69,25 @@ export interface ProtocolDay {
   injections: ProtocolInjection[]
   oral_and_daily_timing: Record<string, string>
   source: string
+  inventory_schedule_events?: Array<{
+    day_number: number
+    date: string
+    compound: string
+    source_name: string
+    timing: string
+    source_value: string
+    amount: string
+    unit: string
+    resolution: "exact_source_value" | "reviewed_range_selection"
+    allocations: Array<{
+      inventory_item_id: string
+      label_name?: string
+      expiration_date?: string
+      amount: string
+      unit: string
+      inventory_units: string
+    }>
+  }>
 }
 
 export interface ProtocolWindow {
@@ -94,6 +113,79 @@ export interface ProtocolWindow {
   unresolved_dose_compounds: string[]
   member_confirmation_required: boolean
   clinical_review_status: string
+}
+
+export interface PedInventoryItemInput {
+  user_id: string
+  label_name: string
+  canonical_compound: string
+  formulation: "injectable" | "oral" | "other"
+  strength_value: string
+  strength_unit: "mg" | "mcg"
+  available_units: string
+  inventory_unit: "mL" | "tablet" | "capsule"
+  expiration_date: string
+  lot_reference?: string | null
+  source_note?: string | null
+  confirmed: boolean
+  status: "active" | "depleted" | "archived"
+}
+
+export interface PedInventoryItem extends PedInventoryItemInput {
+  id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PedRangeResolution {
+  compound: string
+  source_value: string
+  selected_value: string
+  unit: "mg" | "mcg"
+}
+
+export interface PedReviewEvidence {
+  reviewer_name: string
+  reviewer_role: string
+  review_note: string
+  attested: boolean
+  recorded_at?: string | null
+}
+
+export interface PedInventoryBlocker {
+  code: string
+  severity: "critical" | "major" | "informational"
+  message: string
+  compound?: string
+  source_value?: string
+  day_number?: number
+}
+
+export interface PedInventoryCoverage {
+  ready: boolean
+  validation_status: string
+  medical_safety_status: "not_validated"
+  required_by_compound: Array<{
+    compound: string
+    required_amount: string
+    available_amount: string
+    remaining_amount: string
+    shortage_amount: string
+    unit: string
+    event_count: number
+  }>
+  scheduled_events: Array<Record<string, unknown>>
+  blockers: PedInventoryBlocker[]
+  range_requirements: Array<{
+    compound: string
+    source_name: string
+    source_value: string
+    minimum: string
+    maximum: string
+    unit: "mg" | "mcg"
+    occurrence_count: number
+  }>
+  unused_inventory: Array<Partial<PedInventoryItem>>
 }
 
 export interface ChallengePlanDay extends ChallengeTemplateDay {
@@ -124,6 +216,9 @@ export interface ChallengePlanSnapshot {
   days: ChallengePlanDay[]
   calculation_summary: CalculationResult["summary"]
   calculation_progression: CalculationResult["progression"]
+  inventory_coverage?: PedInventoryCoverage
+  member_inventory_confirmed?: boolean
+  ped_review?: PedReviewEvidence | null
 }
 
 export interface ChallengePreview {
@@ -131,6 +226,7 @@ export interface ChallengePreview {
   protocol_snapshot: ProtocolWindow
   calculation_snapshot: CalculationResult
   plan_snapshot: ChallengePlanSnapshot
+  inventory_coverage: PedInventoryCoverage
   readiness: { ready: boolean; blockers: string[] }
 }
 
@@ -175,6 +271,11 @@ export interface ChallengePreviewInput {
   protocol_start_week: number
   start_date: string
   safety_acknowledged: boolean
+  inventory_user_id: string
+  inventory_required: boolean
+  range_resolutions: PedRangeResolution[]
+  member_inventory_confirmed: boolean
+  review_evidence?: PedReviewEvidence
 }
 
 export interface ChallengeAmendmentInput {

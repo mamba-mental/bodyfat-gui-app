@@ -47,6 +47,20 @@ def test_challenge_report_uses_saved_plan_protocol_and_actual_logs():
             "start_date": "2026-08-11",
             "end_date": "2026-08-24",
             "template_revision_number": 2,
+            "inventory_coverage": {
+                "ready": True,
+                "required_by_compound": [
+                    {"compound": "testosterone", "required_amount": "1200", "available_amount": "1500", "remaining_amount": "300", "unit": "mg"}
+                ],
+                "unused_inventory": [{"label_name": "Unused item", "canonical_compound": "anavar"}],
+                "validation_status": "inventory_math_only_not_medical_safety",
+            },
+            "ped_review": {
+                "reviewer_name": "Dr. Example",
+                "reviewer_role": "licensed clinician",
+                "review_note": "Existing source schedule reviewed separately.",
+                "attested": True,
+            },
             "days": plan_days,
         },
     }
@@ -59,6 +73,10 @@ def test_challenge_report_uses_saved_plan_protocol_and_actual_logs():
     assert "source timing" in markdown
     assert "2150 kcal" in markdown
     assert "not a medical recommendation" in markdown
+    assert "Inventory coverage at activation" in markdown
+    assert "1200 mg required" in markdown
+    assert "inventory math only" in markdown.lower()
+    assert "Dr. Example" in markdown
     assert "source timing" in html
     assert "1 of 14 days logged" in html
 

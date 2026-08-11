@@ -6,6 +6,10 @@ import type {
   ChallengePreviewInput,
   ChallengeTemplate,
   ChallengeTemplateDefinition,
+  PedInventoryCoverage,
+  PedInventoryItem,
+  PedInventoryItemInput,
+  PedRangeResolution,
   ProtocolCatalog,
   ProtocolWindow,
 } from "@/types/challenge"
@@ -58,6 +62,23 @@ export const challengeApi = {
     method: "POST",
     body: JSON.stringify({ start_week: startWeek }),
   }),
+  inventory: (userId = "default") => api<PedInventoryItem[]>(`${DATA_API}/ped-inventory?user_id=${encodeURIComponent(userId)}`),
+  createInventoryItem: (input: PedInventoryItemInput) => api<PedInventoryItem>(`${DATA_API}/ped-inventory`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  }),
+  updateInventoryItem: (id: string, input: PedInventoryItemInput) => api<PedInventoryItem>(`${DATA_API}/ped-inventory/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  }),
+  deleteInventoryItem: (id: string) => api<{ success: boolean; id: string }>(`${DATA_API}/ped-inventory/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  }),
+  inventoryCoverage: (input: { user_id?: string; start_week: number; start_date: string; range_resolutions: PedRangeResolution[] }) =>
+    api<PedInventoryCoverage>(`${DATA_API}/ped-inventory/coverage`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
   preview: (input: ChallengePreviewInput) => api<ChallengePreview>(`${DATA_API}/challenges/preview`, {
     method: "POST",
     body: JSON.stringify(input),

@@ -49,3 +49,13 @@
 - [ ] 7.2 Validate app startup, 14-day regression, standard/custom duration behavior, backup/restore, and rollback with live local services.
 - [ ] 7.3 Complete a safety-focused review of every activation and amendment blocker.
 - [ ] 7.4 Update product documentation and Feature Lab status only after the verified capability is available.
+
+## 8. Approved Tonight MVP slice
+
+- [x] 8.1 Add editable manual inventory with exact strength/concentration, units on hand, expiration, and confirmation state.
+- [x] 8.2 Expand the selected reviewed 14-day source window into dated events without substitutions or inferred repetition.
+- [x] 8.3 Add Decimal-based allocation plus persistent blockers for source ranges, units, confirmation, expiration, divisibility, and shortages.
+- [x] 8.4 Require separate member inventory confirmation and documented human-review evidence before activation.
+- [x] 8.5 Freeze inventory coverage, range records, allocations, and review provenance into the plan revision, Command Center, and report.
+- [x] 8.6 Add focused Python/API/frontend/report tests and preserve medical safety status as `not_validated`.
+- [x] 8.7 Publish tonight-use instructions and distinguish the available manual MVP from the remaining AI/custom-duration roadmap.

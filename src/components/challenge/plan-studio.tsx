@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ProtocolScheduleCard } from "./protocol-schedule-card"
 import { PlanPreviewPanel } from "./plan-preview-panel"
+import { PedInventoryWorkspace, type PedInventoryActivationContext } from "./ped-inventory-workspace"
 
 function todayLocalISO() {
   return new Date().toLocaleDateString("en-CA")
@@ -33,6 +34,16 @@ export function PlanStudio() {
   const [loading, setLoading] = React.useState(true)
   const [previewing, setPreviewing] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [inventoryContext, setInventoryContext] = React.useState<PedInventoryActivationContext>({
+    inventory_user_id: "default",
+    inventory_required: true,
+    range_resolutions: [],
+    member_inventory_confirmed: false,
+  })
+  const updateInventoryContext = React.useCallback((context: PedInventoryActivationContext) => {
+    setInventoryContext(context)
+    setPreview(null)
+  }, [])
 
   React.useEffect(() => {
     let alive = true
@@ -78,6 +89,7 @@ export function PlanStudio() {
         protocol_start_week: startWeek,
         start_date: startDate,
         safety_acknowledged: acknowledged,
+        ...inventoryContext,
       })
       setPreview(result)
     } catch (error) {
@@ -109,6 +121,7 @@ export function PlanStudio() {
         protocol_start_week: startWeek,
         start_date: startDate,
         safety_acknowledged: acknowledged,
+        ...inventoryContext,
         name: "Two-Week Emergency Cut",
         activate,
       })
@@ -192,6 +205,7 @@ export function PlanStudio() {
                   <p className="mt-3 flex gap-2 text-xs text-[#76601c]"><AlertTriangle className="h-4 w-4 shrink-0" /> Week 1 is unavailable because the source contains no Week 1 dosing table; Week 16 cannot start a two-week window.</p>
                 </section>
                 <ProtocolScheduleCard protocol={protocol} />
+                <PedInventoryWorkspace protocol={protocol} startDate={startDate} onContextChange={updateInventoryContext} />
                 <label className="flex items-start gap-3 rounded-2xl border border-[#d7ddd4] bg-white p-4 text-sm"><input type="checkbox" className="mt-1 h-4 w-4 accent-[#2d6846]" checked={acknowledged} onChange={(event) => { setAcknowledged(event.target.checked); setPreview(null) }} /><span><strong className="flex items-center gap-2 text-[#274a36]"><ShieldCheck className="h-4 w-4" /> Safety acknowledgement</strong><span className="mt-1 block text-xs text-[#687169]">I understand this app is tracking an existing source schedule, not prescribing or medically approving it, and that source gaps/ranges remain unresolved unless separately reviewed.</span></span></label>
               </>
             )}

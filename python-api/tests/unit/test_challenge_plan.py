@@ -94,6 +94,45 @@ def test_activation_readiness_requires_active_template_source_and_acknowledgemen
     assert any("acknowledgement" in blocker for blocker in blockers)
 
 
+def test_inventory_checked_activation_requires_coverage_member_confirmation_and_review():
+    plan = build_plan_snapshot(_template(), _protocol(), _calculation(), "2026-08-11")
+    blocked_coverage = {
+        "ready": False,
+        "blockers": [
+            {"code": "insufficient_inventory", "severity": "critical", "message": "Testosterone is short by 200 mg"}
+        ],
+    }
+
+    blockers = readiness_blockers(
+        "active",
+        plan,
+        True,
+        inventory_required=True,
+        inventory_coverage=blocked_coverage,
+        member_inventory_confirmed=False,
+        review_evidence=None,
+    )
+
+    assert "Testosterone is short by 200 mg" in blockers
+    assert any("member confirmation" in blocker.lower() for blocker in blockers)
+    assert any("documented review" in blocker.lower() for blocker in blockers)
+
+    assert readiness_blockers(
+        "active",
+        plan,
+        True,
+        inventory_required=True,
+        inventory_coverage={"ready": True, "blockers": []},
+        member_inventory_confirmed=True,
+        review_evidence={
+            "reviewer_name": "Dr. Example",
+            "reviewer_role": "licensed clinician",
+            "review_note": "Existing source schedule reviewed separately.",
+            "attested": True,
+        },
+    ) == []
+
+
 def test_active_plan_amendments_reject_elapsed_and_logged_days(monkeypatch):
     today = datetime.now().date()
     revision = {

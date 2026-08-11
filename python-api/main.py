@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 import uvicorn
@@ -25,6 +25,9 @@ from challenge_endpoints import router as challenge_router, repo as challenge_re
 from challenge_plan import build_plan_snapshot, readiness_blockers
 from challenge_protocol import select_protocol_window
 from database import Database
+from ped_inventory import build_inventory_coverage
+from ped_inventory_endpoints import router as ped_inventory_router, repo as ped_inventory_repo
+from ped_inventory_schemas import PedRangeResolution, PedReviewEvidence
 
 # Report output directory - must match data_endpoints.py REPORTS_DIR for ingestion
 REPORTS_OUTPUT_DIR = Path(__file__).parent.parent / "storage" / "reports"
@@ -103,6 +106,7 @@ app.include_router(backup_router)
 
 # Include editable 14-day challenge and source-bound PED schedule endpoints.
 app.include_router(challenge_router)
+app.include_router(ped_inventory_router)
 
 # CORS Configuration - Use environment variable for production security
 # Set ALLOWED_ORIGINS env var as comma-separated list in production
@@ -228,6 +232,11 @@ class ChallengePreviewRequest(BaseModel):
     protocol_start_week: int
     start_date: str
     safety_acknowledged: bool = False
+    inventory_user_id: str = "default"
+    inventory_required: bool = True
+    range_resolutions: List[PedRangeResolution] = Field(default_factory=list)
+    member_inventory_confirmed: bool = False
+    review_evidence: Optional[PedReviewEvidence] = None
 
 
 class ChallengeCreateRequest(ChallengePreviewRequest):
@@ -665,6 +674,23 @@ async def _build_challenge_preview(request: ChallengePreviewRequest) -> Dict[str
     try:
         protocol = select_protocol_window(request.protocol_start_week)
         start = parse_date_string(request.start_date)
+        range_resolutions = [
+            row.model_dump(mode="json") if hasattr(row, "model_dump") else row.dict()
+            for row in request.range_resolutions
+        ]
+        inventory_coverage = build_inventory_coverage(
+            protocol,
+            ped_inventory_repo.list_items(request.inventory_user_id),
+            start.strftime("%Y-%m-%d"),
+            range_resolutions,
+        )
+        events_by_day: Dict[int, List[Dict[str, Any]]] = {}
+        for event in inventory_coverage["scheduled_events"]:
+            events_by_day.setdefault(int(event["day_number"]), []).append(event)
+        for day in protocol.get("days", []):
+            day["inventory_schedule_events"] = events_by_day.get(int(day["day_number"]), [])
+        protocol["range_resolutions"] = range_resolutions
+        protocol["inventory_validation_status"] = inventory_coverage["validation_status"]
         # PRIME treats end_date as the fixed deadline boundary. Fourteen days
         # therefore uses start + 14, while the visible calendar ends on +13.
         engine_end = start + timedelta(days=14)
@@ -685,18 +711,37 @@ async def _build_challenge_preview(request: ChallengePreviewRequest) -> Dict[str
         plan = build_plan_snapshot(
             template["current_revision"], protocol, calculation, start.strftime("%Y-%m-%d")
         )
+        review_evidence = (
+            request.review_evidence.model_dump(mode="json")
+            if request.review_evidence and hasattr(request.review_evidence, "model_dump")
+            else request.review_evidence.dict()
+            if request.review_evidence
+            else None
+        )
+        plan["inventory_coverage"] = inventory_coverage
+        plan["member_inventory_confirmed"] = request.member_inventory_confirmed
+        plan["ped_review"] = review_evidence
     except HTTPException:
         raise
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    blockers = readiness_blockers(template["status"], plan, request.safety_acknowledged)
+    blockers = readiness_blockers(
+        template["status"],
+        plan,
+        request.safety_acknowledged,
+        inventory_required=request.inventory_required,
+        inventory_coverage=inventory_coverage,
+        member_inventory_confirmed=request.member_inventory_confirmed,
+        review_evidence=review_evidence,
+    )
     calculation_data = calculation.model_dump() if hasattr(calculation, "model_dump") else calculation.dict()
     return {
         "template": template,
         "protocol_snapshot": protocol,
         "calculation_snapshot": calculation_data,
         "plan_snapshot": plan,
+        "inventory_coverage": inventory_coverage,
         "readiness": {"ready": not blockers, "blockers": blockers},
     }
 
@@ -723,6 +768,8 @@ async def create_challenge(request: ChallengeCreateRequest):
     template = preview["template"]
     protocol = preview["protocol_snapshot"]
     status = "active" if request.activate else "draft"
+    if request.activate and plan.get("ped_review"):
+        plan["ped_review"]["recorded_at"] = datetime.now().isoformat()
     database = Database()
     database.save_cycle(
         {

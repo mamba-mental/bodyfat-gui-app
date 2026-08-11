@@ -1,13 +1,14 @@
-import { CheckCircle, PackageSearch, ShieldCheck } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, CheckCircle, PackageSearch, ShieldCheck } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import ClientIcon from "@/components/ui/client-icon"
 
-const plannedCapabilities = [
+const availableCapabilities = [
   "Confirmed inventory intake with units, quantities, and expiration tracking",
-  "Source-backed draft schedules for 14-day, standard, and custom-length cuts",
-  "Shortage, unresolved-range, and missing-source blockers before activation",
-  "Versioned amendments, completion tracking, and planned-versus-actual reports",
+  "Exact source-event coverage and shortage blockers for the 14-day cut",
+  "Documented reviewed values for literal source ranges",
+  "Inventory and review provenance frozen into the generated report",
 ]
 
 export function PedSchedulerRoadmapCard() {
@@ -22,16 +23,16 @@ export function PedSchedulerRoadmapCard() {
             <h3 id="ped-scheduler-roadmap-title" className="text-lg font-semibold">
               AI-Assisted PED Inventory &amp; Protocol Scheduler
             </h3>
-            <Badge variant="outline">Coming soon · specification in review</Badge>
+            <Badge variant="outline">14-day manual MVP available</Badge>
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Match confirmed on-hand inventory to reviewed protocol sources, then build a dated,
-            report-ready draft for 14-day, standard, and custom-length cuts.
+            The manual 14-day workflow is ready in Plan Studio. The complete design still targets
+            source-backed schedules for 14-day, standard, and custom-length cuts.
           </p>
 
           <div className="grid gap-2 text-sm md:grid-cols-2">
-            {plannedCapabilities.map((capability) => (
+            {availableCapabilities.map((capability) => (
               <div key={capability} className="flex items-start gap-2">
                 <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>{capability}</span>
@@ -39,12 +40,16 @@ export function PedSchedulerRoadmapCard() {
             ))}
           </div>
 
+          <Link href="/plans" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            Open 14-day Plan Studio <ArrowRight className="h-4 w-4" />
+          </Link>
+
           <div className="flex items-start gap-2 rounded-md border border-amber-500/35 bg-amber-500/10 p-3 text-xs text-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
             <p>
-              This will be a constrained planning and tracking tool, not an AI prescriber. It will
-              not invent compounds, doses, substitutions, or missing source values; activation will
-              require complete inputs, provenance, and documented review.
+              AI label intake, arbitrary durations, reminders, and automated replanning remain on the roadmap.
+              The available MVP is a constrained planning and tracking tool, not an AI prescriber; it will not
+              invent compounds, doses, substitutions, or missing source values.
             </p>
           </div>
         </div>
