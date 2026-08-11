@@ -1,5 +1,7 @@
 # 🚀 Ap³𝘹Fit.ai – 𝛼 (Alpha) - NAS Deployment Guide
 
+> **Unverified deployment candidate.** This is not the current live workstation topology and does not include the complete August 2026 cycle/challenge/inventory verification contract. Back up SQLite and validate resolved volumes, secrets, health routes, and rollback before following it. See [`RUNBOOK.md`](RUNBOOK.md).
+
 ## 📋 Pre-Deployment Checklist
 ✅ All 23 development tasks completed  
 ✅ Application rebranded to "Ap³𝘹Fit.ai – 𝛼 (Alpha)"  

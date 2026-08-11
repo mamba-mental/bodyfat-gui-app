@@ -1,5 +1,7 @@
 # Apex Fit — Full Bug Audit
 
+> **Historical June 3 snapshot.** Findings and counts below reflect that audit date. Current dispositions are in [`../ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](../ADVERSARIAL-FLOW-REVIEW-2026-08-11.md).
+
 Date: 2026-06-03  |  Branch: feat/recomp-cycle-foundation
 
 Method: layered audit — 6 Claude subsystem reviewers (4 lenses: correctness / edge-case / data-flow / state-async) + 3 independent Codex (GPT-5) adversarial reviews.

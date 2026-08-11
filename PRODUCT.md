@@ -1,5 +1,7 @@
 # Product
 
+**Current product baseline:** August 11, 2026
+
 ## Register
 
 product
@@ -35,3 +37,11 @@ Disciplined, premium, and direct. The interface should feel consumer-enticing an
 ## Accessibility & Inclusion
 
 Target WCAG 2.2 AA. Text contrast must be at least 4.5:1, interactive components and large text at least 3:1, and no status may depend on color alone. Keyboard navigation, visible focus, reduced motion, readable image overlays, and responsive layouts are required.
+
+## Safety Boundary
+
+Apex Fit may calculate deterministic nutrition/body-composition targets and track a member-selected, source-backed PED schedule, inventory coverage, review evidence, and adherence. It does not prescribe PEDs, recommend a “best” compound or dose, infer missing protocol values, claim clinical safety, or replace qualified medical care. AI may explain immutable evidence but must not alter it.
+
+## Shipped Versus Roadmap
+
+The manual 14-day inventory/coverage MVP is shipped. AI/OCR inventory extraction, AI schedule drafting, universal-duration PED scheduling, adherence-driven inventory ledger, and AI report explanation remain roadmap capabilities and must stay visibly labeled as unavailable until their OpenSpec gates pass.

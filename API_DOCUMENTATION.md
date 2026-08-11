@@ -1,374 +1,165 @@
-# 🔗 Ap³𝘹Fit.ai API Documentation
-
-## 📋 Overview
-
-The Ap³𝘹Fit.ai application uses a Next.js API route system for data management and a Python FastAPI backend for PRIME calculations. This document describes all available API endpoints and their usage.
-
-## 🌐 Next.js API Routes
-
-### Base URL
-- **Development**: `http://localhost:3000/api`
-- **Production**: `https://your-domain.com/api`
-
-### 📊 Data Management API (`/api/data/route.ts`)
-
-#### GET `/api/data/route`
-Get stored data by key.
-
-**Parameters:**
-- `key` (query string): The data key to retrieve
-
-**Response:**
-```json
-{
-  "data": "Retrieved data object or null"
-}
-```
-
-**Example:**
-```bash
-GET /api/data/route?key=user_theme_settings
-```
-
-#### POST `/api/data/route`
-Store data with a key.
-
-**Request Body:**
-```json
-{
-  "key": "string",
-  "data": "any"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Data stored successfully"
-}
-```
-
-**Example:**
-```bash
-POST /api/data/route
-Content-Type: application/json
-
-{
-  "key": "user_theme_settings",
-  "data": {
-    "theme": "dark",
-    "font": "roboto"
-  }
-}
-```
-
-### 🤖 AI Chat API (`/api/ai/chat/route.ts`)
-
-#### POST `/api/ai/chat`
-Send messages to AI providers for fitness coaching responses.
-
-**Request Body:**
-```json
-{
-  "message": "string",
-  "history": "ChatMessage[]",
-  "user": "UserData",
-  "entries": "Entry[]",
-  "calculation": "CalculationResult",
-  "aiProvider": "string",
-  "aiModel": "string",
-  "aiApiKey": "string"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "AI generated response",
-  "timestamp": "2025-07-22T10:30:00.000Z"
-}
-```
-
-**Supported AI Providers:**
-- `anthropic` - Claude (Sonnet, Haiku, Opus)
-- `openai` - GPT-4, GPT-3.5-turbo
-- `gemini` - Gemini Pro, Gemini Pro Vision
-- `openrouter` - Multiple models via OpenRouter
-- `groq` - Llama, Mixtral models
-- `perplexity` - Perplexity models
-- `mistral` - Mistral models
-- `xai` - Grok models
-- And more...
-
-**Example:**
-```bash
-POST /api/ai/chat
-Content-Type: application/json
-
-{
-  "message": "How is my progress this week?",
-  "aiProvider": "anthropic",
-  "aiModel": "claude-3-5-sonnet-20241022",
-  "aiApiKey": "sk-ant-...",
-  "user": { ... },
-  "entries": [ ... ]
-}
-```
-
-### 📈 Reports API (`/api/data/reports/route.ts`)
-
-#### GET `/api/data/reports/route`
-Get all generated reports.
-
-**Response:**
-```json
-{
-  "reports": [
-    {
-      "id": "string",
-      "title": "string",
-      "generated_at": "ISO date string",
-      "html_content": "string",
-      "calculation_result": "object"
-    }
-  ]
-}
-```
-
-#### POST `/api/data/reports/route`
-Generate a new report.
-
-**Request Body:**
-```json
-{
-  "user": "UserData object",
-  "calculation": "CalculationResult object",
-  "entries": "Entry[] array"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "report": {
-    "id": "generated-uuid",
-    "title": "Report title",
-    "generated_at": "ISO date string",
-    "html_content": "Generated HTML",
-    "calculation_result": "object"
-  }
-}
-```
-
-## 🐍 Python FastAPI Backend
-
-### Base URL
-- **Development**: `http://127.0.0.1:8000`
-- **Production**: `http://your-server:8000`
-
-### 🏥 Health Check
-
-#### GET `/`
-Basic health check endpoint.
-
-**Response:**
-```json
-{
-  "message": "Body Fat Calculator API is running!",
-  "timestamp": "2025-07-22T10:30:00.000000"
-}
-```
-
-### 🧮 Calculation Endpoints
-
-#### POST `/calculate`
-Perform initial PRIME calculation.
-
-**Request Body:**
-```json
-{
-  "name": "string",
-  "age": "number",
-  "gender": "M|F",
-  "height_ft": "number",
-  "height_in": "number",
-  "current_weight": "number",
-  "current_bf_percentage": "number",
-  "goal_weight": "number",
-  "goal_bf_percentage": "number",
-  "activity_level": "number",
-  "workout_type": "string",
-  "diet_type": "string"
-}
-```
-
-**Response:**
-```json
-{
-  "user_id": "string",
-  "timeline_weeks": "number",
-  "total_weight_loss": "number",
-  "progression": [
-    {
-      "week": "number",
-      "date": "string",
-      "weight": "number",
-      "body_fat_percentage": "number",
-      "daily_calorie_intake": "number",
-      "rmr": "number",
-      "tdee": "number",
-      "tef": "number",
-      "neat": "number"
-    }
-  ],
-  "confidence_score": "number",
-  "ai_analysis": "string"
-}
-```
-
-#### POST `/recalculate`
-Recalculate progression with new entry data.
-
-**Request Body:**
-```json
-{
-  "original_calculation": "CalculationResult",
-  "entries": [
-    {
-      "date": "string",
-      "weight": "number",
-      "body_fat_percentage": "number",
-      "notes": "string"
-    }
-  ]
-}
-```
-
-**Response:**
-Same as `/calculate` endpoint with updated progression.
-
-#### GET `/rmr/{age}/{gender}/{weight_kg}/{height_cm}`
-Calculate Resting Metabolic Rate.
-
-**Parameters:**
-- `age`: Age in years
-- `gender`: 'M' or 'F'
-- `weight_kg`: Weight in kilograms
-- `height_cm`: Height in centimeters
-
-**Response:**
-```json
-{
-  "rmr": "number"
-}
-```
-
-#### GET `/tdee/{rmr}/{activity_level}`
-Calculate Total Daily Energy Expenditure.
-
-**Parameters:**
-- `rmr`: Resting Metabolic Rate
-- `activity_level`: Activity multiplier (1.2-2.0)
-
-**Response:**
-```json
-{
-  "tdee": "number"
-}
-```
-
-### 📄 Report Generation
-
-#### POST `/generate-report`
-Generate detailed HTML/PDF reports.
-
-**Request Body:**
-```json
-{
-  "calculation": "CalculationResult",
-  "user_data": "UserData",
-  "entries": "Entry[]",
-  "format": "html|pdf"
-}
-```
-
-**Response:**
-```json
-{
-  "report_html": "string",
-  "report_pdf": "base64 encoded PDF (if requested)",
-  "generated_at": "ISO date string"
-}
-```
-
-## 🔐 Authentication & Security
-
-### API Key Management
-- AI provider API keys are managed client-side
-- Keys are not stored on server for security
-- Each request includes the necessary API key for the chosen provider
-
-### CORS Configuration
-All API endpoints include CORS headers:
-```
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, Authorization
-```
-
-### Rate Limiting
-- No rate limiting currently implemented
-- Consider implementing for production deployment
-
-## 📝 Error Handling
-
-### Standard Error Response
-```json
-{
-  "error": "Error message description",
-  "code": "ERROR_CODE",
-  "timestamp": "2025-07-22T10:30:00.000Z"
-}
-```
-
-### Common Error Codes
-- `400` - Bad Request (invalid input)
-- `404` - Not Found (resource not found)
-- `500` - Internal Server Error
-- `503` - Service Unavailable (Python API down)
-
-### AI Provider Error Handling
-When AI providers fail, the system:
-1. Attempts the configured provider
-2. Falls back to local response generation if enabled
-3. Returns appropriate error message if fallback disabled
-
-## 🚀 Deployment Considerations
-
-### Environment Variables
-```bash
-# Next.js
-NEXT_PUBLIC_PYTHON_API_URL=http://127.0.0.1:8000
-NODE_ENV=production
-
-# AI Provider Keys (client-side)
-# These are managed through the UI, not environment variables
-```
-
-### Health Checks
-- Next.js: Check any API route (e.g., `/api/data/route?key=health`)
-- Python API: `GET /` endpoint
-
-### Monitoring
-Consider monitoring:
-- API response times
-- AI provider success rates
-- Error frequencies
-- Python API availability
-
----
-
-*Last Updated: July 22, 2025*  
-*Version: 1.3.0*
+# Apex Fit API Documentation
+
+**Current as of:** August 11, 2026
+
+## Service boundaries
+
+| Service | Local base URL | Role |
+| --- | --- | --- |
+| Next.js | `http://localhost:3010` | Browser UI, same-origin API routes, proxy/gateway behavior |
+| FastAPI | `http://127.0.0.1:8313` | Canonical data service, PRIME calculations, report generation, challenges, inventory |
+
+Use `GET http://127.0.0.1:8313/docs` for the runtime-generated OpenAPI schema. This document records the architectural surface and invariants; the runtime schema is authoritative for detailed Pydantic fields.
+
+## General behavior
+
+- The current app is single-user/local and has no authentication/tenant boundary.
+- Do not expose either service to an untrusted network without authentication, authorization, TLS, input/rate limits, and test-route removal.
+- JSON uses ISO `YYYY-MM-DD` for cycle/day dates and ISO timestamps for generated records.
+- SQLite is canonical. Redis failures are non-fatal and must not overwrite newer SQLite data.
+- List responses may omit heavy report bodies. Fetch a report detail before rendering/downloading full HTML.
+- Challenge activation and amendment endpoints fail closed when source, inventory, review, or immutable-history constraints are not satisfied.
+
+## Next.js API routes
+
+### Canonical data gateways
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET, POST | `/api/data/user` | Read/save canonical member profile |
+| GET, POST, DELETE | `/api/data/entries` | Read/save/delete entries; Python/SQLite is authoritative |
+| GET, POST | `/api/data/cycles` | Read/upsert cycles and active-cycle state |
+| GET, POST, DELETE | `/api/data/reports` | Report list/save/clear compatibility gateway |
+| GET | `/api/data/reports/{id}` | Full report detail |
+| POST, DELETE | `/api/data/report` | Single-report save/delete compatibility gateway |
+| GET, POST | `/api/data/calculation` | Latest calculation persistence |
+| GET, POST, DELETE | `/api/data` | Legacy key/value/settings compatibility route |
+
+### Calculation and reporting
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/calculate` | Gateway to PRIME `/calculate` |
+| POST | `/api/calculate/recalculate` | Gateway to `/recalculate` |
+| POST | `/api/generate-report` | Standard report generation gateway |
+| POST | `/api/generate-living-report` | Living Report gateway |
+| POST, GET | `/api/reports/generate` | Report generation/status workflow |
+| POST | `/api/reports/verify` | Numerical/presentation verification workflow |
+| GET | `/api/reports/files/{filename}` | Serve a generated report artifact by validated filename |
+| GET | `/api/entries/history` | Historical entry query/integrity response |
+| GET | `/api/dashboard/state` | Dashboard production-state diagnostic |
+
+### Nutrition, AI, settings, and support
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET, POST, DELETE | `/api/nutrition` | Local nutrition history/manual import/delete operations |
+| POST | `/api/ai/chat` | Configured-provider chat gateway |
+| POST | `/api/ai/insights` | Configured-provider insights gateway |
+| GET, POST, DELETE | `/api/ai/settings` | AI provider settings persistence |
+| POST | `/api/ai/fetch-models` | Provider model discovery |
+| POST | `/api/ai/test-connection` | Provider connection test |
+| GET, PUT | `/api/theme` | Theme preference read/update |
+| POST, DELETE | `/api/upload` | Validated image upload/delete |
+| GET | `/api/sync/status` | Local/cloud sync readiness |
+| GET | `/api/health/redis` | Redis health diagnostic |
+
+### Redis compatibility routes
+
+`/api/redis/user`, `/api/redis/entries`, `/api/redis/reports`, `/api/redis/calculation`, and `/api/redis/export` remain compatibility/cache endpoints. They are not the authoritative data API and must not be used to prove that a profile, entry, cycle, report, or challenge revision is durable.
+
+## FastAPI routes
+
+### Health and calculations
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET | `/` | Returns API service JSON; not a dashboard |
+| GET | `/health` | Data-service health |
+| POST | `/calculate` | PRIME progression/calorie/body-composition calculation |
+| POST | `/recalculate` | Recalculate from changed/current inputs |
+| POST | `/rmr` | Resting metabolic rate calculation |
+| POST | `/tdee` | Total daily energy expenditure calculation |
+| GET | `/performance/stats` | Local performance diagnostics |
+| POST | `/performance/clear-cache` | Clear calculation performance cache |
+
+### Canonical data
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET, POST | `/api/data/user` | Profile read/upsert for user `default` |
+| GET, POST | `/api/data/entries` | Entry list/insert |
+| DELETE | `/api/data/entries/{entry_id}` | Idempotent entry deletion target |
+| GET, POST | `/api/data/cycles` | Cycle list/upsert and one-active-cycle enforcement |
+| GET | `/api/data/reports` | Lightweight report list |
+| POST | `/api/data/report` | Save report metadata/content |
+| GET | `/api/data/reports/{report_id}` | Full report detail |
+| GET, POST | `/api/data/calculation` | Latest calculation read/save |
+| GET, POST | `/api/data/route` | Legacy settings/key-value compatibility |
+
+### Programs
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/programs` | Program archive/current-program list |
+| POST | `/api/programs/archive` | Legacy program archive/start behavior |
+| GET | `/api/programs/{program_id}` | Program detail |
+| GET | `/api/programs/{program_id}/entries` | Program-scoped entries |
+| GET | `/api/programs/{program_id}/compare` | Program comparison |
+
+The current UI's repaired new-standard-program flow also creates/upserts a first-class cycle and saves the edited profile baseline. Program/cycle creation is compensated client-side on failure but is not yet one atomic backend transaction.
+
+### 14-day challenges and templates
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/data/challenges/preview` | Build exact 14-day PRIME-backed preview |
+| POST | `/api/data/challenges` | Activate a ready challenge snapshot |
+| GET | `/api/data/challenge-templates` | List templates |
+| GET | `/api/data/challenge-templates/{template_id}` | Template detail |
+| POST | `/api/data/challenge-templates/import-default` | Deterministic default import |
+| GET, POST | `/api/data/challenge-templates/{template_id}/revisions` | Revision history/create |
+| PUT | `/api/data/challenge-templates/{template_id}/status` | Draft/reviewed/active/superseded status |
+| GET | `/api/data/ped-protocols/catalog` | Available source protocol revisions |
+| POST | `/api/data/ped-protocols/window` | Exact two-consecutive-week source window |
+| GET, POST | `/api/data/challenges/{cycle_id}/plan-revisions` | Immutable plan revisions |
+| GET, POST | `/api/data/challenges/{cycle_id}/amendments` | Future-effective amendments |
+| GET | `/api/data/challenges/{cycle_id}/daily-logs` | Daily challenge actuals |
+| PUT | `/api/data/challenges/{cycle_id}/daily-logs/{day_number}` | Save one day's log |
+| POST | `/api/data/challenges/{cycle_id}/report` | Progress/final/stopped-early report |
+| POST | `/api/data/challenges/{cycle_id}/amend` | Validate/apply explicit amendment |
+
+### PED inventory MVP
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/data/ped-inventory` | List manual inventory records |
+| POST | `/api/data/ped-inventory` | Create an inventory record |
+| PUT | `/api/data/ped-inventory/{item_id}` | Update/confirm an inventory record |
+| DELETE | `/api/data/ped-inventory/{item_id}` | Remove inventory for future previews |
+| POST | `/api/data/ped-inventory/coverage` | Deterministic event-to-inventory coverage and blockers |
+
+These endpoints do not choose a protocol, recommend a compound, invent a dose, or establish medical safety.
+
+### Reports and AI
+
+| Methods | Route | Purpose |
+| --- | --- | --- |
+| POST | `/generate-report` | Standard report artifact generation |
+| POST | `/generate-living-report` | Cycle-scoped Living Report generation |
+| POST | `/ai/insights` | AI insight generation when configured |
+| POST | `/ai/analyze-progress` | AI progress analysis |
+| POST | `/ai/entry-feedback` | AI feedback for an entry |
+
+## Important request/response invariants
+
+- `/calculate` accepts a `user_data` body model plus optional AI settings; Next gateways may wrap the browser payload to match FastAPI's multiple-body-parameter contract.
+- A two-week request uses `plan_mode="two_week_cut"` and exactly `timeline_days=14`; it maps to two PRIME weeks without date rounding.
+- A confirmed generic `ped_use` flag is not sufficient for 14-day activation. A selected, versioned source window and frozen protocol/inventory/review snapshot are required.
+- Report scope and `cycle_id` must be explicit. No-active-cycle means aggregate rather than newest stopped cycle.
+- `source_fingerprint` is used to prevent equivalent duplicate report generation.
+- Unknown/ranged protocol data remains visibly unknown/ranged and blocks activation until the contract's separate review requirement is met.
+
+## n8n is not an API endpoint
+
+The browser directly posts to the user-configured n8n URL after a successful standard report. Apex Fit supplies an idempotency key but does not persist/enforce it. See [docs/N8N-WEIGH-IN-AUTOMATION.md](docs/N8N-WEIGH-IN-AUTOMATION.md).

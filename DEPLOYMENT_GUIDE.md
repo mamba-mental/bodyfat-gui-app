@@ -1,5 +1,7 @@
 # ApexFit AI - Production Deployment Guide
 
+> **Legacy production design, not a verified current deployment.** The present app is local/Windows-supervised on `3010`/`8313` with Redis optional on `6385`. Treat commands, monitoring claims, ports, secrets, and Compose services below as candidates requiring revalidation. See [`docs/DOCUMENTATION-INDEX.md`](docs/DOCUMENTATION-INDEX.md).
+
 This guide provides comprehensive instructions for deploying ApexFit AI to production environments.
 
 ## Table of Contents

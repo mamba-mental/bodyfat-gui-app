@@ -1,539 +1,179 @@
-# ApexFit AI - Production Runbook
+# Apex Fit Local Operations Runbook
 
-## 🎯 Overview
+**Current as of:** August 11, 2026
 
-This runbook provides step-by-step operational procedures for managing ApexFit AI in production. It includes deployment, monitoring, troubleshooting, and emergency response procedures.
+**Verified topology:** Windows-supervised Next.js/FastAPI plus optional Redis in WSL/Docker.
 
-## 📞 Emergency Contacts
+## Endpoints and stores
 
-| Role | Primary | Secondary |
-|------|---------|-----------|
-| **On-Call Engineer** | [Your primary contact] | [Your secondary contact] |
-| **Infrastructure** | [Infrastructure team] | [Backup contact] |
-| **Security** | [Security team] | [Security backup] |
-| **Business Owner** | [Product owner] | [Business stakeholder] |
+| Item | Location |
+| --- | --- |
+| Dashboard | `http://127.0.0.1:3010` |
+| API root | `http://127.0.0.1:8313` |
+| API health | `http://127.0.0.1:8313/health` |
+| API docs | `http://127.0.0.1:8313/docs` |
+| Redis cache | host port `6385` when enabled |
+| Canonical database | `data/bodyfat.db` |
+| Report artifacts | `storage/reports/` |
+| Supervisor log | `_ops/supervisor.log` |
 
-## 🚀 Deployment Procedures
+## Normal lifecycle
 
-### Standard Deployment
+### Desktop shortcut status
 
-```bash
-# 1. Pre-deployment checks
-./scripts/deploy-production.sh verify
-curl -f http://localhost:3000/api/health
+Do **not** use the current Desktop shortcuts named **ApexFit Tracker** or **Stop ApexFit**. Both `.lnk` files point to:
 
-# 2. Create backup
-./scripts/deploy-production.sh backup
-
-# 3. Deploy new version
-git pull origin main
-./scripts/deploy-production.sh deploy
-
-# 4. Post-deployment verification
-curl -f http://localhost:3000/api/health
-curl -f http://localhost:8000/health
-docker-compose -f docker-compose.prod.yml ps
+```text
+C:\GitHub_Projects\2025.0629_bf-estimator-terminal-standalone\bodyfat-gui-app
 ```
 
-### Hotfix Deployment
+That directory no longer exists. The `Launch-ApexFit.cmd` and `Stop-ApexFit.cmd` files in the current repository also `cd` to the same stale path, so merely repointing the `.lnk` files would not be sufficient. Until a separately authorized repair updates both wrapper contents and shortcut targets, use the Python lifecycle commands from the real project root:
 
-```bash
-# 1. Urgent backup
-./scripts/database-backup.sh backup
-
-# 2. Quick deployment
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
-
-# 3. Immediate verification
-curl -f http://localhost:3000/api/health
+```powershell
+python .\_ops\apex_lifecycle.py start
+python .\_ops\apex_lifecycle.py status
+python .\_ops\apex_lifecycle.py stop
 ```
 
-### Rollback Procedure
+The start command is idempotent: it leaves already-listening services alone and opens the browser unless `--no-browser` is supplied.
 
-```bash
-# 1. Immediate rollback
-./scripts/deploy-production.sh rollback
+## Health verification
 
-# 2. Verify rollback
-curl -f http://localhost:3000/api/health
-docker-compose -f docker-compose.prod.yml ps
-
-# 3. Post-rollback communication
-# Notify stakeholders about rollback and issue
+```powershell
+$apexTargets = @(
+  'http://127.0.0.1:3010/',
+  'http://127.0.0.1:8313/',
+  'http://127.0.0.1:8313/health'
+)
+$apexTargets | ForEach-Object {
+  Invoke-WebRequest -Uri $_ -UseBasicParsing -TimeoutSec 15 |
+    Select-Object StatusCode, StatusDescription
+}
+Get-NetTCPConnection -State Listen -LocalPort 3010,8313,6385 -ErrorAction SilentlyContinue |
+  Select-Object LocalAddress,LocalPort,OwningProcess
 ```
 
-## 🔍 Monitoring & Alerting
+Expected API root body:
 
-### Key Metrics to Monitor
-
-| Metric | Warning Threshold | Critical Threshold | Response |
-|--------|------------------|-------------------|----------|
-| **Service Uptime** | < 99.5% | < 99% | Investigate immediately |
-| **Response Time (95th)** | > 2s | > 5s | Check performance |
-| **Error Rate** | > 1% | > 5% | Investigate errors |
-| **CPU Usage** | > 70% | > 90% | Scale resources |
-| **Memory Usage** | > 80% | > 95% | Check for leaks |
-| **Disk Space** | < 20% free | < 10% free | Clean up or expand |
-
-### Monitoring Dashboards
-
-- **Grafana**: http://localhost:3001
-  - Username: admin
-  - Password: [from GRAFANA_PASSWORD]
-- **Prometheus**: http://localhost:9090
-
-### Alert Response Procedures
-
-#### Service Down Alert
-```bash
-# 1. Check service status
-docker-compose -f docker-compose.prod.yml ps
-
-# 2. Check logs
-docker-compose -f docker-compose.prod.yml logs --tail=50 <service>
-
-# 3. Restart if needed
-docker-compose -f docker-compose.prod.yml restart <service>
-
-# 4. Verify recovery
-curl -f http://localhost:3000/api/health
+```json
+{"message":"PRIME Body Fat Calculator API","status":"running"}
 ```
 
-#### High Error Rate Alert
-```bash
-# 1. Check error logs
-docker-compose -f docker-compose.prod.yml logs --tail=100 | grep ERROR
+Service health is necessary but insufficient. For a release or repair, also read cycles/profile/reports, test the relevant UI route, and verify persisted associations.
 
-# 2. Check specific service logs
-docker-compose -f docker-compose.prod.yml logs backend | grep ERROR
+## Manual foreground diagnosis
 
-# 3. Analyze error patterns
-# Look for common error messages or patterns
+Stop only the Apex listeners through the lifecycle tool, then run visible processes:
 
-# 4. Apply fix or escalate
+```powershell
+# Terminal 1
+Set-Location .\python-api
+python main.py
+
+# Terminal 2, repository root
+npm run dev
 ```
 
-#### Resource Usage Alert
-```bash
-# 1. Check resource usage
-docker stats
+Do not kill all `python.exe` or `node.exe` processes. Other local agents and tools use them.
 
-# 2. Identify heavy consumers
-docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+## Backup procedure
 
-# 3. Restart if memory leak suspected
-docker-compose -f docker-compose.prod.yml restart <service>
+Before a migration, data repair, or restore:
 
-# 4. Scale if needed
-docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+1. Stop Apex writers.
+2. Resolve the exact source and backup paths.
+3. Copy—do not move—the canonical database.
+4. Record timestamp/reason outside the database.
+5. Start services only after the copy completes.
+
+Example from the repository root:
+
+```powershell
+python .\_ops\apex_lifecycle.py stop
+$apexStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$apexSource = (Resolve-Path .\data\bodyfat.db).Path
+$apexBackupDir = (Resolve-Path .\data\backups).Path
+$apexBackup = Join-Path $apexBackupDir "bodyfat-$apexStamp.db"
+Copy-Item -LiteralPath $apexSource -Destination $apexBackup
+Get-Item -LiteralPath $apexSource,$apexBackup | Select-Object FullName,Length,LastWriteTime
+python .\_ops\apex_lifecycle.py start
 ```
 
-## 🔧 Troubleshooting Guide
+Also back up `storage/reports/` and uploads when complete recovery of generated/member artifacts matters.
 
-### Common Issues
+## Restore procedure
 
-#### Frontend Not Loading
-```bash
-# Check frontend service
-docker-compose -f docker-compose.prod.yml logs frontend
+Restore is destructive to the current live database and requires explicit operator intent.
 
-# Check nginx/proxy logs (if using)
-sudo tail -f /var/log/nginx/error.log
+1. Stop all Apex writers.
+2. Resolve and inspect the exact candidate backup.
+3. Preserve the current database under a new recovery filename.
+4. Validate the candidate offline with SQLite `PRAGMA quick_check`.
+5. Copy the validated candidate into `data/bodyfat.db`.
+6. Start services.
+7. Re-read health, profile, cycles, entry/report counts, and active-cycle invariant.
+8. Verify the UI and one non-mutating report/detail path.
 
-# Verify DNS resolution
-nslookup your-domain.com
+Never restore Redis over SQLite and never infer that a Docker volume contains the workstation database without inspecting the resolved mount.
 
-# Check SSL certificate
-openssl s_client -connect your-domain.com:443 -servername your-domain.com
+## Release verification
+
+```powershell
+npx tsc --noEmit
+npm run build
+python -m pytest python-api\tests\unit -q
+npx playwright test tests\e2e\modern-workspace.spec.ts --project=chromium --workers=1
+openspec validate add-two-week-cut-challenge --strict
+openspec validate update-interface-palettes-and-feature-lab --strict
+openspec validate add-ai-ped-inventory-scheduler --strict
+git diff --check
 ```
 
-#### API Connection Issues
-```bash
-# Check backend health
-curl -f http://localhost:8000/health
+Confirm all relevant route checks and record gaps in `docs/VERIFICATION-2026-08-11.md`. The current build's known ESLint circular-configuration warning must be distinguished from a failed production build.
 
-# Check backend logs
-docker-compose -f docker-compose.prod.yml logs backend
+## Incident quick paths
 
-# Verify network connectivity
-docker network ls
-docker network inspect bodyfat-gui-app_apexfit-network
-```
+### Frontend down, API up
 
-#### Database Issues
-```bash
-# Check database file
-ls -la /opt/apexfit/data/bodyfat.db
+- Confirm `3010` listener and `_ops/supervisor.log`.
+- Start `npm run dev` in the foreground.
+- If a stale production bundle was introduced, return to the verified dev lifecycle; do not delete user data.
 
-# Verify database integrity
-./scripts/database-backup.sh verify
+### API down
 
-# Check database permissions
-chmod 644 /opt/apexfit/data/bodyfat.db
+- Confirm `8313` listener.
+- Run `python-api/main.py` in the foreground.
+- Inspect dependency/import/database errors.
+- Do not switch to another database path to make health green.
 
-# Restore from backup if corrupted
-./scripts/database-backup.sh restore /path/to/latest/backup.db.gz
-```
+### Wrong active cycle/report date
 
-#### SSL Certificate Issues
-```bash
-# Check certificate expiry
-openssl x509 -in /path/to/cert.pem -text -noout | grep "Not After"
+- Read `GET /api/data/cycles` and verify exactly one `status=active`.
+- Read `GET /api/data/user` and compare `program_reference`/dates.
+- Inspect report `cycle_id` and source fingerprint.
+- Preserve incorrect historical rows until the recovery decision is explicit.
 
-# Test SSL connection
-openssl s_client -connect your-domain.com:443
+### Slow navigation
 
-# Renew certificate (Let's Encrypt)
-certbot renew --dry-run
-```
+- Determine whether the route is cold under `next dev`.
+- Retry after compilation and compare warmed latency.
+- If still slow, inspect network waterfall, process CPU/memory, and server logs.
 
-## 💾 Backup & Recovery
+### n8n failure
 
-### Daily Backup Verification
-```bash
-# Check if backup completed
-ls -la /opt/apexfit/backups/ | head -10
+- Confirm active cycle and saved `weighin_days`.
+- Confirm n8n workflow is active and URL is the production webhook.
+- Inspect n8n execution and CORS/auth behavior.
+- Never roll back a successful report because reminder delivery failed.
 
-# Verify latest backup integrity
-./scripts/database-backup.sh verify
+## Docker deployment files
 
-# Test backup restore (in staging)
-./scripts/database-backup.sh restore /path/to/backup.db.gz
-```
+`docker-compose.yml`, `docker-compose.prod.yml`, and related Dockerfiles remain deployment candidates. Their internal ports (`3000`/`8000`), volumes, config mounts, monitoring profiles, and secrets must be validated before use. They do not describe the currently running workstation topology, and the old deployment guides are retained as historical/reference material in the [documentation index](docs/DOCUMENTATION-INDEX.md).
 
-### Recovery Procedures
+## Security/operational constraints
 
-#### Database Recovery
-```bash
-# 1. Stop services
-docker-compose -f docker-compose.prod.yml down
-
-# 2. Backup current (corrupted) database
-cp /opt/apexfit/data/bodyfat.db /opt/apexfit/data/bodyfat.db.corrupted
-
-# 3. Restore from backup
-./scripts/database-backup.sh restore /path/to/good/backup.db.gz
-
-# 4. Start services
-docker-compose -f docker-compose.prod.yml up -d
-
-# 5. Verify recovery
-curl -f http://localhost:3000/api/health
-```
-
-#### Full System Recovery
-```bash
-# 1. Stop all services
-docker-compose -f docker-compose.prod.yml down
-
-# 2. Restore data directories
-tar -xzf /path/to/system/backup.tar.gz -C /
-
-# 3. Fix permissions
-sudo chown -R $USER:$USER /opt/apexfit
-chmod -R 755 /opt/apexfit
-
-# 4. Start services
-docker-compose -f docker-compose.prod.yml up -d
-
-# 5. Verify all services
-./scripts/deploy-production.sh verify
-```
-
-## 🔄 Maintenance Procedures
-
-### Weekly Maintenance
-```bash
-# 1. Check disk usage
-df -h
-du -sh /opt/apexfit/*
-
-# 2. Clean old logs
-docker system prune -f
-docker volume prune -f
-
-# 3. Update system packages
-sudo apt update && sudo apt upgrade -y
-
-# 4. Verify backup integrity
-./scripts/database-backup.sh verify
-
-# 5. Review monitoring dashboards
-# Check Grafana for any anomalies
-```
-
-### Monthly Maintenance
-```bash
-# 1. Update container images
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
-
-# 2. Database optimization
-sqlite3 /opt/apexfit/data/bodyfat.db "VACUUM; ANALYZE;"
-
-# 3. Security updates
-sudo apt update && sudo apt upgrade -y
-docker scout cves
-
-# 4. Certificate renewal check
-certbot certificates
-
-# 5. Performance review
-# Analyze metrics for optimization opportunities
-```
-
-### Quarterly Maintenance
-```bash
-# 1. Full security audit
-docker scout cves
-trivy image <image-name>
-
-# 2. Capacity planning review
-# Analyze growth trends and plan scaling
-
-# 3. Disaster recovery test
-# Perform full restore test in staging
-
-# 4. Documentation update
-# Update runbook with lessons learned
-
-# 5. Team training update
-# Ensure team is up-to-date on procedures
-```
-
-## 🚨 Incident Response
-
-### Severity Levels
-
-#### P1 - Critical (15 min response)
-- Complete service outage
-- Data loss/corruption
-- Security breach
-
-#### P2 - High (1 hour response)
-- Partial service degradation
-- Performance issues affecting users
-- Failed deployments
-
-#### P3 - Medium (4 hour response)
-- Minor functionality issues
-- Monitoring alerts
-- Non-critical bugs
-
-#### P4 - Low (Next business day)
-- Feature requests
-- Documentation updates
-- Minor optimizations
-
-### Incident Response Process
-
-#### Initial Response (5 minutes)
-```bash
-# 1. Acknowledge alert
-# Update monitoring system
-
-# 2. Quick assessment
-curl -f http://localhost:3000/api/health
-docker-compose -f docker-compose.prod.yml ps
-
-# 3. Initial communication
-# Notify team of incident
-
-# 4. Begin investigation
-docker-compose -f docker-compose.prod.yml logs --tail=100
-```
-
-#### Investigation (15 minutes)
-```bash
-# 1. Gather information
-docker stats
-df -h
-tail -100 /var/log/apexfit-*.log
-
-# 2. Identify root cause
-# Analyze logs and metrics
-
-# 3. Determine fix approach
-# Restart, rollback, or code fix
-
-# 4. Update stakeholders
-# Provide status update
-```
-
-#### Resolution
-```bash
-# 1. Apply fix
-# Based on investigation findings
-
-# 2. Verify resolution
-curl -f http://localhost:3000/api/health
-curl -f http://localhost:8000/health
-
-# 3. Monitor for stability
-# Watch metrics for 30 minutes
-
-# 4. Post-incident communication
-# Notify resolution to stakeholders
-```
-
-## 📊 Performance Optimization
-
-### Performance Monitoring
-```bash
-# Check response times
-curl -w "@curl-format.txt" -o /dev/null -s http://localhost:3000/
-
-# Monitor resource usage
-docker stats --no-stream
-
-# Database performance
-sqlite3 /opt/apexfit/data/bodyfat.db ".timer on" "SELECT COUNT(*) FROM entries;"
-
-# Check cache hit rates
-redis-cli info stats | grep hit_rate
-```
-
-### Optimization Actions
-
-#### High CPU Usage
-```bash
-# Scale backend workers
-docker-compose -f docker-compose.prod.yml up -d --scale backend=3
-
-# Optimize database queries
-# Analyze slow queries and add indexes
-
-# Enable caching
-# Verify Redis is working properly
-```
-
-#### High Memory Usage
-```bash
-# Restart services to clear memory leaks
-docker-compose -f docker-compose.prod.yml restart
-
-# Analyze memory usage patterns
-docker stats --format "table {{.Container}}\t{{.MemUsage}}\t{{.MemPerc}}"
-
-# Adjust memory limits if needed
-# Update docker-compose.prod.yml
-```
-
-#### Slow Response Times
-```bash
-# Check database performance
-./scripts/database-backup.sh verify
-
-# Optimize database
-sqlite3 /opt/apexfit/data/bodyfat.db "VACUUM; ANALYZE;"
-
-# Check network latency
-ping your-domain.com
-
-# Enable compression
-# Verify nginx/proxy gzip settings
-```
-
-## 🔐 Security Procedures
-
-### Security Monitoring
-```bash
-# Check for failed login attempts
-grep "Failed" /var/log/auth.log
-
-# Monitor container vulnerabilities
-docker scout cves
-
-# Check SSL certificate status
-openssl x509 -in /path/to/cert.pem -text -noout | grep "Not After"
-
-# Verify firewall rules
-sudo ufw status
-```
-
-### Security Incident Response
-```bash
-# 1. Isolate affected systems
-# Block suspicious IPs
-sudo ufw deny from <suspicious-ip>
-
-# 2. Gather evidence
-# Copy relevant logs before rotation
-
-# 3. Assess impact
-# Check for data access or modification
-
-# 4. Contain and remediate
-# Update credentials, patch vulnerabilities
-
-# 5. Recovery
-# Restore from clean backups if needed
-```
-
-## 📋 Checklists
-
-### Pre-Deployment Checklist
-- [ ] Backup completed successfully
-- [ ] Staging environment tested
-- [ ] Team notification sent
-- [ ] Rollback plan confirmed
-
-### Post-Deployment Checklist
-- [ ] Health checks passing
-- [ ] Monitoring alerts cleared
-- [ ] Performance metrics normal
-- [ ] User acceptance confirmed
-
-### Incident Response Checklist
-- [ ] Incident acknowledged
-- [ ] Stakeholders notified
-- [ ] Root cause identified
-- [ ] Fix applied and tested
-- [ ] Post-mortem scheduled
-
----
-
-## 📚 Quick Reference
-
-### Essential Commands
-```bash
-# Service status
-docker-compose -f docker-compose.prod.yml ps
-
-# Service logs
-docker-compose -f docker-compose.prod.yml logs <service>
-
-# Health checks
-curl -f http://localhost:3000/api/health
-curl -f http://localhost:8000/health
-
-# Restart service
-docker-compose -f docker-compose.prod.yml restart <service>
-
-# Full restart
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d
-
-# Backup database
-./scripts/database-backup.sh backup
-
-# Deploy
-./scripts/deploy-production.sh deploy
-
-# Rollback
-./scripts/deploy-production.sh rollback
-```
-
-### Important File Locations
-- **Environment**: `.env.production`
-- **Logs**: `/var/log/apexfit-*.log`
-- **Data**: `/opt/apexfit/data/`
-- **Backups**: `/opt/apexfit/backups/`
-- **Scripts**: `./scripts/`
-
----
-
-**Last Updated**: [Update date]
-**Version**: 1.0
-**Maintained By**: [Your team]
+- Keep services bound to local/trusted interfaces until authentication exists.
+- Do not expose test pages, FastAPI docs, raw health data, SQLite, reports, uploads, or n8n URLs publicly.
+- Do not log or copy AI/PED/provider credentials.
+- Use exact PIDs/ports for process intervention.
+- Preserve rollback artifacts and report what was actually verified rather than equating process health with user-flow success.

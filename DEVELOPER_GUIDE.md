@@ -1,526 +1,153 @@
-# 👨‍💻 Developer Guide - Ap³𝘹Fit.ai
+# Apex Fit Developer Guide
 
-## 📋 Overview
+**Current as of:** August 11, 2026
 
-This guide provides technical information for developers working on the Ap³𝘹Fit.ai application. It covers architecture decisions, component patterns, and development workflows.
+## Architecture
 
-## 🏗️ Architecture Overview
-
-### Frontend Architecture (Next.js)
-```
-src/
-├── app/                    # Next.js 15 App Router
-│   ├── (pages)/           # Route groups
-│   ├── api/               # API routes
-│   └── globals.css        # Global styles
-├── components/
-│   ├── ui/                # Reusable UI components (shadcn/ui)
-│   ├── charts/            # Chart components with refresh system
-│   ├── layout/            # Layout components
-│   └── forms/             # Form components
-├── contexts/              # React Context providers
-├── hooks/                 # Custom React hooks
-├── lib/                   # Utility functions and services
-├── types/                 # TypeScript type definitions
-└── python-api/            # Python FastAPI backend
+```mermaid
+flowchart LR
+    Browser["Next.js UI :3010"] --> NextAPI["Same-origin Next API routes"]
+    Browser --> PyDirect["Selected direct FastAPI calls"]
+    NextAPI --> FastAPI["FastAPI/PRIME :8313"]
+    PyDirect --> FastAPI
+    FastAPI --> SQLite["data/bodyfat.db"]
+    FastAPI --> Reports["storage/reports"]
+    NextAPI -. optional .-> Redis["Redis :6385"]
 ```
 
-### Key Design Patterns
+### Main directories
 
-#### 0. Navigation & Routing Notes
-- All sidebar items must link to full-page routes using `next/link` (no modal popups). The changelog now lives at the `/changelog` page and should always be accessed via the sidebar link rather than a dialog component.
+| Path | Responsibility |
+| --- | --- |
+| `src/app/` | Next.js pages and API route handlers |
+| `src/components/` | Shared UI, dashboard, cycle, report, challenge, and settings components |
+| `src/contexts/` | Application state/reducer/actions and persistence orchestration |
+| `src/lib/` | Data sync, cycle/report/challenge contracts, theming, webhook, nutrition, and utilities |
+| `src/types/` | Shared TypeScript contracts |
+| `python-api/` | FastAPI, PRIME engine adapters, repositories, schema initialization, reports |
+| `python-api/alembic/versions/` | Additive schema migrations |
+| `tests/` | Vitest/Playwright tests |
+| `openspec/` | Accepted specs and active change records |
+| `_ops/` | Local lifecycle/supervisor tooling |
+| `data/` | Canonical SQLite and protected local backups |
+| `storage/reports/` | Generated report artifacts |
 
-#### 1. Context + Reducer Pattern
-```typescript
-// AppContext manages global application state
-interface AppState {
-  current_user: UserData | null
-  current_calculation: CalculationResult | null
-  entries: Entry[]
-  reports: Report[]
-  loading: boolean
-  error: string | null
-}
+## Core domain invariants
 
-// Actions for state updates
-type AppAction = 
-  | { type: 'SET_USER'; payload: UserData }
-  | { type: 'ADD_ENTRY'; payload: Entry }
-  | { type: 'SET_LOADING'; payload: boolean }
+1. SQLite is authoritative; Redis is optional.
+2. The canonical local user is `default`.
+3. At most one active cycle exists for that user.
+4. Starting a program preserves profile/history and refreshes an editable baseline.
+5. Entry persistence succeeds before UI success/navigation.
+6. Entry saving and report generation are separate user actions.
+7. Report scope is explicit; stopped cycles are never silently current.
+8. Living Report inputs are cycle-scoped and use cycle dates.
+9. Activated 14-day plans are immutable snapshots; future changes create amendments/revisions.
+10. Missing/ranged PED source data is not inferred, substituted, or optimized.
+11. Manual inventory is a coverage constraint, not a recommendation engine.
+12. External AI explanation cannot mutate schedules, calculations, inventory, or report history.
+
+## Standard-program transaction boundary
+
+The UI currently performs cycle creation and profile persistence as separate writes. If profile save fails, it attempts to reactivate the previous cycle or stop the new cycle. This reduces ordinary split state but cannot protect against a process crash between requests. The planned durable fix is one backend transaction that updates previous-cycle status, creates the new cycle, and saves the profile/program baseline atomically.
+
+Do not remove the compensation until that transaction endpoint and failure tests exist.
+
+## Data access rules
+
+- Prefer same-origin Next data routes from browser components when a gateway exists.
+- Challenge APIs use the `/python-api/:path*` rewrite or the shared challenge client.
+- Preserve extra/versioned fields through TypeScript, Next, Pydantic, repository, and SQLite round trips.
+- Do not warm-write a normalized Redis copy back over canonical Python data.
+- Treat a 404 deletion of an already-absent record as an idempotent terminal state when the endpoint contract says so.
+- Report list paths should remain lightweight; detail is fetched lazily.
+- Never log complete profiles, PED schedule details, AI keys, webhook URLs, or reusable credentials.
+
+## Date rules
+
+- Persist day dates as `YYYY-MM-DD`.
+- Parse cycle dates as date-only values; avoid browser-timezone shifts from implicit UTC/local conversions.
+- Compute current week as `floor(days_since_start / 7) + 1`, bounded to the timeline.
+- A 14-day challenge is an inclusive exact day contract and maps to two PRIME weeks.
+- Date display preference is not yet globally enforced; do not claim otherwise.
+
+## Reporting rules
+
+- Report generation is explicit.
+- Report Center owns the standard duplicate/source-fingerprint gate.
+- A dashboard CTA routes into Report Center rather than bypassing the gate.
+- Living Reports receive the selected cycle's entries only.
+- 14-day reports render from the frozen plan/protocol/inventory snapshot plus daily logs/amendments.
+- Startup artifact ingestion must recognize artifacts already represented by canonical report rows.
+
+## 14-day and PED safety rules
+
+- Separate nutrition/training template revisions from protocol schedule revisions.
+- Require two explicit consecutive source weeks.
+- Preserve source hash, literal source values, missing values, and range text.
+- Inventory items remain unusable until required label/identity/unit/quantity/expiry fields are confirmed.
+- Use Decimal-based allocation; reject incompatible units, expired inventory, shortages, and non-divisible tablet/capsule events.
+- Member confirmation, documented review, and clinical validation are distinct states.
+- An amendment may affect only future/uncompleted days and records reason plus before/after state.
+
+## UI and theme rules
+
+- All primary navigation is route-based and keyboard accessible.
+- Seven palette choices exist independently of Light/Dark/System mode.
+- Use semantic palette tokens for new work. Hard-coded prototype colors on modern pages are known debt, not a pattern to copy.
+- Preserve the uploaded banner in the current shell.
+- Do not label stored-but-unused Settings values as globally active.
+- Test pages must be gated or removed before network exposure.
+
+## n8n boundary
+
+`src/lib/weighinWebhook.ts` is a browser-side, best-effort local MVP. It requires an active cycle and saved weigh-in days, posts after standard report success, and supplies `cycle_id:date` as `idempotency_key`. The downstream workflow must enforce that key. A remote/multi-user implementation requires a server-side signed delivery service, encrypted credential storage, retries, and an audit table.
+
+## Development workflow
+
+```powershell
+npm install
+python -m pip install -r .\python-api\requirements.txt
+
+# API
+Set-Location .\python-api
+python main.py
+
+# Web from repository root
+npm run dev
 ```
 
-#### 2. Widget Refresh System
-```typescript
-// Subscription pattern for dashboard widgets
-const { subscribeToDataChanges } = useApp()
-const [refreshKey, setRefreshKey] = useState(0)
+Use `_ops/apex_lifecycle.py` for the normal detached local lifecycle. The local dev port is `3010`; FastAPI is `8313`.
 
-useEffect(() => {
-  const unsubscribe = subscribeToDataChanges(() => {
-    setRefreshKey(prev => prev + 1)
-  })
-  return unsubscribe // Cleanup function
-}, [subscribeToDataChanges])
+## Required verification
+
+Choose the smallest relevant tests during implementation, then run the release gates for cross-cutting changes:
+
+```powershell
+npx tsc --noEmit
+npm run build
+python -m pytest python-api\tests\unit -q
+npx playwright test tests\e2e\modern-workspace.spec.ts --project=chromium --workers=1
+openspec validate add-two-week-cut-challenge --strict
+openspec validate update-interface-palettes-and-feature-lab --strict
+openspec validate add-ai-ped-inventory-scheduler --strict
+git diff --check
 ```
 
-#### 3. Dual Storage Pattern
-```typescript
-// Theme persistence with localStorage + server storage
-const updateTheme = async (newTheme: Theme) => {
-  // 1. Update state immediately
-  setTheme(newTheme)
-  
-  // 2. Save to localStorage for quick access
-  localStorage.setItem('userSettings', JSON.stringify(settings))
-  
-  // 3. Save to server for persistence
-  await fetch('/api/data/route', {
-    method: 'POST',
-    body: JSON.stringify({ key: 'user_theme_settings', data: { theme: newTheme } })
-  })
-}
-```
+Do not interpret a passing health endpoint as an end-to-end pass. For persistence flows, verify read, write, re-read, cycle ownership, and UI refresh. Do not mutate live member data merely to claim a test pass; use fixtures/copies.
 
-## 🔧 Component Development
+## Documentation and change control
 
-### UI Component Standards
+- Read `openspec/AGENTS.md` for proposals, new capabilities, breaking behavior, architecture changes, or ambiguous plans.
+- Do not manually edit `.taskmaster/tasks/tasks.json`.
+- Update current docs, changelog, verification, and the relevant OpenSpec tasks/spec in the same change.
+- Preserve dated audits as evidence and link them to current disposition rather than rewriting their original results.
 
-All UI components follow shadcn/ui patterns:
-```typescript
-interface ComponentProps {
-  className?: string
-  children?: React.ReactNode
-  // Component-specific props
-}
+## Security checklist
 
-export function Component({ className, children, ...props }: ComponentProps) {
-  return (
-    <div className={cn("default-styles", className)} {...props}>
-      {children}
-    </div>
-  )
-}
-```
-
-### Chart Component Pattern
-```typescript
-interface ChartWidgetProps {
-  data?: DataType[]
-  title?: string
-  description?: string
-}
-
-export function ChartWidget({ data, title, description }: ChartWidgetProps) {
-  const { subscribeToDataChanges } = useApp()
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  // Auto-refresh subscription
-  useEffect(() => {
-    const unsubscribe = subscribeToDataChanges(() => {
-      setRefreshKey(prev => prev + 1)
-    })
-    return unsubscribe
-  }, [subscribeToDataChanges])
-
-  // Memoized calculations with refresh key
-  const chartData = useMemo(() => {
-    if (!data) return []
-    return processData(data)
-  }, [data, refreshKey])
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
-          {/* Chart implementation */}
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  )
-}
-```
-
-### Form Component Pattern
-```typescript
-const formSchema = z.object({
-  field: z.string().min(1, "Required field"),
-})
-
-type FormData = z.infer<typeof formSchema>
-
-export function FormComponent() {
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-  })
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      // Handle form submission
-    } catch (error) {
-      // Handle errors
-    }
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <FormField
-          control={form.control}
-          name="field"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Field Label</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </form>
-    </Form>
-  )
-}
-```
-
-## 🔌 API Integration
-
-### Next.js API Routes
-```typescript
-// app/api/route-name/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const param = searchParams.get('param')
-    
-    // Handle request
-    const result = await processRequest(param)
-    
-    return NextResponse.json(result, { headers: corsHeaders })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500, headers: corsHeaders }
-    )
-  }
-}
-
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, { headers: corsHeaders })
-}
-```
-
-### Python API Integration
-```typescript
-// Service layer for Python API calls
-export class PythonAPIService {
-  private baseUrl: string
-
-  constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://127.0.0.1:8000'
-  }
-
-  async calculate(userData: UserData): Promise<CalculationResult> {
-    const response = await fetch(`${this.baseUrl}/calculate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    })
-
-    if (!response.ok) {
-      throw new Error(`Calculation failed: ${response.status}`)
-    }
-
-    return await response.json()
-  }
-}
-```
-
-### AI Provider Integration
-```typescript
-// AI service with multiple providers
-export async function callAIProvider(
-  provider: AIProvider,
-  model: string,
-  apiKey: string,
-  message: string,
-  context: any
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const systemPrompt = buildSystemPrompt(context)
-    
-    switch (provider) {
-      case 'anthropic':
-        return await callAnthropic(apiKey, model, systemPrompt, message)
-      case 'openai':
-        return await callOpenAI(apiKey, model, systemPrompt, message)
-      // ... other providers
-      default:
-        throw new Error(`Unsupported provider: ${provider}`)
-    }
-  } catch (error) {
-    console.error(`AI provider error:`, error)
-    return { success: false, message: 'Failed to get AI response' }
-  }
-}
-```
-
-## 📦 State Management
-
-### AppContext Structure
-```typescript
-interface AppContextType {
-  state: AppState
-  dispatch: React.Dispatch<AppAction>
-  // Computed getters
-  isAuthenticated: boolean
-  hasCalculation: boolean
-  // Action creators
-  setUser: (user: UserData) => void
-  addEntry: (entry: Entry) => Promise<void>
-  generateNewReport: () => Promise<void>
-  // Widget refresh system
-  refreshWidgets: () => void
-  subscribeToDataChanges: (callback: () => void) => () => void
-}
-```
-
-### State Updates
-```typescript
-// Reducer pattern for predictable state updates
-function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case 'SET_USER':
-      return { ...state, current_user: action.payload }
-    
-    case 'ADD_ENTRY':
-      return { 
-        ...state, 
-        entries: [action.payload, ...state.entries] 
-      }
-    
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload }
-    
-    default:
-      return state
-  }
-}
-```
-
-## 🎨 Styling Guidelines
-
-### Tailwind CSS Conventions
-```typescript
-// Use consistent spacing scale
-const spacing = {
-  xs: "p-2",    // 8px
-  sm: "p-4",    // 16px  
-  md: "p-6",    // 24px
-  lg: "p-8",    // 32px
-  xl: "p-12",   // 48px
-}
-
-// Responsive design patterns
-<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-  {/* Content */}
-</div>
-
-// Component size variants
-<Button size="sm" variant="outline">
-  {/* Button content */}
-</Button>
-```
-
-### CSS Custom Properties
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  /* ... */
-}
-
-[data-theme="dark"] {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  /* ... */
-}
-```
-
-## 🧪 Testing Strategy
-
-### Component Testing
-```typescript
-// Testing dashboard widgets
-import { render, screen } from '@testing-library/react'
-import { AppProvider } from '@/contexts/app-context'
-import { DashboardWidget } from '../dashboard-widget'
-
-describe('DashboardWidget', () => {
-  const renderWithContext = (component: React.ReactElement) => {
-    return render(
-      <AppProvider>
-        {component}
-      </AppProvider>
-    )
-  }
-
-  it('renders loading state correctly', () => {
-    renderWithContext(<DashboardWidget loading={true} />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-  })
-
-  it('refreshes data when entries change', async () => {
-    // Test refresh functionality
-  })
-})
-```
-
-### API Testing
-```typescript
-// Testing API routes
-import { GET, POST } from '../route'
-import { NextRequest } from 'next/server'
-
-describe('/api/data/route', () => {
-  it('handles GET requests correctly', async () => {
-    const request = new NextRequest('http://localhost:3000/api/data/route?key=test')
-    const response = await GET(request)
-    
-    expect(response.status).toBe(200)
-    const data = await response.json()
-    expect(data).toBeDefined()
-  })
-})
-```
-
-## 🚀 Performance Optimization
-
-### Code Splitting
-```typescript
-// Dynamic imports for large components
-const ReportsPage = dynamic(() => import('./reports-page'), {
-  loading: () => <Skeleton className="h-64 w-full" />
-})
-
-// Lazy load chart components
-const ProgressChart = lazy(() => import('../charts/progress-chart'))
-```
-
-### Memoization Patterns
-```typescript
-// Expensive calculations
-const expensiveData = useMemo(() => {
-  return processLargeDataset(rawData)
-}, [rawData])
-
-// Event handlers
-const handleClick = useCallback((id: string) => {
-  onItemClick(id)
-}, [onItemClick])
-
-// Component memoization
-export default memo(ExpensiveComponent)
-```
-
-### Bundle Optimization
-```javascript
-// next.config.js
-module.exports = {
-  experimental: {
-    optimizePackageImports: ['recharts', 'lucide-react']
-  },
-  webpack: (config) => {
-    config.optimization.splitChunks.chunks = 'all'
-    return config
-  }
-}
-```
-
-## 🔍 Debugging & Development Tools
-
-### Debug Utilities
-```typescript
-// Debug logging utility
-const debug = (namespace: string) => {
-  const isEnabled = process.env.NODE_ENV === 'development' || 
-                   localStorage.getItem('debug') === 'true'
-  
-  return (message: string, data?: any) => {
-    if (isEnabled) {
-      console.log(`[${namespace}] ${message}`, data)
-    }
-  }
-}
-
-const log = debug('AppContext')
-log('User data updated', userData)
-```
-
-### Development Scripts
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:watch": "jest --watch"
-  }
-}
-```
-
-## 📋 Code Review Checklist
-
-### Before Submitting PR
-- [ ] All TypeScript types are properly defined
-- [ ] Components include proper error handling
-- [ ] Accessibility attributes are included
-- [ ] Responsive design is tested
-- [ ] No console errors or warnings
-- [ ] Code follows established patterns
-- [ ] Tests are included for new features
-- [ ] Documentation is updated
-
-### Performance Considerations
-- [ ] Large datasets are properly memoized
-- [ ] Components are properly memoized where needed
-- [ ] No unnecessary re-renders
-- [ ] Images are optimized
-- [ ] Bundle size impact is minimal
-
-## 🔐 Security Best Practices
-
-### Client-Side Security
-- Never store API keys in localStorage (use secure context only)
-- Validate all user inputs with Zod schemas
-- Sanitize data before display
-- Use HTTPS in production
-
-### API Security
-- Implement proper CORS headers
-- Validate request bodies
-- Use rate limiting in production
-- Log security events
-
----
-
-*Last Updated: July 22, 2025*  
-*Version: 1.3.0*  
-*For additional technical details, see API_DOCUMENTATION.md and TROUBLESHOOTING.md*
+- No credentials in source, screenshots, docs, logs, reports, fixtures, or commits.
+- Validate uploaded file type/size/path and report artifact filenames.
+- Keep CORS and service binding local until authentication exists.
+- Minimize health/PED context sent to external AI providers and require deliberate provider configuration.
+- Back up SQLite before schema or repair operations.
+- Keep member confirmation separate from medical approval.

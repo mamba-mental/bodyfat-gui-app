@@ -1,5 +1,7 @@
 # Ap³xFit Calc Engine — Validation Findings (2026-06-08)
 
+> **Dated calculation audit.** This is evidence and design input, not a statement that every proposed modifier is active in the current engine. Re-run fixtures before changing production calculations.
+
 Synthesis of 4 parallel agents: **calc-inventory** (45 calcs mapped) · **fat-loss-coach** (domain) ·
 **deep-research** (2024-26 science, cited) · **codex** (code/pipeline). This is the source-of-truth
 content for the per-calculation dashboard. Nothing here is auto-applied — these are findings + PRIME's decisions.

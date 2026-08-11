@@ -1,5 +1,7 @@
 # Docker Deployment Guide for Ap³𝘹Fit.ai
 
+> **Legacy Docker guide.** It does not describe the verified August 2026 daily-use topology. Use [`RUNBOOK.md`](RUNBOOK.md) for current operations and treat the Docker stack as an unverified deployment candidate.
+
 This guide covers deploying Ap³𝘹Fit.ai using Docker with persistent data storage.
 
 ## Prerequisites

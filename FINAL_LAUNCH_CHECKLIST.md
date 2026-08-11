@@ -1,5 +1,7 @@
 # Final Launch Checklist - ApexFit AI Body Fat Estimator
 
+> **Historical launch checklist.** “Final” here refers to an older release state. Use [`CURRENT_STATUS.md`](CURRENT_STATUS.md), [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md), and the current OpenSpec tasks for present release readiness.
+
 **Date**: August 17, 2025  
 **Version**: 1.3.0 Production  
 **Launch Target**: Conditional Approval (Pending fixes)

@@ -1,5 +1,7 @@
 # Comprehensive Test Plan for All Fixes
 
+> **Historical test plan.** Routes, ports, and expected behavior must be reconciled with the August 2026 documentation before reuse. The latest focused gates are in [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md).
+
 ## Date: 2025-07-07
 ## Purpose: Verify all fixes implemented in this session
 

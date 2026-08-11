@@ -1,5 +1,7 @@
 # Apex Fit Adversarial Flow Review — 2026-08-11
 
+**Disposition updated:** August 11, 2026 after commit `df184db`. This is the current full-flow audit; older June audits remain historical snapshots.
+
 ## Scope and method
 
 This review traced every primary sidebar destination, the header plan/profile links, all Settings tabs, the standard-cycle and 14-day-cycle entry points, entry persistence, report generation, Living Report generation, and the n8n reminder handoff. It compared visible promises with the actual write/read path and exercised non-destructive browser and HTTP checks.
@@ -11,6 +13,8 @@ This review traced every primary sidebar destination, the header plan/profile li
 - TypeScript typecheck and `git diff --check`: passed.
 - Clean Next.js production build: passed, 57/57 static pages generated. The existing ESLint circular-configuration warning remains.
 - No webhook, report generation, challenge activation, entry mutation, or destructive data action was fired during the audit.
+
+After the read-only audit, an explicitly scoped live-state repair restored the current profile/cycle association: exactly one standard cycle is active from August 11, prior cycles are stopped/preserved, and the June 3 report remains historical. The repair was preceded by a SQLite backup under `data/backups/`.
 
 ## Findings fixed in this change
 
@@ -92,3 +96,7 @@ The live UI uses `next dev`; the first visit after restart can take several seco
 3. Make Settings honest: implement or label units/date formatting, notifications, and privacy enforcement.
 4. Move the live supervisor to production runtime, then add a signed server-side n8n delivery record with retries and event history.
 5. Remove or development-gate test routes and install Firefox/WebKit for cross-browser release testing.
+
+## Documentation disposition
+
+The corrected flows are reflected in the root README, current status, usage guide, user manual, API/developer/database/persistence/runbook/troubleshooting documents, the n8n automation guide, the two-week MVP guide, and the documentation index. Historical plans/audits are retained as dated evidence and do not override this review.

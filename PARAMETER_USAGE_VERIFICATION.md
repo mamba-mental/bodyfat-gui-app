@@ -1,5 +1,7 @@
 # Custom Profile Parameters - Usage Verification Report
 
+> **Dated verification artifact.** Re-run contract tests before using its conclusions for the current PRIME, standard-cycle, or 14-day paths. Current release evidence is in [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md).
+
 **Generated:** 2025-11-16  
 **Purpose:** Verify all custom profile form parameters are used in Python PRIME calculations
 

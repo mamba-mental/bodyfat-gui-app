@@ -2,6 +2,10 @@
 
 These are reference patterns, not instructions to copy another product. Each lane preserves Apex Fit's information and workflows while providing a concrete structure to react to before implementation.
 
+The options are **not mutually exclusive comps that require discarding the other cards/widgets**. They are a pattern library: each reference can contribute useful hierarchy, navigation, form, chart, history, or action behavior to one coherent Apex Fit system. Implementation still follows the selected Quiet Strength/Apex Fit shell, banner, seven palettes, and semantic tokens.
+
+**Current disposition:** Dashboard, Plan Studio, 14-day Command Center, Settings palette selection, nutrition, and challenge discovery have been modernized. New Entry, AI Coach, Reports/history, Progress Charts, and portions of Settings remain the highest-value destinations for the patterns below. Palette-token completion is a prerequisite for calling the visual migration complete.
+
 ## New Entry and daily check-in
 
 1. [Hims focused measurement form](https://mobbin.com/screens/9654baf0-4e76-4662-8777-948c54d570c9) — one focused column, low cognitive load, strong completion action. Best fit for the standard body-composition entry.
@@ -49,3 +53,16 @@ Recommended synthesis: Featurebase's information architecture with Cal.com's vis
 3. Reports: expose 14-day source/revision history clearly.
 4. Progress Charts: reduce the legacy widget density without removing metrics.
 5. Settings: complete the structural refresh after all destination pages stabilize.
+
+## Functional preservation checklist
+
+Every future page update must retain:
+
+- the current route and sidebar/header entry point;
+- active-cycle context and historical-cycle access;
+- all existing data fields, validation, loading/error/empty states, and exports;
+- keyboard/focus/reduced-motion/responsive behavior;
+- the uploaded banner where the shell calls for it;
+- seven palette choices through semantic tokens;
+- source/revision/protocol/inventory provenance on report/challenge pages;
+- explicit distinction between shipped features and coming-soon actions.

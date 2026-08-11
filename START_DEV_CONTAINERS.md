@@ -1,5 +1,7 @@
 # 🚀 Development Container Status & Access
 
+> **Historical container-status snapshot.** Container names/ports below are not proof of current state. For August 2026, use [`CURRENT_STATUS.md`](CURRENT_STATUS.md) and verify listeners/process ownership live.
+
 ## Current Container Status
 
 ### ✅ Running Containers:

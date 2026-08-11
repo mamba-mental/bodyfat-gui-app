@@ -1,5 +1,7 @@
 # ReComp Cycle — First-Class Feature Plan
 
+> **Implementation plan with work now partially/mostly landed.** Use current OpenSpec tasks and the August 11 adversarial review for actual completion and open atomicity/settings/runtime gaps.
+
 **Status:** DRAFT (pre-review). Branch `007-design-review-fixes`. Base `master`.
 **Author:** Claude (this session). For `/codex:adversarial-review` then `/tdd`.
 **App:** Next.js 15 frontend (prod build :3010) + Python FastAPI backend (:8313, SQLite).

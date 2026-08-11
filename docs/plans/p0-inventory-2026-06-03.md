@@ -1,5 +1,7 @@
 # P0 Data Inventory — 2026-06-03 (read-only, non-destructive)
 
+> **Historical storage snapshot.** Do not use its counts or June active-state values as current live data. SQLite remains canonical; current state is recorded in [`../../CURRENT_STATUS.md`](../../CURRENT_STATUS.md).
+
 First step of the approved ReComp Cycle plan (`~/.claude/plans/im-leaning-to-option-gleaming-book.md`). No data was modified.
 
 ## SQLite stores

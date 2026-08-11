@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-11
+
+### Added
+
+- Complete 14-day cut workflow with exact day semantics, editable/versioned templates, source-bound two-week PED schedule selection, daily command center, future-day amendments, and progress/final/stopped-early reporting.
+- Manual confirmed PED inventory MVP with Decimal-based coverage, expiry/unit/divisibility/shortage blockers, documented range review, immutable activation snapshots, and report provenance.
+- Modernized workspace, preserved banner, seven palettes, nutrition workspace/import, Plan Studio, AI pages, Settings Feature Lab, and Mobbin reference directions.
+- Weigh-in schedule and optional n8n webhook handoff with cycle/date idempotency key and prerequisite guards.
+- Canonical documentation index plus current user, API, developer, database, persistence, operations, troubleshooting, n8n, and verification guides.
+
+### Fixed
+
+- Starting a new program no longer deletes or blanks the member profile. It opens an editable copy, creates a first-class active standard cycle, saves a program baseline, stops the prior cycle, and preserves history.
+- Reports no longer silently select the newest stopped cycle when no active cycle exists; aggregate history is used instead.
+- New Entry confirms persistence before navigation and no longer waits for automatic report generation.
+- Dashboard report actions now route through Report Center's cycle/source duplicate gate.
+- Standard 12/15/22-week choices now continue to the editable program review.
+- Living Reports use selected-cycle entries, the selected cycle's start date, and floor-based week calculation.
+- 14-day report generation refreshes global report state.
+- Report artifact startup ingestion and UI history no longer display an already-backed artifact twice.
+- n8n test/send no longer emits no-cycle placeholder events and now explains that downstream n8n must enforce idempotency.
+- Entry-history “from start” deltas use the program baseline.
+- Setup Profile remains available; Settings display name now updates the actual member profile.
+- Repaired the live active-cycle start from the incorrectly inherited June 3 context to August 11 while preserving the old cycle/report as history.
+
+### Known limitations
+
+- New-program persistence is not yet one atomic backend transaction.
+- Palette selection does not yet govern every hard-coded modern-page color.
+- Several stored Settings preferences are not fully enforced.
+- n8n delivery remains browser-side and unsigned.
+- AI-assisted PED drafting, universal-duration scheduling, adherence inventory ledger, and AI report explanation remain roadmap work.
+- Four developer test routes remain in the production route manifest.
+- The two desktop shortcuts and both repository `.cmd` wrappers still point to a removed project path; use the lifecycle Python commands until a separately authorized shortcut repair is made.
+
 ## [1.6.1] - 2026-01-09
 
 ### Fixed

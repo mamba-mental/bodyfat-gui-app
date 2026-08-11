@@ -1,5 +1,7 @@
 # Stabilize Reporting Pipeline, AI Settings, Theming, Banner Standards, and Persistent History
 
+> **Historical proposed plan.** Several items were implemented or superseded, while its JSON-persistence assumptions are no longer current. Use [`docs/DOCUMENTATION-INDEX.md`](docs/DOCUMENTATION-INDEX.md), active OpenSpec changes, and [`CURRENT_STATUS.md`](CURRENT_STATUS.md) for current status.
+
 Status: Proposed
 Owner: Kilo Code
 Scope: Targeted fixes across reporting, AI Settings route, changelog hygiene, last-known-data fallback, theming, banner standards, and persistent history.
@@ -122,7 +124,7 @@ Acceptance:
 
 Key artifacts:
 - `src/components/ui/banner.tsx` (new)
-- CSS utility (e.g., `.banner-16x9`) in [styles/globals.css](styles/globals.css) or in the component.
+- CSS utility (e.g., `.banner-16x9`) in [src/app/globals.css](src/app/globals.css) or in the component.
 
 Acceptance:
 - All banners render without stretching on multiple pages/devices, no CLS regressions.

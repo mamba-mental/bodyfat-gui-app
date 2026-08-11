@@ -1,5 +1,7 @@
 # Final Status Report - All Critical Issues Fixed
 
+> **Historical status report.** Its title is not a current all-clear. The current open P1-P3 findings are tracked in [`ISSUES_TO_FIX.md`](ISSUES_TO_FIX.md) and the [`docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md).
+
 ## 🎉 EVERYTHING IS NOW COMPLETE!
 
 ### Access Your App:

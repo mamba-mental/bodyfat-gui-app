@@ -1,5 +1,7 @@
 # Body Fat Tracker - Docker Deployment
 
+> **Legacy Docker README.** It is not the current run command: Windows supervises Next.js `:3010` and FastAPI `:8313`; optional Redis alone runs in WSL/Docker on `:6385`. See [`RUNBOOK.md`](RUNBOOK.md).
+
 ## 🎯 MVP Ready for NAS Deployment
 
 This application is **100% complete** with all 23 features implemented:

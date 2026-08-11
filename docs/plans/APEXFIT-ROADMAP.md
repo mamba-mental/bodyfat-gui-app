@@ -1,5 +1,7 @@
 # Ap³xFit — Roadmap & North Star
 
+> **North-star plan, not a shipped-feature list.** Current completion is defined by accepted OpenSpec tasks plus [`../VERIFICATION-2026-08-11.md`](../VERIFICATION-2026-08-11.md). In particular, only the manual 14-day PED inventory Tonight MVP is complete.
+
 **Owner:** PRIME · **Last updated:** 2026-06-08
 
 ---

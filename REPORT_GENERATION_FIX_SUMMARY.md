@@ -1,5 +1,7 @@
 # Report Generation Fix Summary
 
+> **Historical snapshot.** This document records an older fallback-based fix and port `3000`. Current reports use the PRIME/FastAPI flow on frontend `3010` and backend `8313`, and backend failure is not documented as permission to fabricate a fallback result. See [`CURRENT_STATUS.md`](CURRENT_STATUS.md), [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md), and [`docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md).
+
 ## Issue Resolved: "Unable to connect to calculation service"
 
 ### Root Cause

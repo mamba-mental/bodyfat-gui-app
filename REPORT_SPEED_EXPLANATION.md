@@ -1,5 +1,7 @@
 # Report Generation Speed Issue Explained
 
+> **Historical design explanation.** Current entry saves do not wait for report generation, and report creation is explicit. Use [`USAGE.md`](USAGE.md) and [`docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md) for current behavior.
+
 ## Root Cause
 The report generation is slow because it's making an external API call to Claude (Anthropic) for AI confidence analysis. This adds 20-30 seconds to the report generation process.
 

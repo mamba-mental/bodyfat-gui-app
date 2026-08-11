@@ -1,5 +1,7 @@
 # PRIME Coaching Protocol — Nutrition & PED (Structured Extraction)
 
+> **Source-preservation artifact, not a prescription.** It records literal extracted source content—including missing/ranged values—for deterministic selection and audit. Apex Fit must not infer missing doses, substitute compounds, or represent this extraction as clinical approval.
+
 > **Subject:** MJ PRIME — 281.3 lbs @ 36.8% BF -> 220 lbs @ 13% BF, 16-week cut, cycle start June 1, 2026
 > **Extraction date:** 2026-06-08
 > **Method:** python-docx — iterated document.paragraphs AND document.tables. Per-week PED timeline cross-verified between both PED docs (zero diff across weeks 2-16).

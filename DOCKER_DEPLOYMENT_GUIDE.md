@@ -1,5 +1,7 @@
 # Docker Deployment Guide for Ap³𝘹Fit.ai
 
+> **Legacy Docker guide.** Docker is not currently serving the Apex frontend or FastAPI application. Only Redis is expected in Docker. Validate the actual Compose file, internal/host ports, mounts, and database path before using this guide.
+
 This guide explains how to properly deploy the Body Fat Tracker application using Docker with persistent storage for images and data.
 
 ## Prerequisites

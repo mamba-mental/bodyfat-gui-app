@@ -1,4 +1,6 @@
 # Ap³xFit · Living Progress Report — *Clinical Playbook*
+
+> **Illustrative rendered sample.** Values and prose are examples, not live data or clinical guidance. Verify current output from the selected cycle/report snapshot.
 ### PRIME.TIME · **WEEK 0 of 16** · Phase: RESET
 > PRIME · Goal **217 lb @ 13% BF** · 16-week cut · weigh-ins **Mon / Thu / Sat**
 > Generated 2026-06-08

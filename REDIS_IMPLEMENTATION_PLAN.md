@@ -1,5 +1,7 @@
 # REDIS-FIRST ARCHITECTURE - IMPLEMENTATION PLAN
 
+> **Superseded architecture proposal.** Current Apex Fit is SQLite-authoritative; Redis is optional cache/fallback infrastructure and must not overwrite newer canonical records. See [`DATABASE_INFO.md`](DATABASE_INFO.md).
+
 ## Overview
 Migrate from JSON/SQLite hybrid to Redis as the single source of truth.
 

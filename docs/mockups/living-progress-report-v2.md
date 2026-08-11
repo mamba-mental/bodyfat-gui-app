@@ -1,4 +1,6 @@
 # Ap³xFit · Living Progress Report — *Clinical Playbook*
+
+> **Illustrative content mockup.** This is not a live member report, medical instruction, or guaranteed current renderer output. Current Living Reports are cycle-scoped and revisioned.
 ### PRIME.TIME-06.2026 · **WEEK 3 of 16** · Phase: ADAPT
 > MJ PRIME · 47 · 5′9″ · Goal **217 lb @ 13% BF** · 16-week cut · weigh-ins **Mon / Thu / Sat**
 > *Full report — generated on the week's first weigh-in (Mon). Thu/Sat = AI Coach check-ins.*

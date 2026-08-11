@@ -1,5 +1,7 @@
 # PED Stack Recomp Modifiers — Sourcing Reference
 
+> **Research/reference only.** This document does not prescribe use, establish clinical safety, or prove that a modifier is active. Many cited compounds lack controlled human body-composition evidence; current scheduling must remain source-bound and fail closed.
+
 **Version:** 1.0  
 **Date:** 2026-06-08  
 **Purpose:** Literature-grounded, bounded modifiers for the PED Stack feature of the body-recomp engine. Powers p-ratio adjustments (fat fraction of weight loss) and lean-retention signals.  

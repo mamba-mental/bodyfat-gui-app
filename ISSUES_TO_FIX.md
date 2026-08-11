@@ -1,93 +1,48 @@
-# Ap³𝘅Fit.ai - Outstanding Issues to Fix
+# Apex Fit Outstanding Issues
 
-## Date: 2025-07-07
-## Session Summary: Multiple critical issues remain unresolved despite attempted fixes
+**Reviewed:** August 11, 2026
 
-### 1. Report Generation Issues
-- **Problem**: Generate report hangs indefinitely (waited 5+ minutes)
-- **Expected**: Should generate within seconds
-- **Root Cause**: Unknown - Python API is running but request may be timing out
-- **Fix Needed**: Add proper timeout handling and progress indicators
+**Evidence:** [`docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md)
 
-### 2. Profile Update Not Pre-populating
-- **Problem**: "Update Profile" button doesn't pre-populate with existing user data
-- **Expected**: All fields should show current user settings when updating
-- **Code Location**: `/src/app/setup/custom/page.tsx`
-- **Note**: Code was updated but changes not reflecting in browser
+Older July 2025 issues in this file were reconciled against the current application. Report waiting, profile prefill, theme navigation, sidebar routes, and AI page availability are no longer described here as current defects.
 
-### 3. Theme Preference Not Persisting
-- **Problem**: Theme preference doesn't change/save after clicking save in settings
-- **Expected**: Theme should immediately apply and persist across sessions
-- **Fix Needed**: Implement proper theme switching mechanism
+## Open defects and risks
 
-### 4. AI Settings Not Persisting (CRITICAL)
-- **Problem**: API keys are lost when opening new browser
-- **Expected**: API keys should persist on server (ai-settings.json)
-- **Current State**: ai-settings.json was cleared (all API keys blank)
-- **Note**: This was supposedly fixed multiple iterations ago but still broken
+| Priority | Issue | Current impact | Required fix |
+| --- | --- | --- | --- |
+| P1 | Standard program start is not atomic | A crash between cycle/profile requests can leave split state despite client compensation | One backend SQLite transaction plus failure/retry tests |
+| P1 | Palette coverage is incomplete | Seven choices exist, but hard-coded modern-page colors can ignore selection | Convert to semantic tokens and visually verify every palette/page/theme |
+| P1 | Some Settings success is optimistic | UI can show Saved before the profile server write is confirmed | Await persistence and surface failure |
+| P1 | Desktop start/stop shortcuts are stale | Both shortcuts and both current `.cmd` wrappers reference a deleted repository path | Update wrapper `cd` paths and repoint/recreate shortcuts, then run lifecycle integration test |
+| P2 | Units/date/notification/privacy preferences are not fully consumed | Settings imply broader behavior than exists | Implement consumers or label/disable inactive controls |
+| P2 | n8n is browser-side and unsigned | URL in localStorage; no signature, retry ledger, or app-side dedupe enforcement | Server-side secure delivery service and audit table |
+| P2 | Local runtime uses `next dev` | Cold routes can feel slow; not a production lifecycle | Verified standalone build/start supervisor with rollback |
+| P2 | Full PED scheduler/AI roadmap incomplete | Only manual 14-day inventory coverage is shipped | Complete unchecked `add-ai-ped-inventory-scheduler` tasks |
+| P3 | Test routes ship in production manifest | Debug/test pages could be exposed | Gate/remove outside development |
+| P3 | Cross-browser verification incomplete | Chromium verified; Firefox/WebKit binaries unavailable | Install browsers and run release suite |
+| P3 | Older broad suites are stale | Noise from retired paths/ports/schema/harness failure | Update harness/contracts and restore trustworthy all-suite status |
 
-### 5. AI Coach Chat Using Prefab Responses
-- **Problem**: AI chat not using configured AI providers, only showing template responses
-- **Evidence**: Logs show "AI provider chutes failed, using fallback"
-- **Expected**: Should use real AI responses from configured providers
-- **Fix Needed**: Debug why AI providers are failing and fix integration
+## Resolved in the August 11 flow repair
 
-### 6. Progress Report Calculation
-- **Problem**: Report shows summary instead of complete recalculation from new entry date
-- **Expected**: When new entry added, entire program should recalculate from that date
-- **Fix Needed**: Update calculation logic to use latest entry as starting point
+- New Program preserves and pre-populates the profile.
+- A new standard program creates a first-class active cycle and baseline.
+- Reports do not silently use the newest stopped cycle.
+- Entry save does not wait for or silently create reports.
+- Dashboard generation uses Report Center's duplicate gate.
+- Plan Studio 12/15/22 choices continue to setup.
+- Living Reports are selected-cycle scoped and use correct week math.
+- 14-day report creation refreshes app state.
+- Startup/UI report artifact duplication is guarded.
+- n8n requires active cycle, schedule, and next date; downstream enforcement is explicit.
+- Entry-history progress uses the program baseline.
+- Setup/Profile remains available; Settings display name updates the real profile.
+- The live active-cycle start date is August 11, with the June 3 cycle/report preserved as history.
 
-### 7. Missing Sidebar Features
-**Not Implemented:**
-- Changelog link in Tools sidebar (component created but not showing)
-- Direct link to AI Settings in sidebar
-- Direct link to Report Generation in sidebar
-- Full page for AI Chat/Insights (currently only widgets)
+## Verification gaps, not proven defects
 
-### 8. Additional Issues from Logs
-- AI insights showing null provider after settings were saved
-- Chutes AI provider consistently failing
-- JSON parsing errors in insights endpoint
+- No paid AI provider call was made during the audit.
+- No live n8n downstream task/calendar event was created.
+- No 14-day challenge was activated against the member's live data.
+- No destructive entry/report/profile operation was exercised against live data.
 
-## Technical Notes
-
-### Server Logs Show Pattern:
-1. Initial requests have AI settings (provider, model, apiKey)
-2. After some time, requests show null values
-3. This suggests settings are being lost/cleared
-
-### File Locations for Fixes:
-- AI Settings Service: `/src/lib/ai-settings-service.ts`
-- AI Settings Storage: `/ai-settings.json`
-- Profile Update: `/src/app/setup/custom/page.tsx`
-- Sidebar: `/src/components/layout/main-layout.tsx`
-- Theme: Need to implement theme context
-- Report Generation: `/src/app/api/generate-report/route.ts`
-- AI Chat: `/src/app/api/ai/chat/route.ts`
-
-## How to Retrieve This Information
-
-This file is saved at:
-```
-/mnt/c/GitHub_Projects/2025.0629_bf-estimator-terminal-standalone/bodyfat-gui-app/ISSUES_TO_FIX.md
-```
-
-To retrieve in future Claude sessions:
-1. Ask Claude to read the file: "Please read ISSUES_TO_FIX.md"
-2. Or provide the full path above
-3. The file will persist in your project directory
-
-## Recommended Fix Priority
-1. **CRITICAL**: AI Settings persistence (breaks all AI features)
-2. **HIGH**: Report generation hanging
-3. **HIGH**: Profile update pre-population
-4. **MEDIUM**: AI Chat real responses
-5. **MEDIUM**: Progress report calculation logic
-6. **LOW**: Theme persistence
-7. **LOW**: Sidebar UI improvements
-
-## Session Context
-- Multiple attempts to fix these issues were made
-- Changes were implemented in code but not reflecting in browser
-- Possible caching issues or state management problems
-- Need comprehensive debugging session to identify root causes
+Do not close an issue merely because a page renders or a health endpoint returns 200. Verify the complete read/write/re-read/UI path with the appropriate safe fixture or explicitly authorized live mutation.

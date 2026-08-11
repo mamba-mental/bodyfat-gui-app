@@ -1,5 +1,7 @@
 # Exact Code Changes for AI Speed Optimization
 
+> **Historical implementation proposal.** Verify every referenced symbol against current code before applying. Current entry saves and deterministic reports do not depend on waiting for an external AI call.
+
 ## 1. Switch to Faster Model (70% Speed Improvement)
 
 **File**: `/new_prime_python_code/PRIME_AI_Confidence_Analyzer.py`

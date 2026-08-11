@@ -1,5 +1,7 @@
 # How to Verify All Fixes Are Working
 
+> **Historical verification guide.** Use [`RUNBOOK.md`](RUNBOOK.md), [`CURRENT_STATUS.md`](CURRENT_STATUS.md), and [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md) for current commands and expected results.
+
 ## Browser Cache Issue
 If you're seeing old errors, it's likely a browser cache issue. Please:
 

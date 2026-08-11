@@ -1,5 +1,7 @@
 # AI Speed Optimization Implementation Plan
 
+> **Historical plan.** Use current profiling and [`docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md`](docs/ADVERSARIAL-FLOW-REVIEW-2026-08-11.md) before treating these tasks as current.
+
 ## Quick Wins (Implement Today)
 
 ### 1. Switch to Faster Model (70% Speed Improvement)

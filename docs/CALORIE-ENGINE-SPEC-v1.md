@@ -1,5 +1,7 @@
 # Ap³xFit Calorie Engine — Implementation Spec v1 (2026-06-08)
 
+> **Versioned engineering reference.** This v1 document does not override newer code, accepted OpenSpec contracts, or source-safety requirements. Coefficients must remain traceable and tested.
+
 **Goal:** the app's weekly report must produce PRIME's **calibrated** calorie/protein numbers —
 the ones from his proven `recomp-protocol/recomp-calculator.xlsx` (`build_calculator.py`) — not the
 app's from-scratch TDEE−deficit estimate. "Correct values" == his calculator's values.

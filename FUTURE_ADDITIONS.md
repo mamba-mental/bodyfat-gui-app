@@ -1,157 +1,86 @@
-# Ap³𝘹Fit.ai - Future Additions Roadmap
+# Apex Fit Remaining Roadmap
 
-This document outlines planned features and enhancements for Ap³𝘹Fit.ai, organized by priority and category.
+**Updated:** August 11, 2026
 
-## 🎯 High Priority Features
+**Authority:** Accepted OpenSpec changes and the latest adversarial review. This file summarizes; task completion is tracked in `openspec/changes/*/tasks.md`.
 
-### 1. Enhanced Data Persistence
-- **Server-Side Storage**: Implement PostgreSQL/MongoDB for Docker deployments
-- **Data Sync**: Real-time sync between local and server storage
-- **Backup/Restore**: Automated backup with point-in-time recovery
-- **Multi-Device Support**: Access your data from any device
+## P1 — Reliability and honest state
 
-### 2. Advanced AI Features
-- **Multi-Modal Analysis**: Support for progress photos with AI analysis
-- **Voice Commands**: Natural language input for logging entries
-- **Predictive Adjustments**: AI-powered plan modifications based on progress
-- **Personalized Coaching**: Context-aware motivational messages
+1. **Atomic start-program transaction**
+   - Save prior-cycle status, new cycle, edited profile, and program baseline in one SQLite transaction.
+   - Return the complete committed state and test failure/rollback boundaries.
 
-### 3. Social & Community Features
-- **Progress Sharing**: Share achievements with accountability partners
-- **Community Challenges**: Join transformation challenges
-- **Expert Consultation**: Connect with certified nutritionists/trainers
-- **Success Stories**: Browse and share transformation journeys
+2. **Complete palette-token migration**
+   - Replace remaining hard-coded modern Dashboard, Plan Studio, and Command Center colors with semantic tokens.
+   - Visually verify all seven palettes, both themes, contrast, reduced motion, and responsive layouts.
 
-## 🚀 Medium Priority Features
+3. **Awaited Settings persistence**
+   - Make profile/settings actions return server-confirmed success/failure.
+   - Do not display Saved before durable writes complete.
 
-### 4. Enhanced Tracking
-- **Barcode Scanner**: Quick food logging via mobile camera
-- **Wearable Integration**: Connect Fitbit, Apple Watch, Garmin
-- **Body Measurements**: Track waist, chest, arms, thighs
-- **Progress Photos**: Side-by-side comparison with AI overlay
+4. **Production local runtime**
+   - Create a verified standalone Next build/copy/start lifecycle with rollback.
+   - Repair the repository start/stop wrappers and desktop shortcuts only as an explicitly scoped operational change.
+   - Gate/remove developer test routes.
 
-### 5. Advanced Analytics
-- **Plateau Detection**: AI identifies and suggests breakthrough strategies
-- **Correlation Analysis**: Discover what factors affect your progress most
-- **Predictive Modeling**: See projected results for different scenarios
-- **Custom Metrics**: Define and track your own progress indicators
+## P2 — Complete the PED inventory/scheduler roadmap
 
-### 6. Nutrition Enhancement
-- **Meal Planning**: AI-generated meal plans based on preferences
-- **Recipe Database**: Thousands of macro-friendly recipes
-- **Restaurant Guide**: Find suitable meals at popular restaurants
-- **Grocery Lists**: Auto-generated shopping lists from meal plans
+The full contract is `openspec/changes/add-ai-ped-inventory-scheduler`. Only its section 8 Tonight MVP is complete.
 
-## 💡 Innovative Features
+### Persistence and deterministic scheduling
 
-### 7. Gamification
-- **Achievement System**: Unlock badges and rewards
-- **Streaks & Challenges**: Daily/weekly/monthly goals
-- **Level System**: Progress through fitness levels
-- **Virtual Coach**: AI avatar that evolves with your progress
+- Add protocol/schedule/event/allocation/transaction/review/adherence tables beyond the current inventory-only migration.
+- Support independent diet and protocol date windows for 14-day, standard, and custom-duration plans.
+- Preserve explicit pre-protocol/off/stopped/uncovered periods; never infer repetition or substitution.
+- Add immutable future revisions, rescheduling, adherence events, and auditable inventory decrement/reconciliation.
+- Extend backup/export/import coverage for every new record.
 
-### 8. Health Integration
-- **Lab Results Import**: Track biomarkers and correlate with progress
-- **Sleep Analysis**: Integrate sleep data for recovery insights
-- **Stress Management**: HRV and stress tracking integration
-- **Medical Reports**: Generate reports for healthcare providers
+### AI-assisted drafting
 
-### 9. Mobile App
-- **Native iOS/Android**: Full-featured mobile applications
-- **Offline Mode**: Complete functionality without internet
-- **Push Notifications**: Smart reminders and motivational messages
-- **Widget Support**: Quick logging from home screen
+- Optional label extraction/normalization with user confirmation of every required field.
+- Reviewed-template matching that returns a draft only.
+- Deterministic reconstruction/validation of every AI result before display.
+- Provider/model/schema IDs, hashes, sources, confidence, unknowns, and transmission consent without storing credentials in the audit record.
+- No one-click AI activation and no AI-created regimen/dose.
 
-## 🔧 Technical Enhancements
+### Reports and explanation
 
-### 10. Performance & Scalability
-- **Edge Computing**: Faster calculations with edge deployment
-- **GraphQL API**: More efficient data fetching
-- **Real-time Updates**: WebSocket support for live features
-- **CDN Integration**: Global content delivery for speed
+- Planned-versus-actual PED event reporting for every program duration.
+- Schedule revision, inventory transaction, adherence, review, source, and unknown-state audit trail.
+- Optional read-only AI explanation bound to the immutable report snapshot.
+- Tests proving AI cannot mutate schedules, inventory, calculations, or report history.
 
-### 11. Security & Privacy
-- **End-to-End Encryption**: Optional E2EE for sensitive data
-- **Two-Factor Authentication**: Enhanced account security
-- **GDPR Compliance**: Full data export and deletion tools
-- **Audit Logs**: Track all data access and modifications
+## P2 — Settings and automation completion
 
-### 12. Developer Features
-- **Public API**: Allow third-party integrations
-- **Webhook Support**: Trigger external actions on events
-- **Plugin System**: Community-developed extensions
-- **SDK Release**: Build custom integrations
+- Apply unit/date preferences to all inputs, charts, reports, and exports.
+- Implement or honestly disable notification and privacy toggles.
+- Move n8n delivery server-side with encrypted URL/credential storage, signed requests, retries, delivery history, and unique-key enforcement.
+- Add actual clock-based reminders if desired; the current hook is only report-triggered.
 
-## 📱 Platform Expansions
+## P2 — Data portability and security
 
-### 13. Smart TV Apps
-- **Apple TV**: View progress on the big screen
-- **Android TV**: Family fitness tracking hub
-- **Roku**: Stream workout videos with progress overlay
+- Verified complete export/import for profile, cycles, entries, calculations, reports/artifacts, nutrition, challenge templates/revisions, amendments, daily logs, inventory, schedules, adherence, and reviews.
+- Local backup/restore UI with integrity verification and no credential leakage.
+- Authentication, authorization, tenant isolation, encryption/key management, and cloud provider selection before multi-user/cloud writes.
+- Development/production network binding and CORS hardening.
 
-### 14. Voice Assistants
-- **Alexa Skills**: "Alexa, log my weight as 180 pounds"
-- **Google Assistant**: Natural conversation about progress
-- **Siri Shortcuts**: Quick actions and status updates
+## P3 — Test and observability cleanup
 
-### 15. Fitness Equipment Integration
-- **Smart Scales**: Auto-import weight and body composition
-- **Connected Gym Equipment**: Track workout performance
-- **Home Gym Integration**: Peloton, Mirror, Tonal data sync
+- Reconcile older broad suites with current endpoints/ports/theme schema.
+- Resolve the Vitest structured-clone harness failure.
+- Install/run Firefox and WebKit E2E.
+- Add a production startup canary and cold/warm route performance budget.
+- Add durable report/webhook job state and correlation IDs without sensitive payload logging.
 
-## 🌟 Premium Features (Potential)
+## Later product opportunities
 
-### 16. Ap³𝘹Fit Pro
-- **Advanced AI Models**: Access to latest AI capabilities
-- **Priority Support**: Direct access to fitness experts
-- **Custom Branding**: White-label for trainers/coaches
-- **Team Features**: Manage multiple clients/athletes
+- Wearable/smart-scale import, progress-photo comparison, additional measurements, recovery integrations, meal planning, and mobile/offline clients.
+- Coach/team workflows only after privacy, authentication, audit, and ownership models exist.
+- Accessibility validation against WCAG 2.2 AA across every new surface.
 
-### 17. Enterprise Solutions
-- **Corporate Wellness**: Company-wide fitness programs
-- **Healthcare Integration**: Partner with insurance providers
-- **Research Platform**: Anonymized data for studies
-- **API Priority**: Higher rate limits and SLA
+## Explicit non-goals unless separately approved
 
-## 🔮 Experimental Ideas
-
-### 18. AR/VR Features
-- **AR Body Scanning**: Accurate measurements via phone camera
-- **VR Workouts**: Immersive training experiences
-- **Holographic Coach**: AR fitness guidance
-
-### 19. Blockchain Integration
-- **NFT Achievements**: Verifiable fitness milestones
-- **Crypto Rewards**: Earn tokens for reaching goals
-- **Decentralized Storage**: Own your fitness data
-
-### 20. AI Innovations
-- **Digital Twin**: AI model of your metabolism
-- **Genetic Integration**: Personalization based on DNA
-- **Quantum Optimization**: Next-gen calculation algorithms
-
----
-
-## Contributing Ideas
-
-Have an idea for a future feature? We'd love to hear it!
-
-1. Check if it's already listed above
-2. Consider which category it fits into
-3. Think about the user value it provides
-4. Submit via GitHub Issues with the "enhancement" label
-
-## Implementation Timeline
-
-Features will be prioritized based on:
-- User demand and feedback
-- Technical feasibility
-- Resource availability
-- Strategic alignment
-
-Check our [GitHub Project Board](https://github.com/yourusername/apexfit-ai/projects) for current development status.
-
----
-
-*Last Updated: 2025-07-07*
-*Version: 1.0*
+- Automatic PED prescribing, “best stack” ranking, substitution, invented dosing, or claims of clinical safety.
+- Blockchain/NFT/crypto reward work.
+- Social/community features that expose member health/protocol data before a mature consent/privacy model.
+- Replacing reproducible PRIME/source calculations with opaque AI output.

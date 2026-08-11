@@ -1,5 +1,7 @@
 # ApexFit AI - Production Readiness Checklist
 
+> **Legacy checklist requiring revalidation.** The current local app has no authentication boundary, still exposes test routes, and has known runtime/settings/webhook gaps. Do not treat old checked boxes as August 2026 production approval. See [`CURRENT_STATUS.md`](CURRENT_STATUS.md).
+
 This checklist ensures your ApexFit AI deployment is ready for production use.
 
 ## 📋 Pre-Deployment Checklist

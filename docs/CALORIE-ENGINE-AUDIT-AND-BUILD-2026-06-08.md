@@ -1,5 +1,7 @@
 # Ap³xFit Calorie/Recomp Engine — Audit + Build Plan (2026-06-08)
 
+> **Dated audit/build plan.** Check current code, tests, OpenSpec, and [`VERIFICATION-2026-08-11.md`](VERIFICATION-2026-08-11.md) before treating an item as implemented.
+
 > Source-of-truth for the recomp projection engine. Written after PRIME flagged that
 > reports converge WEIGHT to goal but not BODY FAT, and that lifestyle/PED modifiers
 > should drive the daily calorie prescription.

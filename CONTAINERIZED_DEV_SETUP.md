@@ -1,5 +1,7 @@
 # 🐳 Containerized Development Setup with Redis Persistence
 
+> **Historical container setup.** The verified August 11, 2026 daily-use topology runs Next.js on Windows `:3010`, FastAPI on Windows `:8313`, and only optional Redis in WSL/Docker on `:6385`. Validate this document's Compose file, ports, and mounts before use. See [`RUNBOOK.md`](RUNBOOK.md).
+
 ## Overview
 
 This setup provides a fully containerized development environment with:

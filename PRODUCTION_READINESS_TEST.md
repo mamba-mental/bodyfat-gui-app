@@ -1,5 +1,7 @@
 # 🚀 Production Readiness Test Plan
 
+> **Historical test plan.** Update ports, routes, persistence, challenge/inventory coverage, and security gates before execution. Current evidence is in [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md).
+
 ## 📋 Test Overview
 **Application**: Ap³𝘹Fit.ai - AI-Powered Fitness Analytics  
 **Version**: 1.3.0  

@@ -1,5 +1,7 @@
 # Report Verification System Implementation Summary
 
+> **Historical implementation summary.** It documents the change at that time, not the complete August 2026 report/cycle contract. See [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) and current verification.
+
 ## Tasks Completed
 
 ### T015: Create POST /api/reports/verify Endpoint

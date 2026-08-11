@@ -1,5 +1,7 @@
 # Blueprint — "Generate Recomp Protocol" feature (Apex Fit)
 
+> **Blueprint, not current capability.** The app can track a selected source-backed 14-day schedule/inventory snapshot, but it does not yet generate universal-duration or AI-authored PED protocols.
+
 Status: SPEC ONLY (not implemented). Produced via feature-dev (3 code-explorers + 2 code-architects). 2026-06-03.
 
 ## What it does

@@ -1,5 +1,7 @@
 # Design: Design Review Fixes
 
+> **Historical April design artifact.** Current visual/product decisions are governed by `PRODUCT.md`, the palette/Feature Lab OpenSpec change, and the August 11 flow review.
+
 **Date**: 2026-04-01
 **Branch**: 007-design-review-fixes
 **Spec**: specs/007-design-review-fixes/spec.md

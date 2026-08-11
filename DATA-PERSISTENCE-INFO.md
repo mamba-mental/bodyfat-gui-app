@@ -1,161 +1,60 @@
-# 📁 Data Persistence Information - Ap³𝘹Fit.ai – 𝛼
+# Apex Fit Data Persistence
 
-## 🚨 Current Storage Status
+**Current as of:** August 11, 2026
 
-### Browser LocalStorage (Current Implementation)
-- **Location:** User's browser localStorage
-- **Persistence:** Only persists in the specific browser
-- **Data includes:**
-  - User profile data
-  - Body fat entries
-  - Generated reports
-  - PRIME calculations
-- **Limitations:**
-  - ❌ Not shared across devices
-  - ❌ Lost if browser data cleared
-  - ❌ Different data on each device/browser
-  - ❌ No server backup
+## What persists where
 
-## 🔧 Docker Volume Configuration (Added)
+| Data | Store | Authority |
+| --- | --- | --- |
+| Profile and program baseline | `data/bodyfat.db` | Canonical |
+| Entries and cycle association | `data/bodyfat.db` | Canonical |
+| Standard/two-week cycles and weigh-in schedule | `data/bodyfat.db` | Canonical |
+| Calculations and report records | `data/bodyfat.db` | Canonical |
+| Two-week templates/revisions/logs/amendments | `data/bodyfat.db` | Canonical |
+| Manual PED inventory and frozen coverage | `data/bodyfat.db` | Canonical |
+| HTML/Markdown/PDF report files | `storage/reports/` | Artifact store; linked from canonical records |
+| Theme/palette and selected local Settings values | Browser and/or settings endpoints | Preference only |
+| n8n webhook URL | Browser localStorage | Single-browser preference/secret-like URL |
+| Redis keys | Optional Redis cache | Never authoritative |
+| Cloud copy | None | Cloud writes disabled |
 
-### NAS Persistent Storage Setup
-The `docker-compose.yml` now includes volumes for persistent storage:
+## History behavior
 
-```yaml
-volumes:
-  - apex-fit-data:/app/data      # User data, entries, reports
-  - apex-fit-exports:/app/exports # Exported files
+- Starting a new program does not wipe the profile, entries, or reports.
+- The existing profile is copied into an editable form and saved as the new baseline.
+- The prior active cycle is stopped and remains available as history.
+- An entry is saved to SQLite before it is accepted into the UI as durable.
+- A report is generated explicitly and stored as a new historical record. Duplicate source fingerprints are gated in Report Center.
+- Activated 14-day snapshots remain reproducible even if the editable template or inventory later changes.
+
+## Backups
+
+The application uses `data/backups/` for local database backups. A backup of the database before the August 11 cycle repair is retained at:
+
+```text
+data/backups/bodyfat-before-2026-08-11-cycle-repair.db
 ```
 
-### Storage Locations on NAS
-When deployed, data will be stored in:
-- `./nas-data/` - All application data
-- `./nas-exports/` - Exported reports and backups
+This path may be gitignored and must not be treated as a remote/off-machine backup. Maintain a separate protected copy for disaster recovery.
 
-### Creating Storage Directories
-Before first deployment:
-```bash
-cd /path/to/bodyfat-gui-app/
-mkdir -p nas-data nas-exports
-chmod 755 nas-data nas-exports
-```
+Recommended backup set:
 
-## 🎯 Data Storage Architecture
+1. `data/bodyfat.db`
+2. `storage/reports/`
+3. `public/uploads/` if member photos/banners are used
+4. required local settings files, excluding reusable provider secrets from casual archives
 
-### Current (Alpha Version)
-```
-User Browser → localStorage → Per-browser data
-```
+## Export/import status
 
-### Future Enhancement Options
+Legacy Redis/JSON export routes and older manuals do not define the current canonical backup contract. Do not assume a browser JSON export contains every cycle, challenge revision, inventory record, report artifact, or source fingerprint. Until a verified full export/import test covers the current schema, use database plus artifact backups.
 
-#### Option 1: JSON File Storage (Simple)
-- Store data as JSON files in Docker volumes
-- One file per user
-- Easy backup/restore
+## Security and privacy
 
-#### Option 2: SQLite Database (Recommended)
-- Single database file in Docker volume
-- Better performance for multiple users
-- Easy to backup entire database
+- SQLite, uploads, report artifacts, logs, and backups can contain sensitive health and protocol information.
+- They are local, but not automatically encrypted at rest by Apex Fit.
+- Do not commit them, sync them to an untrusted location, or paste them into AI prompts without deliberate consent and minimization.
+- Cloud sync, authentication, tenant isolation, and server-side webhook credential storage are future capabilities.
 
-#### Option 3: PostgreSQL/MySQL (Enterprise)
-- Separate database container
-- Best for multi-user scenarios
-- Requires additional setup
+## Docker volumes
 
-## 📋 Current Data Management
-
-### Export Data (Available Now)
-Users can export their data via Settings → Data Management:
-- **Format:** JSON file download
-- **Contains:** All user data, entries, reports
-- **Usage:** Manual backup/restore
-
-### Import Data (Manual Process)
-- Upload JSON file through settings
-- Restore previous data
-
-## 🚀 Quick Backup Solution
-
-### Backup Current Browser Data
-1. Go to Settings → Data Management
-2. Click "Export All Data"
-3. Save the JSON file
-
-### Backup Docker Volume Data
-```bash
-# Backup
-docker run --rm -v apex-fit-data:/data -v $(pwd):/backup alpine tar -czf /backup/apex-fit-backup-$(date +%Y%m%d).tar.gz -C /data .
-
-# Restore
-docker run --rm -v apex-fit-data:/data -v $(pwd):/backup alpine tar -xzf /backup/apex-fit-backup-20250630.tar.gz -C /data
-```
-
-## 💡 Recommendations
-
-### For Alpha/MVP Testing
-- ✅ Current localStorage is sufficient
-- ✅ Users can export/import data manually
-- ✅ Docker volumes ready for future server storage
-
-### For Production
-- 🔄 Implement server-side storage API
-- 🔄 Add SQLite or PostgreSQL
-- 🔄 Implement user authentication
-- 🔄 Add automatic cloud backup
-
-## 📊 Data Structure
-
-### Stored Data Types
-```javascript
-{
-  "userData": {
-    "name": "User Name",
-    "age": 30,
-    "current_weight": 200,
-    "goal_weight": 180,
-    // ... other profile data
-  },
-  "entries": [
-    {
-      "id": "abc123",
-      "date": "2025-06-30",
-      "weight": 198.5,
-      "body_fat_percentage": 25.2,
-      // ... entry data
-    }
-  ],
-  "reports": [
-    {
-      "id": "xyz789",
-      "generated_at": "2025-06-30T10:00:00Z",
-      "calculation_result": { /* ... */ },
-      // ... report data
-    }
-  ],
-  "lastCalculation": {
-    "progression": [ /* weekly data */ ],
-    "confidence_score": 85,
-    // ... calculation data
-  }
-}
-```
-
-## 🔐 Privacy & Security
-
-### Current Status
-- ✅ All data stored locally in browser
-- ✅ No data sent to external servers
-- ✅ Privacy-first approach
-- ✅ User controls all data
-
-### Future Considerations
-- Add encryption for sensitive data
-- Implement user authentication
-- Add role-based access control
-- Regular automated backups
-
----
-
-**Note:** For the Alpha version, localStorage is acceptable as users can manually export/import their data. The Docker volumes are configured for future server-side storage implementation.
+The repository contains Docker Compose candidates with named/bind volumes, but the verified daily-use topology is not the full Docker stack. Validate mounts and make a backup before using a Compose file. Do not infer that `apexfit-data` contains the active workstation database unless the running container's resolved mount proves it.

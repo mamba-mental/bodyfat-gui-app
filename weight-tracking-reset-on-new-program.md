@@ -1,5 +1,7 @@
 # OpenSpec Proposal: weight-tracking-reset-on-new-program
 
+> **Superseded proposal.** The accepted baseline now lives in [`openspec/specs/program-tracking/spec.md`](openspec/specs/program-tracking/spec.md), and the August 11 implementation creates/preserves a first-class cycle plus editable profile baseline. See [`CURRENT_STATUS.md`](CURRENT_STATUS.md).
+
 ## Problem
 The current weight tracking and dashboard metrics exhibit inconsistent behavior when a user starts a new program:
 - The weight displayed on the dashboard does not update to reflect the starting weight of the new program.

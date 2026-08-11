@@ -1,5 +1,7 @@
 # Report Generation Fix Verification
 
+> **Historical October 2025 Docker verification.** It proves the specific template fixes below in that environment, not the current workstation topology or full 2026 cycle/report flow. Use [`docs/VERIFICATION-2026-08-11.md`](docs/VERIFICATION-2026-08-11.md) for current verification.
+
 ## Date: October 6, 2025
 
 ## Issues Fixed
