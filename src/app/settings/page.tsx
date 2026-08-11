@@ -37,6 +37,7 @@ import { withBasePath } from "@/lib/api-path"
 import { DEFAULT_PALETTE, PALETTE_OPTIONS, type PaletteId } from "@/lib/palettes"
 import type { CloudSyncStatus } from "@/lib/cloud-sync"
 import { WorkspacePageHeader } from "@/components/layout/workspace-page-header"
+import { PedSchedulerRoadmapCard } from "@/components/settings/ped-scheduler-roadmap-card"
 
 interface UserSettings {
   units: "imperial" | "metric"
@@ -930,6 +931,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              <PedSchedulerRoadmapCard />
 
               <Separator />
 
