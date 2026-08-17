@@ -12,6 +12,8 @@ import re
 import socket
 import subprocess
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 API_PORT = 8313
@@ -38,6 +40,21 @@ def port_up(port: int, host: str = "127.0.0.1", timeout: float = 1.0) -> bool:
         return False
     finally:
         s.close()
+
+
+def http_up(port: int, path: str = "/", timeout: float = 3.0) -> bool:
+    """True only when the service answers HTTP successfully.
+
+    A listening socket is not enough for the web app: Next.js can bind its port
+    before compilation finishes or before a startup failure is surfaced.
+    """
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{port}{path}", timeout=timeout
+        ) as response:
+            return 200 <= response.status < 400
+    except (OSError, urllib.error.URLError):
+        return False
 
 
 def listeners(port: int) -> list[int]:
@@ -105,7 +122,7 @@ def open_app(url: str = f"http://localhost:{WEB_PORT}") -> None:
         os.startfile(url)  # type: ignore[attr-defined]
 
 
-def start(open_browser: bool = True, wait: float = 45.0) -> dict[int, bool]:
+def start(open_browser: bool = True, wait: float = 90.0) -> dict[int, bool]:
     """Start API + web if their ports are down, wait until both are reachable,
     then (optionally) open the browser. Idempotent: already-up servers are left
     alone, never double-spawned. database.py resolves ../data from python-api/,
@@ -120,17 +137,21 @@ def start(open_browser: bool = True, wait: float = 45.0) -> dict[int, bool]:
         # instead, build once and run the standalone server:
         #   npx next build && node .next/standalone/server.js
         # (after copying .next/static and public/ into .next/standalone/).
-        _spawn_detached(f"npx next dev -H 0.0.0.0 -p {WEB_PORT}", APP_DIR)
+        # Use the project's pinned local Next.js through npm. `npx next` may
+        # download a newer major release when local resolution is disrupted,
+        # which can mutate dependencies and start an incompatible dev server.
+        _spawn_detached("npm.cmd run dev -- -H 0.0.0.0", APP_DIR)
 
     deadline = time.time() + wait
     while time.time() < deadline:
-        if port_up(API_PORT) and port_up(WEB_PORT):
+        if http_up(API_PORT) and http_up(WEB_PORT):
             break
         time.sleep(1)
 
-    if open_browser and port_up(WEB_PORT):
+    health = {API_PORT: http_up(API_PORT), WEB_PORT: http_up(WEB_PORT)}
+    if open_browser and health[WEB_PORT]:
         open_app()
-    return status([API_PORT, WEB_PORT])
+    return health
 
 
 def main(argv: list[str]) -> int:

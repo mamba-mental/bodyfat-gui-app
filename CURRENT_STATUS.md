@@ -1,10 +1,10 @@
 # Current Application Status
 
-**Verified:** August 11, 2026
+**Verified:** August 17, 2026
 
 **Branch:** `feat/recomp-cycle-foundation`
 
-**Last verified repair:** `df184db` (`fix: preserve profiles and align cycle report flows`)
+**Last verified repository baseline:** `0592572`; shortcut/runtime repair is pending commit
 
 ## Operational state
 
@@ -19,7 +19,9 @@
 
 The frontend and API are not currently served by the Docker application stack. The local supervisor runs them on Windows; only Redis is expected in Docker.
 
-The Desktop shortcuts **ApexFit Tracker** and **Stop ApexFit** are not currently valid: both point to a removed repository path, and the current `Launch-ApexFit.cmd`/`Stop-ApexFit.cmd` wrappers contain the same stale path. Use `python .\_ops\apex_lifecycle.py start|stop` from the real project root until a separately authorized shortcut repair is completed.
+The OneDrive Desktop shortcuts **ApexFit Tracker** and **Stop ApexFit** now point to the current repository and have valid working directories. The launcher uses the repository's pinned Next.js rather than allowing `npx` to download a different major version, waits for HTTP health rather than an open socket, and coordinates the supervisor through a no-admin stop marker. Real shortcut tests returned HTTP 200 for both services and proved that Stop kept both ports down for at least 25 seconds.
+
+The full Apex application is not yet container-deployed. Live Docker inspection found only `apex-fit-redis`; the existing full-stack Compose path selects the simplified backend and bakes a browser-facing localhost API URL into the frontend. Do not deploy it unchanged. HP1 is the preferred future host based on current capacity, with private Tailscale access and Synology backups.
 
 ## Live member/cycle repair state
 
@@ -63,6 +65,6 @@ See [docs/VERIFICATION-2026-08-11.md](docs/VERIFICATION-2026-08-11.md) for exact
 - PED scheduling for standard/custom durations, adherence event tracking, and automatic inventory decrement.
 - Production-gating/removal of the four test routes.
 - Firefox and WebKit end-to-end verification.
-- Repaired start/stop wrapper paths and Desktop shortcut targets.
+- Production-grade HP1 container deployment with same-origin API routing, private access, health checks, persistent storage, and Synology backup.
 
 These items must not be described elsewhere as shipped. The [documentation index](docs/DOCUMENTATION-INDEX.md) identifies older plans and snapshots that are historical rather than current instructions.

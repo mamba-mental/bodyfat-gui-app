@@ -1,6 +1,6 @@
 # Apex Fit Local Operations Runbook
 
-**Current as of:** August 11, 2026
+**Current as of:** August 17, 2026
 
 **Verified topology:** Windows-supervised Next.js/FastAPI plus optional Redis in WSL/Docker.
 
@@ -19,15 +19,11 @@
 
 ## Normal lifecycle
 
-### Desktop shortcut status
+### Desktop shortcuts
 
-Do **not** use the current Desktop shortcuts named **ApexFit Tracker** or **Stop ApexFit**. Both `.lnk` files point to:
+Use **ApexFit Tracker** on the OneDrive Desktop to start the API and web app, wait for HTTP readiness, open Brave, and then launch the watchdog. Use **Stop ApexFit** to write the durable stop marker, stop the watchdog, and end both services. Both shortcuts point to the current repository and use a minimized command window.
 
-```text
-C:\GitHub_Projects\2025.0629_bf-estimator-terminal-standalone\bodyfat-gui-app
-```
-
-That directory no longer exists. The `Launch-ApexFit.cmd` and `Stop-ApexFit.cmd` files in the current repository also `cd` to the same stale path, so merely repointing the `.lnk` files would not be sufficient. Until a separately authorized repair updates both wrapper contents and shortcut targets, use the Python lifecycle commands from the real project root:
+For diagnosis, use the same lifecycle module directly from the real project root:
 
 ```powershell
 python .\_ops\apex_lifecycle.py start
@@ -35,7 +31,7 @@ python .\_ops\apex_lifecycle.py status
 python .\_ops\apex_lifecycle.py stop
 ```
 
-The start command is idempotent: it leaves already-listening services alone and opens the browser unless `--no-browser` is supplied.
+The start command is idempotent and uses the locally installed Next.js through `npm run dev`; it must never prompt to install another Next.js version. It opens the browser unless `--no-browser` is supplied. The direct Python stop command kills listeners but does not create the supervisor stop marker; prefer the Desktop Stop shortcut for normal operation.
 
 ## Health verification
 

@@ -33,11 +33,20 @@ Verified on August 11, 2026 against the local Windows-supervised application and
 
 ## Desktop-shortcut finding
 
+> Superseded operationally on August 17, 2026. The bullets below preserve what the August 11 documentation pass found; see the follow-up immediately after them and the [dated shortcut triage](SHORTCUT-TRIAGE-2026-08-17.md).
+
 - `ApexFit Tracker.lnk` and `Stop ApexFit.lnk` on the OneDrive Desktop point to the removed path `C:\GitHub_Projects\2025.0629_bf-estimator-terminal-standalone\bodyfat-gui-app`.
 - Their target `.cmd` files therefore do not exist at the shortcut destination.
 - The current repository's `Launch-ApexFit.cmd` and `Stop-ApexFit.cmd` also contain that stale `cd` path internally.
 - The verified safe commands are currently `python .\_ops\apex_lifecycle.py start` and `python .\_ops\apex_lifecycle.py stop` from the real project root.
 - No shortcut was modified during this documentation-only pass.
+
+### August 17 follow-up
+
+- Both repository wrappers and both OneDrive Desktop links were repaired to the current path and backed up before modification.
+- The launcher now uses the repository's pinned Next.js, waits for HTTP 200, and prevents the supervisor from racing the initial compile.
+- The stop flow uses a durable no-admin marker honored by the supervisor.
+- The real **ApexFit Tracker** link brought the API and dashboard to HTTP 200; the real **Stop ApexFit** link kept both ports down for at least 25 seconds.
 
 ## Standard-cycle/profile repair verification
 

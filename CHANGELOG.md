@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-08-11
+## [Unreleased] - 2026-08-17
 
 ### Added
 
@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Repaired the ApexFit Tracker and Stop ApexFit Desktop shortcuts and wrapper paths after the repository moved.
+- Pinned shortcut startup to the repository's installed Next.js instead of allowing `npx` to download an incompatible major version.
+- Startup now waits for real HTTP health, pauses the watchdog during launch, and restarts one hidden supervisor only after both services are healthy.
+- Stop now writes a no-admin durable stop marker before ending the watchdog and services, so the scheduled watchdog cannot immediately resurrect Apex Fit.
+- Restored package manifests and locked dependencies after the accidental Next.js 16 prompt changed TypeScript packages.
 - Starting a new program no longer deletes or blanks the member profile. It opens an editable copy, creates a first-class active standard cycle, saves a program baseline, stops the prior cycle, and preserves history.
 - Reports no longer silently select the newest stopped cycle when no active cycle exists; aggregate history is used instead.
 - New Entry confirms persistence before navigation and no longer waits for automatic report generation.
@@ -40,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - n8n delivery remains browser-side and unsigned.
 - AI-assisted PED drafting, universal-duration scheduling, adherence inventory ledger, and AI report explanation remain roadmap work.
 - Four developer test routes remain in the production route manifest.
-- The two desktop shortcuts and both repository `.cmd` wrappers still point to a removed project path; use the lifecycle Python commands until a separately authorized shortcut repair is made.
+- The current full-stack Docker Compose path is not deployment-ready: it selects the simplified Python backend and embeds a localhost API address in the browser bundle.
 
 ## [1.6.1] - 2026-01-09
 

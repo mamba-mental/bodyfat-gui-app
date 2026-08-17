@@ -36,6 +36,11 @@ def test_port_up_false_for_unused_port():
     assert life.port_up(UNUSED_PORT) is False
 
 
+# ---- http_up -------------------------------------------------------------
+def test_http_up_false_for_unused_port():
+    assert life.http_up(UNUSED_PORT) is False
+
+
 # ---- listeners -----------------------------------------------------------
 def test_listeners_returns_pids_for_up_port():
     if not _is_listening(WEB_PORT):

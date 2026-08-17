@@ -6,12 +6,13 @@ $ErrorActionPreference = 'Continue'
 # Dodge the PowerShell InitializeDefaultDrives FileSystem-provider CWD bug.
 Set-Location $env:USERPROFILE
 
-$Root    = 'C:\GitHub_Projects\2025.0629_bf-estimator-terminal-standalone\bodyfat-gui-app'
+$Root    = 'C:\GitHub_Projects\2025.0629 - Body-Fat Estimator Terminal Standalone\bodyfat-gui-app'
 $ApiDir  = Join-Path $Root 'python-api'
 $DataDir = Join-Path $Root 'data'
 $Python  = 'C:\Users\tiran\AppData\Local\Programs\Python\Python313\python.exe'
 $LogDir  = Join-Path $Root '_ops'
 $Log     = Join-Path $LogDir 'supervisor.log'
+$StopFile = Join-Path $env:LOCALAPPDATA 'ApexFit\supervisor.disabled'
 
 # Pin the DB to the real data dir + force reload off for the spawned API.
 $env:DATA_DIR = $DataDir
@@ -27,6 +28,11 @@ function PortUp([int]$p) {
 
 Log "=== ApexFit supervisor started (PID $PID) ==="
 
+if (Test-Path -LiteralPath $StopFile) {
+    Log "stop marker present; supervisor exiting"
+    exit 0
+}
+
 # Fallback python if the pinned interpreter is missing.
 if (-not (Test-Path $Python)) {
     $resolved = (Get-Command python -ErrorAction SilentlyContinue).Source
@@ -36,6 +42,10 @@ if (-not (Test-Path $Python)) {
 
 while ($true) {
     try {
+        if (Test-Path -LiteralPath $StopFile) {
+            Log "stop marker detected; supervisor exiting"
+            exit 0
+        }
         if (-not (PortUp 8313)) {
             Log "API :8313 DOWN -> starting (python main.py, reload off)"
             Start-Process -FilePath $Python -ArgumentList 'main.py' `

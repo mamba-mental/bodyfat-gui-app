@@ -2,19 +2,19 @@
 
 **Owner:** PRIME
 
-**Last updated:** August 11, 2026
+**Last updated:** August 17, 2026
 
 **Canonical purpose:** concise, current procedures for daily use.
 
 ## Quick start
 
-> The desktop **ApexFit Tracker** and **Stop ApexFit** shortcuts are currently stale and should not be used. Their old target directory no longer exists, and the current `.cmd` wrappers also contain that old path. Use the lifecycle commands below until the shortcuts are repaired.
+Use the OneDrive Desktop **ApexFit Tracker** shortcut to start and open the application. Use **Stop ApexFit** when you want both services and the watchdog to remain stopped. The command-line lifecycle remains available for diagnosis.
 
 | Action | Command or location |
 | --- | --- |
-| Start | `python .\_ops\apex_lifecycle.py start` |
+| Start | Desktop **ApexFit Tracker**, or `python .\_ops\apex_lifecycle.py start` |
 | Status | `python .\_ops\apex_lifecycle.py status` |
-| Stop | `python .\_ops\apex_lifecycle.py stop` |
+| Stop | Desktop **Stop ApexFit**, or `python .\_ops\apex_lifecycle.py stop` |
 | Dashboard | `http://localhost:3010` |
 | API status | `http://localhost:8313` |
 | API schema | `http://localhost:8313/docs` |
@@ -50,11 +50,15 @@ Inventory constrains whether the selected source schedule can be fulfilled. It d
 
 ## Add a check-in
 
-1. Open **New Entry**.
-2. Confirm the active-cycle banner and date.
-3. Enter weight, body-fat measurement when available, optional notes, and optional photo.
-4. Save.
-5. Remain on the form if a persistence error is shown; do not assume a failed save reached SQLite.
+1. Double-click **ApexFit Tracker** and wait for the dashboard to open.
+2. Select **New Entry** in the left sidebar.
+3. Confirm the date at the top of **Record today's measurements**. It defaults to today.
+4. Enter **Weight (lbs)**. This is the only required measurement.
+5. Add **Body Fat %**, **Notes**, or a progress photo only when you have them; all three are optional.
+6. Select **Save Entry** once.
+7. The app returns to the dashboard after persistence succeeds. If an error remains on the form, do not assume the entry reached SQLite.
+
+The saved check-in updates the active cycle, dashboard, projections, and Report Center inputs. It does not silently generate a new report.
 
 A successful save updates app state and recalculates. It does not automatically generate a report. Use **Reports** when you want a durable report revision.
 

@@ -1,6 +1,6 @@
 # Apex Fit Documentation Index
 
-**Documentation baseline:** August 11, 2026
+**Documentation baseline:** August 17, 2026
 
 This index is the authority for which documents describe current behavior. Dated audits, implementation plans, generated protocol extracts, test reports, and deployment experiments remain useful evidence, but they do not override the current guides below.
 
@@ -21,6 +21,7 @@ This index is the authority for which documents describe current behavior. Dated
 | [`CHANGELOG.md`](../CHANGELOG.md) | User-visible and engineering change history |
 | [`N8N-WEIGH-IN-AUTOMATION.md`](N8N-WEIGH-IN-AUTOMATION.md) | Exact webhook trigger, payload, deduplication, and workflow setup |
 | [`TWO-WEEK-PED-INVENTORY-MVP.md`](TWO-WEEK-PED-INVENTORY-MVP.md) | What the manual inventory MVP can and cannot do tonight |
+| [`SHORTCUT-TRIAGE-2026-08-17.md`](SHORTCUT-TRIAGE-2026-08-17.md) | Apex shortcut repair evidence and read-only triage of all Desktop shortcut roots |
 
 ## Current verification and design authority
 

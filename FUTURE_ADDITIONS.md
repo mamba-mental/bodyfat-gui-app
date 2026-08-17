@@ -20,7 +20,7 @@
 
 4. **Production local runtime**
    - Create a verified standalone Next build/copy/start lifecycle with rollback.
-   - Repair the repository start/stop wrappers and desktop shortcuts only as an explicitly scoped operational change.
+   - Replace the development runtime with a verified HP1 container deployment, private Tailscale HTTPS access, persistent storage, and Synology backups.
    - Gate/remove developer test routes.
 
 ## P2 — Complete the PED inventory/scheduler roadmap

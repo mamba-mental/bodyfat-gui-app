@@ -2,7 +2,7 @@
 
 Apex Fit is a local-first body-composition planning and progress application. The Next.js interface combines profile and check-in history with the Python PRIME calculation engine, cycle-scoped reports, editable standard programs, a separate 14-day cut workflow, nutrition tracking, and optional AI coaching.
 
-> Current documentation baseline: August 11, 2026. Start with the [documentation index](docs/DOCUMENTATION-INDEX.md) when a dated audit or older deployment note conflicts with a current guide.
+> Current documentation baseline: August 17, 2026. Start with the [documentation index](docs/DOCUMENTATION-INDEX.md) when a dated audit or older deployment note conflicts with a current guide.
 
 ## What is available
 
@@ -37,7 +37,9 @@ The Apex frontend and FastAPI service are Windows-supervised processes in the cu
 
 ### Start, inspect, and stop
 
-> Desktop shortcut warning: the current **ApexFit Tracker** and **Stop ApexFit** shortcuts, plus the two repository `.cmd` wrappers they target, contain the removed non-space project path. Do not use them until they are repointed. Use the commands below from the real project root.
+The OneDrive Desktop shortcuts **ApexFit Tracker** and **Stop ApexFit** are the normal start and stop controls. They point to the current repository, use its pinned local Next.js dependency, coordinate the watchdog without administrator rights, and were exercised end to end on August 17, 2026. **Stop ApexFit** leaves a durable stop marker so the scheduled watchdog does not immediately restart the services.
+
+The lifecycle commands remain the diagnostic fallback from the project root:
 
 From the project root in PowerShell:
 
