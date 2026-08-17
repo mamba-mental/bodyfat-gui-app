@@ -14,6 +14,7 @@ The existing Docker files cannot be deployed unchanged: the default backend imag
 - Migrate a stopped-writer, integrity-checked copy of the current local SQLite database and required report/upload artifacts to HP1 persistent storage.
 - Enforce one canonical writable SQLite database after cutover; the Windows runtime becomes a documented recovery/development path rather than a concurrent writer.
 - Add health checks, restart policy, non-root containers, pinned base images, bounded logs/resources, and secret injection outside committed files.
+- Triage production dependency advisories and block cutover on known critical runtime vulnerabilities unless a specific, documented exception is approved.
 - Add verified SQLite backups from HP1 to a dedicated Synology `Backups/ApexFit` location with retention and restore evidence.
 - After acceptance, update the Desktop launch experience to open the private HP1 URL and retain clearly labeled local recovery controls.
 

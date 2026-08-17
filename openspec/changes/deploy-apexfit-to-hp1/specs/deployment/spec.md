@@ -14,6 +14,12 @@ The system SHALL run the current Apex Fit frontend and full FastAPI/PRIME backen
 - **THEN** container health, HTTP responses, critical UI routes, persistence reads, and semantic data parity are checked
 - **AND** an open port or API root response alone is not reported as end-to-end success
 
+#### Scenario: Runtime dependencies are accepted
+- **WHEN** the production images are prepared for cutover
+- **THEN** direct runtime dependency and image advisories are recorded and reviewed
+- **AND** no known critical runtime advisory is accepted silently
+- **AND** any exception requires specific documented approval after regression-tested remediation options are evaluated
+
 ### Requirement: Private same-origin access
 
 The deployed system SHALL be accessible to trusted tailnet devices through Tailscale Serve HTTPS and SHALL keep the backend, Redis, health data, and storage off the public internet.

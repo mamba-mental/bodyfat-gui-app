@@ -12,6 +12,7 @@
 - [ ] 2.3 Create the HP1 Compose stack with private API/Redis networking, loopback-only web binding, persistent bind mounts, restart policy, resource limits, and bounded logs.
 - [ ] 2.4 Replace browser-facing localhost/Docker-host API configuration with verified same-origin proxy routing.
 - [ ] 2.5 Add fail-closed environment validation without committing secrets.
+- [ ] 2.6 Triage production dependency and image advisories; update and regression-test affected direct runtime packages, and block cutover on unresolved critical findings without an explicit documented exception.
 
 ## 3. Staging acceptance on HP1
 

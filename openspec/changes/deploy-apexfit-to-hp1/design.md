@@ -59,6 +59,7 @@ Use a dedicated `/volume1/Backups/ApexFit/` destination. Backups SHALL be genera
 - Missing feature parity in the existing simplified backend image -> build the full `python-api/main.py` service and run route/persistence acceptance tests.
 - Health endpoint passes while UI or persistence fails -> require browser route checks and data read/re-read checks, not container health alone.
 - No in-app authentication -> restrict to Tailscale Serve; do not publish publicly.
+- Current production audit reports critical advisories affecting direct `next` and `jspdf` dependencies -> update and regression-test supported versions before cutover, or stop for an explicit documented exception; never run a breaking audit fix blindly.
 - Tailnet/DNS outage -> retain a documented HP1 loopback/LAN administrative recovery path without opening it permanently.
 - NAS unavailable during backup -> keep bounded local HP1 backups and surface backup failure without stopping the app.
 
